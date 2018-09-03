@@ -1,0 +1,4 @@
+*.bs.js
+/lib
+/node_modules
+.bsb.lock
