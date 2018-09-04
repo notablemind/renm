@@ -20,31 +20,38 @@ let getData = (store, id) => switch (Store.get(store, id)) {
 
 let evtValue = evt => ReactEvent.Form.target(evt)##value;
 
-let renderContents = (store, id, active, contents: Quill.contents) => switch contents {
+let renderContents = (store, node: SharedTypes.Node.t(Quill.contents), active, collapsed) => switch (node.contents) {
   | Normal(text) =>
   <Quill
     value=text
     onChange=(evt => {
       /* Store.act(store, SharedTypes.SetContents(id, Normal(evtValue(evt)))) */
-      Store.act(store, SharedTypes.SetContents(id, Quill.Normal(evt)))
+      Store.act(store, SharedTypes.SetContents(node.id, Quill.Normal(evt)))
     })
     active
+    onToggleCollapse={
+      () => {
+        Store.act(store, SharedTypes.SetCollapsed(node.id, !collapsed));
+        false
+      }
+    }
+    onEnter={() => {
+      Store.act(store, SharedTypes.CreateAfter)
+    }}
     onDown=(() => {
       open Monads;
-      let%Opt node = Store.get(store, id);
       let%Opt nextId = TreeTraversal.down(store.data, store.sharedViewData.expanded, node);
       Store.act(store, SharedTypes.SetActive(nextId));
       Some(nextId)
     })
     onUp=(() => {
       open Monads;
-      let%Opt node = Store.get(store, id);
       let%Opt prevId = TreeTraversal.up(store.data, node);
       Store.act(store, SharedTypes.SetActive(prevId));
       Some(prevId)
     })
     onFocus=(_evt => {
-      Store.act(store, SharedTypes.SetActive(id))
+      Store.act(store, SharedTypes.SetActive(node.id))
     })
   />
   | _ => str("Other contents")
@@ -67,7 +74,8 @@ let make =
             ~display="flex",
             ~flexDirection="row",
             ~alignItems="center",
-            ~border="1px solid #ccc",
+            /* ~border="1px solid #ccc", */
+            ~margin="1px",
             ~outline=active ? "2px solid skyblue" : "none",
             ()
           )
@@ -95,7 +103,7 @@ let make =
         </div>
         : <div />}
         <div style=ReactDOMRe.Style.(make(~flex="1", ()))>
-        {renderContents(store, node.id, active, node.contents)}
+        {renderContents(store, node, active, collapsed)}
         </div>
       </div>
       {!collapsed

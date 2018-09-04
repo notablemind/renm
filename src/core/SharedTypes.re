@@ -115,6 +115,7 @@ type edit('contents) =
   | Node(Node.t('contents))
   | NodeChildren(Node.id, list(Node.id))
   | NodeCollapsed(Node.id, bool)
+  | Create(Node.t('contents))
   | View(view);
 
 type action('contents) =

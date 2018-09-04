@@ -59,24 +59,59 @@ let trigger = (store, evts) => {
   HashSet.forEach(fns, fn => fn());
 };
 
-let processAction: (t('contents), action('contents)) => (list(edit('contents)), list(Event.t)) = (store, action) => switch action {
-  | SetActive(id) when id != store.view.active => (
-    [View({...store.view, active: id})],
-    [Event.View(Node(store.view.active)), Event.View(Node(id))]
-  )
-  | SetContents(id, contents) => switch (get(store, id)) {
-    | None => ([], [])
-    | Some(node) => (
-      [Node({...node, contents})],
-      [Event.Node(id)]
-    )
-  }
-  | SetCollapsed(id, collapsed) => (
-    [NodeCollapsed(id, collapsed)],
-    [Event.View(Node(id))]
-  )
-  | _ => ([], [])
-};
+let processAction:
+  (t('contents), action('contents)) =>
+  (list(edit('contents)), list(Event.t)) =
+  (store, action) =>
+    switch (action) {
+    | SetActive(id) when id != store.view.active => (
+        [View({...store.view, active: id})],
+        [Event.View(Node(store.view.active)), Event.View(Node(id))],
+      )
+    | SetContents(id, contents) =>
+      switch (get(store, id)) {
+      | None => ([], [])
+      | Some(node) => ([Node({...node, contents})], [Event.Node(id)])
+      }
+    | SetCollapsed(id, collapsed) => (
+        [NodeCollapsed(id, collapsed)],
+        [Event.View(Node(id))],
+      )
+    | CreateAfter =>
+      {
+        let%Monads.Opt node = get(store, store.view.active);
+        let (pid, index) =
+          TreeTraversal.nextChildPosition(
+            store.data,
+            store.sharedViewData.expanded,
+            node,
+          );
+        let nid = Utils.newId();
+        /* TODO I think I want to abstract out the node contents stuff? */
+        let nnode =
+          SharedTypes.Node.create(
+            ~id=nid,
+            ~parent=pid,
+            ~contents=Quill.Normal(Quill.makeBlot("")),
+            ~children=[],
+          );
+        let%Monads.Opt parent = get(store, pid);
+        let edits = [
+            Create(nnode),
+            NodeChildren(pid, Utils.insertIntoList(parent.children, index, nid)),
+            View({...store.view, active: nid})
+          ];
+        let edits = if (!Set.String.has(store.sharedViewData.expanded, pid)) {
+          [NodeCollapsed(pid, false), ...edits]
+        } else { edits };
+        Some((
+          edits,
+          [Event.Node(pid), Event.View(Node(store.view.active))],
+        ));
+      }
+      ->Monads.OptDefault.or_(([], []))
+    | _ => ([], [])
+    };
 
 let applyEdits = (store, edits) =>
   List.forEach(edits, edit =>
@@ -87,6 +122,7 @@ let applyEdits = (store, edits) =>
       ? collapse(store.sharedViewData, id)
       : expand(store.sharedViewData, id)
     }
+    | Create(n)
     | Node(n) =>
       store.data = {
         ...store.data,

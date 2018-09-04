@@ -3,6 +3,12 @@ module OptDefault = {
   let let_ = ((a, default), b) => switch (a) {
     | None => default
     | Some(x) => b(x)
+  };
+  let or_ = (v, default) => {
+    switch v {
+      | None => default
+      | Some(c) => c
+    }
   }
 };
 
