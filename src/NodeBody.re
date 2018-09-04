@@ -19,10 +19,15 @@ let makeData = (store, id) => switch (Store.get(store, id)) {
 let evtValue = evt => ReactEvent.Form.target(evt)##value;
 
 let renderContents = (store, id, contents: SharedTypes.Node.contents) => switch contents {
-  | Normal(text) => <input
+  | Normal(text) =>
+  <Quill
     value=text
     onChange=(evt => {
-      Store.act(store, SharedTypes.SetContents(id, Normal(evtValue(evt))))
+      /* Store.act(store, SharedTypes.SetContents(id, Normal(evtValue(evt)))) */
+      Store.act(store, SharedTypes.SetContents(id, Normal(evt)))
+    })
+    onFocus=(_evt => {
+      Store.act(store, SharedTypes.SetActive(id))
     })
   />
   | _ => str("Other contents")
@@ -39,7 +44,7 @@ let make = (
   render: _self =>
     <div>
       <div style=ReactDOMRe.Style.(make(
-        ~backgroundColor=active ? "skyblue": "white",
+        ~outline=active ? "2px solid skyblue": "none",
         ()
       ))
       onClick=(_evt => {

@@ -15,10 +15,11 @@ module Tag = {
 
 module Node = {
   type id = string;
+  type blot;
 
   type contents =
-  | Normal(string)
-  | Todo(string)
+  | Normal(blot)
+  | Todo(blot)
   | Code(string, string);
 
   type t = {

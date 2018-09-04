@@ -2,7 +2,15 @@
 type quill;
 type blot = SharedTypes.Node.blot;
 
-[@bs.new] external quill: ('element, 'config) => quill = "Quill";
+let makeBlot: string => blot = [%bs.raw {|
+function(text) {
+  return [{insert: text.endsWith('\n') ? text : text + '\n'}]
+}
+|}];
+
+[%bs.raw {|require("quill/dist/quill.core.css")|}];
+
+/* [@bs.new] external quill: ('element, 'config) => quill = "Quill"; */
 
 [@bs.send] external setText: (quill, string) => unit = "";
 [@bs.send] external getContents: (quill) => blot = "";
@@ -16,12 +24,13 @@ let onSelectionChange = (quill, fn: (Js.null(range), Js.null(range), string) => 
   on(quill, "selection-change", fn)
 };
 
-/* [@bs.module "quill/core"] external register: 'a => unit = "";
-[@bs.module] external toolbar: 'a = "quill/modules/toolbar";
-[@bs.module] external bold: 'a = "quill/formats/bold";
-[@bs.module] external italic: 'a = "quill/formats/italic";
-[@bs.module] external header: 'a = "quill/formats/header";
-[@bs.module] external snow: 'a = "quill/themes/snow";
+[@bs.module "quill/core"] [@bs.new] external quill: ('element, 'config) => quill = "default";
+[@bs.module "quill/core"] [@bs.scope "default"] external register: 'a => unit = "register";
+[@bs.module "quill/modules/toolbar"] external toolbar: 'a = "default";
+[@bs.module "quill/formats/bold"] external bold: 'a = "default";
+[@bs.module "quill/formats/italic"] external italic: 'a = "default";
+[@bs.module "quill/formats/header"] external header: 'a = "default";
+[@bs.module "quill/themes/snow"] external snow: 'a = "default";
 
 register({
   "modules/toolbar": toolbar,
@@ -29,7 +38,7 @@ register({
   "formats/italic": italic,
   "formats/header": header,
   "themes/snow": snow,
-}); */
+});
 
 let component = ReasonReact.reducerComponent("Quill");
 

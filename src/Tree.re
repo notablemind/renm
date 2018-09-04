@@ -26,19 +26,19 @@ let store =
         Node.create(
           ~id="a",
           ~parent="a",
-          ~contents=Normal("Root"),
+          ~contents=Normal(Quill.makeBlot("Root")),
           ~children=["b", "c"],
         ),
         Node.create(
           ~id="b",
           ~parent="a",
-          ~contents=Normal("B"),
+          ~contents=Normal(Quill.makeBlot("B")),
           ~children=[],
         ),
         Node.create(
           ~id="c",
           ~parent="a",
-          ~contents=Normal("C"),
+          ~contents=Normal(Quill.makeBlot("C")),
           ~children=[],
         ),
       ],
