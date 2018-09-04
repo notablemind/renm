@@ -8,6 +8,9 @@
     "dir" : "src",
     "subdirs" : true
   },
+  "warnings": {
+    "number": "-44-27"
+  },
   "package-specs": [{
     "module": "commonjs",
     "in-source": true

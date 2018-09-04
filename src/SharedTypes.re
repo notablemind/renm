@@ -33,6 +33,7 @@ module Node = {
     childrenModified: date,
     children: list(string),
   };
+
   let create = (~id, ~parent, ~contents: contents, ~children) => {
     id,
     parent,
@@ -107,7 +108,11 @@ module Event = {
   | View(View.event)
 };
 
-type actions =
+type edit =
+  | Node(Node.t)
+  | View(view);
+
+type action =
   | SetActive(Node.id)
   | SetMode(mode)
   | SetCollapsed(Node.id, bool)

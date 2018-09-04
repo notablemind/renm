@@ -8,7 +8,7 @@ type t = {
   subs: Hashtbl.t(Event.t, list(unit => unit)),
 };
 
-let create = (~root, ~nodes: list(Node.t)) => {
+let create = (~root, ~nodes: list(SharedTypes.Node.t)) => {
   let nodeMap = List.reduce(nodes, Map.String.empty, (map, node) => Map.String.set(map, node.id, node));
   {
     data: {...emptyData(~root), nodes: nodeMap},
@@ -39,14 +39,43 @@ let subscribe = (store, id, fn) => {
   }
 };
 
+module FnId = Id.MakeHashable({
+  type t = unit => unit;
+  let hash = Hashtbl.hash;
+  let eq = (===)
+});
+
 /** TODO maintain ordering... would be great */
 let trigger = (store, evts) => {
-  let fns = Hashtbl.create(10);
+  let id: Id.hashable(FnId.t, FnId.identity) = (module FnId);
+  let fns = HashSet.make(~hintSize=10, ~id)
+  /* let fns = Hashtbl.create(10); */
   List.forEach(evts, evt => {
     switch (Hashtbl.find(store.subs, evt)) {
       | exception Not_found => ()
-      | subs => List.forEach(subs, fn => Hashtbl.replace(fns, fn, ()))
+      | subs => List.forEach(subs, fn => HashSet.add(fns, fn))
     }
   });
-  Hashtbl.iter((fn, ()) => fn(), fns);
+  HashSet.forEach(fns, fn => fn());
+};
+
+let processAction: (t, action) => (list(edit), list(Event.t)) = (store, action) => switch action {
+  | SetActive(id) when id != store.view.active => (
+    [View({...store.view, active: id})],
+    [Event.View(Node(store.view.active)), Event.View(Node(id))]
+  )
+  | _ => ([], [])
+};
+
+let applyEdits = (store, edits) => {
+  List.forEach(edits, (edit) => switch edit {
+    | View(v) => store.view = v
+    | Node(n) => store.data = {...store.data, nodes: Map.String.set(store.data.nodes, n.id, n)}
+  })
+};
+
+let act = (store, action) => {
+  let (edits, events) = processAction(store, action);
+  applyEdits(store, edits);
+  trigger(store, events);
 };

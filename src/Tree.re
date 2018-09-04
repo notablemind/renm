@@ -9,20 +9,6 @@ module type Config = {
   let sub: (store, key, unit => unit, unit) => unit;
 };
 
-module SubNode = (Config: Config) => {
-  let component = ReasonReact.reducerComponent("Node");
-  let make = (~id, ~store, ~render, _children) => {
-    ...component,
-    initialState: () => Config.get(store, id),
-    reducer: (node, _state) => ReasonReact.Update(Some(node)),
-    didMount: self =>
-      self.onUnmount(
-        Config.sub(store, id, () => self.send(Config.get(store, id))),
-      ),
-    render: self => render(self.state),
-  };
-};
-
 let component = ReasonReact.statelessComponent("Tree");
 
 module StoreContext =
@@ -57,43 +43,6 @@ let store =
         ),
       ],
   );
-
-module NodeBody = {
-  let component = ReasonReact.statelessComponent("NodeBody");
-  let make = (~store, ~node: SharedTypes.Node.t, ~renderChild, _children) => {
-    ...component,
-    render: _self =>
-      <div>
-        {str("hello " ++ node.id)}
-        {node.children->List.map(renderChild)->List.toArray->ReasonReact.array}
-      </div>,
-  };
-};
-
-module Node = {
-  let component = ReasonReact.reducerComponent("Node");
-  let rec make = (~id, ~store, _children) => {
-    ...component,
-    initialState: () => Store.get(store, id),
-    reducer: (node, _state) => ReasonReact.Update(node),
-    didMount: self =>
-      self.onUnmount(
-        Store.subscribe(store, id, () => self.send(Store.get(store, id))),
-      ),
-    render: self =>
-      switch (self.state) {
-      | None => <div> {str("Missing node " ++ id)} </div>
-      | Some(node) =>
-        <NodeBody
-          store
-          node
-          renderChild=(
-            (id) => ReasonReact.element(make(~id, ~store, [||]))
-          )
-        />
-      },
-  };
-};
 
 let make = _children => {
   ...component,
