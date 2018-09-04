@@ -1,16 +1,8 @@
 
-type date = string;
+type date = float;
 
-module Tag: {
-  type id;
-  type t = {
-    id,
-    name: string,
-    color: string,
-    created: date,
-    modified: date,
-  };
-} = {
+/** TODO hide the type of ID */
+module Tag = {
   type id = string;
   type t = {
     id,
@@ -30,8 +22,8 @@ module Node = {
   | Code(string, string);
 
   type t = {
-    parent: id,
     id: id,
+    parent: id,
     contents,
     tags: list(Tag.id),
     created: date,
@@ -41,11 +33,22 @@ module Node = {
     childrenModified: date,
     children: list(string),
   };
-
+  let create = (~id, ~parent, ~contents: contents, ~children) => {
+    id,
+    parent,
+    contents,
+    tags: [],
+    created: Js.Date.now(),
+    completed: false,
+    modified: Js.Date.now(),
+    childrenModified: Js.Date.now(),
+    children,
+  }
 };
 
-type store = {
+type data = {
   nodes: Map.String.t(Node.t),
+  tags: Map.String.t(Tag.t),
   root: Node.id,
 };
 
@@ -56,7 +59,7 @@ type sharedViewData = {
 type editPos = Start | End | Default | Replace;
 type mode = Normal | Insert | Visual | Dragging | Dropping;
 
-type viewId = string;
+type viewId = int;
 
 type view = {
   id: viewId,
@@ -70,7 +73,13 @@ type view = {
   lastEdited: option(Node.id),
 };
 
-let newView = (~id, ~root) => {
+let emptyData = (~root) => {root, nodes: Map.String.empty, tags: Map.String.empty};
+
+let emptySharedViewData = {
+  expanded: Set.String.empty
+};
+
+let emptyView = (~id, ~root) => {
   id,
   root,
   mode: Insert,
@@ -82,7 +91,10 @@ let newView = (~id, ~root) => {
   lastEdited: None,
 };
 
-module Events = {
+
+/* TODO move to another file */
+
+module Event = {
   module View = {
     type event =
     | Node(Node.id)

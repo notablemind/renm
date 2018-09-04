@@ -1,27 +1,52 @@
 
-type node = {
-  id: string,
-  contents: string,
+open SharedTypes;
+
+type t = {
+  mutable data,
+  mutable view,
+  mutable sharedViewData,
+  subs: Hashtbl.t(Event.t, list(unit => unit)),
 };
 
-type store = {
-  mutable subs: Map.String.t(list(node => unit)),
-  mutable nodes: Map.String.t(node),
+let create = (~root, ~nodes: list(Node.t)) => {
+  let nodeMap = List.reduce(nodes, Map.String.empty, (map, node) => Map.String.set(map, node.id, node));
+  {
+    data: {...emptyData(~root), nodes: nodeMap},
+    view: emptyView(~root, ~id=0),
+    sharedViewData: emptySharedViewData,
+    subs: Hashtbl.create(10),
+  }
 };
 
-let get = (store, id) => Map.String.get(store.nodes, id);
+let get = (store, id) => Map.String.get(store.data.nodes, id);
 
-let add = (tbl, key, item) => Map.String.set(tbl, key, switch (Map.String.get(tbl, key)) {
-  | None => [item]
-  | Some(items) => [item, ...items]
+let add = (tbl, key, item) => Hashtbl.replace(tbl, key, switch (Hashtbl.find(tbl, key)) {
+  | exception Not_found => [item]
+  | items => [item, ...items]
 });
 
-let remove = (tbl, key, item) => Map.String.set(tbl, key, switch (Map.String.get(tbl, key)) {
-  | None => []
-  | Some(items) => List.keep(items, (!==)(item))
+let remove = (tbl, key, item) => Hashtbl.replace(tbl, key, switch (Hashtbl.find(tbl, key)) {
+  | exception Not_found => []
+  | items => List.keep(items, (!==)(item))
 });
 
 let subscribe = (store, id, fn) => {
-  store.subs = add(store.subs, id, fn);
-  () => store.subs = remove(store.subs, id, fn)
+  add(store.subs, Event.Node(id), fn);
+  add(store.subs, Event.View(Node(id)), fn);
+  () => {
+    remove(store.subs, Event.Node(id), fn);
+    remove(store.subs, Event.View(Node(id)), fn);
+  }
+};
+
+/** TODO maintain ordering... would be great */
+let trigger = (store, evts) => {
+  let fns = Hashtbl.create(10);
+  List.forEach(evts, evt => {
+    switch (Hashtbl.find(store.subs, evt)) {
+      | exception Not_found => ()
+      | subs => List.forEach(subs, fn => Hashtbl.replace(fns, fn, ()))
+    }
+  });
+  Hashtbl.iter((fn, ()) => fn(), fns);
 };

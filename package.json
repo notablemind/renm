@@ -5,6 +5,7 @@
     "build": "bsb -make-world",
     "start": "bsb -make-world -w -ws _ ",
     "serve": "http-server",
+    "pack": "fpack -w --development src/Index.bs.js",
     "clean": "bsb -clean-world",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -14,6 +15,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "fpack": "^0.5.4",
     "react": "^16.2.0",
     "react-dom": "^16.2.0",
     "reason-react": ">=0.4.0"

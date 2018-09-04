@@ -22,7 +22,7 @@ module MakePair = (Config: {
   };
 
   module Consumer = {
-    let make = (children) =>
+    let make = (children: (Config.t) => ReasonReact.reactElement) =>
       ReasonReact.wrapJsForReason(
         ~reactClass=consumer(_pair),
         ~props=Js.Obj.empty(),
