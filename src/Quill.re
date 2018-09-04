@@ -3,21 +3,23 @@
 
 type quill;
 
-[@bs.module "quill/core"] [@bs.new] external quill: ('element, 'config) => quill = "default";
-[@bs.module "quill/core"] [@bs.scope "default"] external register: 'a => unit = "register";
-[@bs.module "quill/modules/toolbar"] external toolbar: 'a = "default";
+[@bs.module] [@bs.new] external quill: ('element, 'config) => quill = "quill";
+[@bs.module "quill"]  external register: 'a => unit = "register";
+/* [@bs.module "quill/modules/toolbar"] external toolbar: 'a = "default";
 [@bs.module "quill/formats/bold"] external bold: 'a = "default";
 [@bs.module "quill/formats/italic"] external italic: 'a = "default";
 [@bs.module "quill/formats/header"] external header: 'a = "default";
-[@bs.module "quill/themes/snow"] external snow: 'a = "default";
+[@bs.module "quill/themes/snow"] external snow: 'a = "default"; */
 
-register({
+/* register({
   "modules/toolbar": toolbar,
   "formats/bold": bold,
   "formats/italic": italic,
   "formats/header": header,
   "themes/snow": snow,
-});
+}); */
+
+[%bs.raw {|require("quill-mention")|}];
 
 type blot;
 let makeBlot: string => blot = [%bs.raw {|
@@ -35,6 +37,9 @@ function(text) {
 [@bs.send] external getLength: (quill) => float = "";
 [@bs.send] external getSelection: (quill) => {."index": float, "length": float} = "";
 [@bs.send] external getBounds: (quill, float) => {."top": float} = "";
+type keyboard;
+[@bs.get] external keyboard: (quill) => keyboard = "";
+[@bs.send] external addBinding: (keyboard, {. "key": float}, unit => bool) => unit = "";
 
 [@bs.send] external on: (quill, string, 'fn) => unit = "";
 
@@ -78,26 +83,6 @@ let make = (~value, ~onChange, ~onUp, ~onDown, ~onFocus, ~active, _children) => 
   },
   render: self => {
     <div
-    onKeyDown={evt => {
-      let%Monads.OptConsume quill = self.state^;
-      switch(ReactEvent.Keyboard.key(evt)) {
-        | "ArrowDown" => {
-          if (atBottom(quill)) {
-            if (onDown() != None) {
-              ReactEvent.Keyboard.preventDefault(evt);
-            }
-          };
-        }
-        | "ArrowUp" => {
-          if (atTop(quill)) {
-            if (onUp() != None) {
-              ReactEvent.Keyboard.preventDefault(evt);
-            }
-          };
-        }
-        | _ => ()
-      }
-    }}
     ref={node => {
       switch (Js.toOption(node), self.state^) {
         | (None, _) | (_, Some(_)) => ()
@@ -105,9 +90,24 @@ let make = (~value, ~onChange, ~onUp, ~onDown, ~onFocus, ~active, _children) => 
           let q = quill(el, {
             "theme": "snow",
             "modules": {
-              "toolbar": false
-            }
+              "toolbar": false,
+              "mention": {
+                "mentionDenotationChars": [|"/"|],
+                "source": (. searchTerm: string, renderList, mentionChar: string) => {
+                  renderList(. [|
+                    {"id": 0, "value": "Header"},
+                    {"id": 1, "value": "Normal"},
+                    {"id": 2, "value": "Code"},
+                  |], searchTerm)
+                },
+              },
+            },
           });
+          keyboard(q)
+          ->addBinding({"key": 38.}, () => !(atTop(q) && onUp() != None));
+          keyboard(q)
+          ->addBinding({"key": 40.}, () => !(atBottom(q) && onDown() != None));
+
           onSelectionChange(q, (range, oldRange, _source) => {
             if (Js.null === oldRange) {
               onFocus()
