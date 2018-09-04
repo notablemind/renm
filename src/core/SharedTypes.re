@@ -15,17 +15,11 @@ module Tag = {
 
 module Node = {
   type id = string;
-  type blot;
 
-  type contents =
-  | Normal(blot)
-  | Todo(blot)
-  | Code(string, string);
-
-  type t = {
+  type t('contents) = {
     id: id,
     parent: id,
-    contents,
+    contents: 'contents,
     tags: list(Tag.id),
     created: date,
     completed: bool,
@@ -35,7 +29,7 @@ module Node = {
     children: list(string),
   };
 
-  let create = (~id, ~parent, ~contents: contents, ~children) => {
+  let create = (~id, ~parent, ~contents, ~children) => {
     id,
     parent,
     contents,
@@ -48,14 +42,22 @@ module Node = {
   }
 };
 
-type data = {
-  nodes: Map.String.t(Node.t),
+type data('contents) = {
+  nodes: Map.String.t(Node.t('contents)),
   tags: Map.String.t(Tag.t),
   root: Node.id,
 };
 
 type sharedViewData = {
   expanded: Set.String.t,
+};
+
+let collapse = (viewData, id) => {
+  expanded: Set.String.remove(viewData.expanded, id)
+};
+
+let expand = (viewData, id) => {
+  expanded: Set.String.add(viewData.expanded, id)
 };
 
 type editPos = Start | End | Default | Replace;
@@ -109,11 +111,13 @@ module Event = {
   | View(View.event)
 };
 
-type edit =
-  | Node(Node.t)
+type edit('contents) =
+  | Node(Node.t('contents))
+  | NodeChildren(Node.id, list(Node.id))
+  | NodeCollapsed(Node.id, bool)
   | View(view);
 
-type action =
+type action('contents) =
   | SetActive(Node.id)
   | SetMode(mode)
   | SetCollapsed(Node.id, bool)
@@ -121,7 +125,7 @@ type action =
   | AddToSelection(Node.id)
   | ClearSelection
   | Edit(editPos)
-  | SetContents(Node.id, Node.contents)
+  | SetContents(Node.id, 'contents)
   | Move(Set.String.t, Node.id, int)
   | CreateBefore
   | CreateAfter

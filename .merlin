@@ -1,6 +1,7 @@
 ####{BSB GENERATED: NO EDIT
 B lib/bs
 FLG -open ReactLite
+FLG -ppx /Users/jared/clone/apps/renm/../../tools/let-monad/lib/bs/native/let_monad.native
 FLG -ppx '/Users/jared/clone/apps/renm/node_modules/bs-platform/lib/reactjs_jsx_ppx_2.exe'
 FLG -ppx /Users/jared/clone/apps/renm/node_modules/bs-platform/lib/bsppx.exe
 S /Users/jared/clone/apps/renm/node_modules/bs-platform/lib/ocaml
@@ -11,4 +12,8 @@ S /Users/jared/clone/apps/renm/node_modules/reason-react/lib/ocaml
 B /Users/jared/clone/apps/renm/node_modules/reason-react/lib/ocaml
 S src
 B lib/bs/src
+S src/utils
+B lib/bs/src/utils
+S src/core
+B lib/bs/src/core
 ####BSB GENERATED: NO EDIT}

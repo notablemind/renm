@@ -1,14 +1,14 @@
 
 open SharedTypes;
 
-type t = {
-  mutable data,
+type t('contents) = {
+  mutable data: data('contents),
   mutable view,
   mutable sharedViewData,
   subs: Hashtbl.t(Event.t, list(unit => unit)),
 };
 
-let create = (~root, ~nodes: list(SharedTypes.Node.t)) => {
+let create = (~root, ~nodes: list(SharedTypes.Node.t('contents))) => {
   let nodeMap = List.reduce(nodes, Map.String.empty, (map, node) => Map.String.set(map, node.id, node));
   {
     data: {...emptyData(~root), nodes: nodeMap},
@@ -59,7 +59,7 @@ let trigger = (store, evts) => {
   HashSet.forEach(fns, fn => fn());
 };
 
-let processAction: (t, action) => (list(edit), list(Event.t)) = (store, action) => switch action {
+let processAction: (t('contents), action('contents)) => (list(edit('contents)), list(Event.t)) = (store, action) => switch action {
   | SetActive(id) when id != store.view.active => (
     [View({...store.view, active: id})],
     [Event.View(Node(store.view.active)), Event.View(Node(id))]
@@ -71,15 +71,46 @@ let processAction: (t, action) => (list(edit), list(Event.t)) = (store, action) 
       [Event.Node(id)]
     )
   }
+  | SetCollapsed(id, collapsed) => (
+    [NodeCollapsed(id, collapsed)],
+    [Event.View(Node(id))]
+  )
   | _ => ([], [])
 };
 
-let applyEdits = (store, edits) => {
-  List.forEach(edits, (edit) => switch edit {
+let applyEdits = (store, edits) =>
+  List.forEach(edits, edit =>
+    switch (edit) {
     | View(v) => store.view = v
-    | Node(n) => store.data = {...store.data, nodes: Map.String.set(store.data.nodes, n.id, n)}
-  })
-};
+    | NodeCollapsed(id, collapsed) => {
+      store.sharedViewData = collapsed
+      ? collapse(store.sharedViewData, id)
+      : expand(store.sharedViewData, id)
+    }
+    | Node(n) =>
+      store.data = {
+        ...store.data,
+        nodes: Map.String.set(store.data.nodes, n.id, {
+          ...n,
+          modified: Js.Date.now()
+        }),
+      }
+    | NodeChildren(id, children) =>
+      switch (Map.String.get(store.data.nodes, id)) {
+      | None => ()
+      | Some(node) =>
+        store.data = {
+          ...store.data,
+          nodes:
+            Map.String.set(
+              store.data.nodes,
+              id,
+              {...node, children, childrenModified: Js.Date.now()},
+            ),
+        }
+      }
+    }
+  );
 
 let act = (store, action) => {
   let (edits, events) = processAction(store, action);

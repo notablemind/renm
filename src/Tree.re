@@ -1,19 +1,29 @@
 
-open Opens;
+/* open Opens; */
 
-module type Config = {
-  type key;
-  type node;
-  type store;
-  let get: (store, key) => node;
-  let sub: (store, key, unit => unit, unit) => unit;
+let rec fromFixture = (pid, id, item) => switch item {
+  | `Leaf(text) => [SharedTypes.Node.create(
+      ~id,
+      ~parent=pid,
+      ~contents=Quill.Normal(Quill.makeBlot(text)),
+      ~children=[],
+    )]
+  | `Node(text, children) =>
+    let childNodes = children |. List.map(child => {
+      let cid = Utils.newId();
+      (cid, fromFixture(id, cid, child))
+    });
+    [SharedTypes.Node.create(
+      ~id="a",
+      ~parent="a",
+      ~contents=Quill.Normal(Quill.makeBlot(text)),
+      ~children=List.map(childNodes, fst),
+    )] @ (List.map(childNodes, snd) |. List.toArray |. List.concatMany)
 };
-
-let component = ReasonReact.statelessComponent("Tree");
 
 module StoreContext =
   Context.MakePair({
-    type t = Store.t;
+    type t = Store.t(Quill.contents);
     let defaultValue = Obj.magic(Js.undefined);
   });
 
@@ -21,28 +31,10 @@ module StoreContext =
 let store =
   Store.create(
     ~root="a",
-    ~nodes=
-      SharedTypes.[
-        Node.create(
-          ~id="a",
-          ~parent="a",
-          ~contents=Normal(Quill.makeBlot("Root")),
-          ~children=["b", "c"],
-        ),
-        Node.create(
-          ~id="b",
-          ~parent="a",
-          ~contents=Normal(Quill.makeBlot("B")),
-          ~children=[],
-        ),
-        Node.create(
-          ~id="c",
-          ~parent="a",
-          ~contents=Normal(Quill.makeBlot("C")),
-          ~children=[],
-        ),
-      ],
+    ~nodes=fromFixture("a", "a", `Node("Root", [`Leaf("a"), `Leaf("b")])),
   );
+
+let component = ReasonReact.statelessComponent("Tree");
 
 let make = _children => {
   ...component,
@@ -51,7 +43,7 @@ let make = _children => {
       <div>
         <StoreContext.Consumer>
           ...{
-            store => <Node store id=store.data.root />
+            store => <RenderNode store id=store.data.root />
           }
         </StoreContext.Consumer>
       </div>

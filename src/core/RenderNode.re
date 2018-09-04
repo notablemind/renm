@@ -3,14 +3,14 @@ open Opens;
 let component = ReasonReact.reducerComponent("Node");
 let rec make = (~id, ~store, _children) => {
   ...component,
-  initialState: () => NodeBody.makeData(store, id),
+  initialState: () => NodeBody.getData(store, id),
   reducer: (node, _state) => ReasonReact.Update(node),
   shouldUpdate: oldAndNewSelf =>
     oldAndNewSelf.oldSelf.state !== oldAndNewSelf.newSelf.state,
   didMount: self =>
     self.onUnmount(
       Store.subscribe(store, id, () =>
-        self.send(NodeBody.makeData(store, id))
+        self.send(NodeBody.getData(store, id))
       ),
     ),
   render: self =>

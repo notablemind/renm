@@ -4,6 +4,7 @@
     "react-jsx": 2
   },
   "bsc-flags": ["-open Belt", "-bs-g"],
+  "ppx-flags": ["../../tools/let-monad/lib/bs/native/let_monad.native"],
   "sources": {
     "dir" : "src",
     "subdirs" : true
