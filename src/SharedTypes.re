@@ -120,6 +120,7 @@ type action =
   | AddToSelection(Node.id)
   | ClearSelection
   | Edit(editPos)
+  | SetContents(Node.id, Node.contents)
   | Move(Set.String.t, Node.id, int)
   | CreateBefore
   | CreateAfter

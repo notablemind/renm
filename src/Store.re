@@ -64,6 +64,13 @@ let processAction: (t, action) => (list(edit), list(Event.t)) = (store, action) 
     [View({...store.view, active: id})],
     [Event.View(Node(store.view.active)), Event.View(Node(id))]
   )
+  | SetContents(id, contents) => switch (get(store, id)) {
+    | None => ([], [])
+    | Some(node) => (
+      [Node({...node, contents})],
+      [Event.Node(id)]
+    )
+  }
   | _ => ([], [])
 };
 
