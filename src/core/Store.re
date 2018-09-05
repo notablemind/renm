@@ -61,6 +61,21 @@ let trigger = (store, evts) => {
 
 open Lets;
 
+let removeMany = (children, ids) => {
+  let rec loop = (children, i) => switch children {
+    | [] => ([], [])
+    | [one, ...rest] => {
+      let (rest, removed) = loop(rest, i + 1);
+      if (Set.String.has(ids, one)) {
+        (rest, [i, ...removed])
+      } else {
+        ([one, ...rest], removed)
+      }
+    }
+  };
+  loop(children, 0)
+};
+
 let processAction:
   (t('contents), action('contents)) =>
   option((list(edit('contents)), list(Event.t))) =
@@ -81,6 +96,46 @@ let processAction:
         [NodeCollapsed(id, collapsed)],
         [Event.View(Node(id))],
       ))
+    | Move(ids, target, above) =>
+      let%Opt node = store->get(target);
+      let%Opt (newParent, newIndex) = if (target == store.data.root) {
+        above ? None : Some((node, 0))
+      } else if (!above && store.sharedViewData.expanded->Set.String.has(target)) {
+        Some((node, 0))
+      } else {
+        let%Opt parent = store->get(node.parent);
+        let%Opt index = TreeTraversal.childPos(parent.children, node.id);
+        Some((parent, above ? index : index + 1))
+      };
+      /* TODO actually order these */
+      let orderedIds = Set.String.toList(ids);
+      let byParent = HashMap.String.make(~hintSize=10);
+      ids->Set.String.forEach(id => {
+        let%OptConsume node = store->get(id);
+        let current = byParent->HashMap.String.get(node.parent)->OptDefault.or_([]);
+        byParent->HashMap.String.set(node.parent, [node, ...current])
+      });
+      let parents = byParent->HashMap.String.reduce([], (parents, id, children) => {
+        let%OptDefault parent = (store->get(id), parents);
+        let childSet = children->List.map(n => n.id)->List.toArray->Set.String.fromArray;
+        let (newChildren, removedIndices) = removeMany(parent.children, childSet);
+        let newChildren = if (id == newParent.id) {
+          let newIndex = List.reduce(removedIndices, newIndex, (index, removed) => removed < newIndex ? index - 1 : index);
+          Utils.insertManyIntoList(newChildren, newIndex, orderedIds)
+        } else {
+          newChildren
+        };
+        [(id, newChildren), ...parents]
+      });
+      let parents = if (HashMap.String.has(byParent, newParent.id)) {
+        parents
+      } else {
+        [(newParent.id, Utils.insertManyIntoList(newParent.children, newIndex, orderedIds)), ...parents]
+      };
+      Some((
+        parents->List.map(((id, children)) => NodeChildren(id, children)),
+        parents->List.map(((id, _)) => Event.View(Node(id))),
+      ));
     | CreateAfter =>
         let%Opt node = get(store, store.view.active);
         let (pid, index) =

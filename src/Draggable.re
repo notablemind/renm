@@ -45,6 +45,16 @@ let findDistanceToNode = (domNode, y) => {
   );
 };
 
+/**
+TODO
+
+~getBlacklist -> a list of IDs that are children or root, so should be ignored
+- when you hover over an "expand" thing, I want it to swell to signal that it could expand, and then expand after a timeout
+- the bottom of one & the top of the other are slightly separated
+- multiselect
+- should I have the placeholder live inside of the node? that would be more rerendering... so prolly not
+
+ */
 let make = (~onDrop, children) => {
   ...component,
   initialState: () =>
@@ -68,7 +78,6 @@ let make = (~onDrop, children) => {
                 (),
               )
             }
-            /* {ReasonReact.string(targetId)} */
           />
         }
       }
@@ -77,11 +86,11 @@ let make = (~onDrop, children) => {
           render(
             ~onMouseDown=
               evt => {
+                /* ReactEvent.Mouse.stopPropagation(evt); */
                 ReactEvent.Mouse.preventDefault(evt);
                 switch (self.state^.current) {
                 | Some(_) => ()
                 | None =>
-                  /* self.send(Some((id, id, true))); */
                   let onMouseMove = evt => {
                     let y = clientY(evt);
                     let%Lets.OptConsume (

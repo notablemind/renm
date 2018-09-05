@@ -130,7 +130,7 @@ type action('contents) =
   /** second arg is the thing to focus after */
   | Remove(Node.id, Node.id)
   | SetContents(Node.id, 'contents)
-  | Move(Set.String.t, Node.id, int)
+  | Move(Set.String.t, Node.id, bool)
   | CreateBefore
   | CreateAfter
   | CreateChild
