@@ -71,7 +71,7 @@ type view = {
   mode,
   hideCompleted: bool,
   selection: Set.String.t,
-  editPos: option(editPos),
+  editPos,
   active: Node.id,
   prevActive: option(Node.id),
   lastEdited: option(Node.id),
@@ -89,7 +89,7 @@ let emptyView = (~id, ~root) => {
   mode: Insert,
   selection: Set.String.empty,
   hideCompleted: false,
-  editPos: None,
+  editPos: Default,
   active: root,
   prevActive: None,
   lastEdited: None,
@@ -119,7 +119,7 @@ type edit('contents) =
   | View(view);
 
 type action('contents) =
-  | SetActive(Node.id)
+  | SetActive(Node.id, editPos)
   | SetMode(mode)
   | SetCollapsed(Node.id, bool)
   | StartSelecting

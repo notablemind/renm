@@ -25,6 +25,7 @@ function(text) {
 [@bs.send] external blur: (quill) => unit = "";
 [@bs.send] external getLength: (quill) => float = "";
 [@bs.send] external getSelection: (quill) => {."index": float, "length": float} = "";
+[@bs.send] external setSelection: (quill, float, float, string) => unit = "";
 [@bs.send] external getBounds: (quill, float) => {."top": float} = "";
 type keyboard;
 [@bs.get] external keyboard: (quill) => keyboard = "";
@@ -35,6 +36,20 @@ type keyboard;
 type range = {. "index": float, "length": float};
 
 
+let atLeft = quill => {
+  let sel = getSelection(quill);
+  sel##length == 0.
+  &&
+  sel##index == 0.;
+};
+
+let atRight = quill => {
+  let sel = getSelection(quill);
+  sel##length == 0.
+  &&
+  sel##index == getLength(quill) -. 1.;
+};
+
 let atTop = quill => {
   let sel = getSelection(quill);
   sel##length == 0.
@@ -43,8 +58,11 @@ let atTop = quill => {
 };
 
 let atBottom = quill => {
-          let sel = getSelection(quill);
-sel##length == 0. && getBounds(quill, sel##index)##top == getBounds(quill, getLength(quill))##top
+  let sel = getSelection(quill);
+  sel##length == 0.
+  &&
+  getBounds(quill, sel##index)##top ==
+  getBounds(quill, getLength(quill))##top;
 };
 
 
@@ -58,74 +76,123 @@ let onSelectionChange = (quill, fn: (Js.null(range), Js.null(range), string) => 
   on(quill, "selection-change", fn)
 };
 
+
+let setupQuill = (element, props: ref(NodeTypes.props(blot))) => {
+  let quill =
+    makeQuill(
+      element,
+      {
+        "theme": "bubble",
+        "placeholder": " ",
+        "modules":
+          {
+            "mention": {
+              "mentionDenotationChars": [|"/"|],
+              "source":
+                (. searchTerm: string, renderList, mentionChar: string) =>
+                  renderList(.
+                    [|
+                      {"id": 0, "value": "Header"},
+                      {"id": 1, "value": "Normal"},
+                      {"id": 2, "value": "Code"},
+                    |],
+                    searchTerm,
+                  ),
+            },
+          },
+          /* "toolbar": false, */
+      },
+    );
+  keyboard(quill)
+  ->addBinding({"key": "z", "collapsed": true, "altKey": true}, () =>
+      props^.onToggleCollapse()
+    );
+  keyboard(quill)
+  ->addBinding({"key": "Left", "collapsed": true}, () =>
+      !(atLeft(quill) && props^.onLeft() != None)
+    );
+  keyboard(quill)
+  ->addBinding({"key": "Right", "collapsed": true}, () =>
+      !(atRight(quill) && props^.onRight() != None)
+    );
+  keyboard(quill)
+  ->addBinding({"key": 38., "collapsed": true}, () =>
+      !(atTop(quill) && props^.onUp() != None)
+    );
+  keyboard(quill)
+  ->addBinding({"key": 40., "collapsed": true}, () =>
+      !(atBottom(quill) && props^.onDown() != None)
+    );
+  keyboard(quill)
+  ->addBinding(
+      {"key": "Enter", "collapsed": true},
+      () => {
+        props^.onEnter();
+        false;
+      },
+    );
+  /* Lol megahaxxx. The first one needs to be the "mention" enter handler. */
+  let () = [%bs.raw
+    {|quill.keyboard.bindings[13].splice(1, 0, quill.keyboard.bindings[13].pop())|}
+  ];
+
+  onSelectionChange(quill, (range, oldRange, source) =>
+    if (Js.null === oldRange && props^.editPos == None) {
+      props^.onFocus();
+    } else if (Js.null === range && props^.editPos != None) {
+      /* focus(quill); */
+      ()
+    }
+  );
+  on(quill, "text-change", (delta, oldDelta, _source) =>
+    props^.onChange(getContents(quill))
+  );
+  setContents(quill, props^.value);
+  if (props^.editPos != None) {
+    focus(quill);
+  };
+  quill;
+};
+
+
+type state = {
+  props: ref(NodeTypes.props(blot)),
+  quill: ref(option(quill)),
+};
+
 let component = ReasonReact.reducerComponent("Quill");
 
-let make = (~value, ~onChange, ~onUp, ~onDown, ~onEnter, ~onFocus, ~onToggleCollapse, ~active, _children) => {
+let make = (~props: NodeTypes.props(blot), _children) => {
   ...component,
-  initialState: () => (ref(None), ref(active)),
+  initialState: () => {props: ref(props), quill: ref(None)},
   reducer: ((), state) => ReasonReact.NoUpdate,
   willUpdate: ({newSelf}) => {
-    snd(newSelf.state) := active
+    newSelf.state.props := props
   },
   didUpdate: ({newSelf}) => {
-    let%Monads.OptConsume quill = fst(newSelf.state)^;
-    if (hasFocus(quill) != active) {
-      active ? focus(quill) : blur(quill)
+    let%Monads.OptConsume quill = newSelf.state.quill^;
+    let props = newSelf.state.props^;
+    if (hasFocus(quill) != (props.editPos != None)) {
+      switch (props.editPos) {
+        | None => blur(quill)
+        | Some(pos) =>
+          focus(quill);
+          switch (pos) {
+          | Start => setSelection(quill, 0., 0., "api")
+          | End => setSelection(quill, getLength(quill), 0., "api")
+          | Replace => setSelection(quill, 0., getLength(quill), "api")
+          | Default => ()
+          };
+      }
     }
   },
   render: self => {
     <div
     ref={node => {
-      switch (Js.toOption(node), fst(self.state)^) {
+      switch (Js.toOption(node), self.state.quill^) {
         | (None, _) | (_, Some(_)) => ()
         | (Some(el), None) => {
-          let quill = makeQuill(el, {
-            "theme": "bubble",
-            "placeholder": " ",
-            "modules": {
-              /* "toolbar": false, */
-              "mention": {
-                "mentionDenotationChars": [|"/"|],
-                "source": (. searchTerm: string, renderList, mentionChar: string) => {
-                  renderList(. [|
-                    {"id": 0, "value": "Header"},
-                    {"id": 1, "value": "Normal"},
-                    {"id": 2, "value": "Code"},
-                  |], searchTerm)
-                },
-              },
-            },
-          });
-          keyboard(quill)
-          ->addBinding({"key": "z", "collapsed": true, "altKey": true}, () => onToggleCollapse());
-          keyboard(quill)
-          ->addBinding({"key": 38., "collapsed": true}, () => !(atTop(quill) && onUp() != None));
-          keyboard(quill)
-          ->addBinding({"key": 40., "collapsed": true}, () => !(atBottom(quill) && onDown() != None));
-          keyboard(quill)
-          ->addBinding({"key": "Enter", "collapsed": true}, () => {
-            Js.log("hello")
-            onEnter();
-            false
-          });
-          /* Lol megahaxxx. The first one needs to be the "mention" enter handler. */
-          let () = [%bs.raw{|quill.keyboard.bindings[13].splice(1, 0, quill.keyboard.bindings[13].pop())|}];
-          if (snd(self.state)^) {
-            focus(quill)
-          };
-
-          onSelectionChange(quill, (range, oldRange, source) => {
-            if (Js.null === oldRange && !snd(self.state)^) {
-              onFocus()
-            } else if (Js.null === range && snd(self.state)^) {
-              focus(quill)
-            }
-          });
-          on(quill, "text-change", (delta, oldDelta, _source) => {
-            onChange(getContents(quill))
-          });
-          fst(self.state) := Some(quill);
-          setContents(quill, value)
+          self.state.quill := Some(setupQuill(el, self.state.props));
         }
       }
     }} />

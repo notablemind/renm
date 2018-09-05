@@ -4,7 +4,7 @@ open Opens;
 type data('contents) = {
   node: SharedTypes.Node.t('contents),
   selected: bool,
-  active: bool,
+  editPos: option(SharedTypes.editPos),
   collapsed: bool,
 };
 
@@ -12,47 +12,61 @@ let getData = (store, id) => switch (Store.get(store, id)) {
   | None => None
   | Some(node) => Some({
     node,
-    active: id == store.view.active,
+    editPos: id == store.view.active ? Some(store.view.editPos) : None,
     selected: Set.String.has(store.view.selection, id),
-    collapsed: !Set.String.has(store.sharedViewData.expanded, id),
+    collapsed: id == store.data.root ? false : !Set.String.has(store.sharedViewData.expanded, id),
   })
 }
 
 let evtValue = evt => ReactEvent.Form.target(evt)##value;
 
-let renderContents = (store, node: SharedTypes.Node.t(Quill.contents), active, collapsed) => switch (node.contents) {
+let renderContents = (store, node: SharedTypes.Node.t(Quill.contents), editPos, collapsed) => switch (node.contents) {
   | Normal(text) =>
   <Quill
-    value=text
-    onChange=(evt => {
-      /* Store.act(store, SharedTypes.SetContents(id, Normal(evtValue(evt)))) */
-      Store.act(store, SharedTypes.SetContents(node.id, Quill.Normal(evt)))
-    })
-    active
-    onToggleCollapse={
-      () => {
-        Store.act(store, SharedTypes.SetCollapsed(node.id, !collapsed));
-        false
-      }
+    props={
+      NodeTypes.value: text,
+      editPos,
+      onChange: contents => {
+        /* Store.act(store, SharedTypes.SetContents(id, Normal(evtValue(evt)))) */
+        Store.act(store, SharedTypes.SetContents(node.id, Quill.Normal(contents)))
+      },
+      onToggleCollapse:
+        () => {
+          Store.act(store, SharedTypes.SetCollapsed(node.id, !collapsed));
+          false
+        }
+      ,
+      onEnter: () => {
+        Store.act(store, SharedTypes.CreateAfter)
+      },
+      onDown: () => {
+        open Monads;
+        let%Opt nextId = TreeTraversal.down(store.data, store.sharedViewData.expanded, node);
+        Store.act(store, SharedTypes.SetActive(nextId, End));
+        Some(nextId)
+      },
+      onRight: () => {
+        open Monads;
+        let%Opt nextId = TreeTraversal.down(store.data, store.sharedViewData.expanded, node);
+        Store.act(store, SharedTypes.SetActive(nextId, Start));
+        Some(nextId)
+      },
+      onLeft: () => {
+        open Monads;
+        let%Opt prevId = TreeTraversal.up(store.data, node);
+        Store.act(store, SharedTypes.SetActive(prevId, End));
+        Some(prevId)
+      },
+      onUp: () => {
+        open Monads;
+        let%Opt prevId = TreeTraversal.up(store.data, node);
+        Store.act(store, SharedTypes.SetActive(prevId, End));
+        Some(prevId)
+      },
+      onFocus: _evt => {
+        Store.act(store, SharedTypes.SetActive(node.id, Default))
+      },
     }
-    onEnter={() => {
-      Store.act(store, SharedTypes.CreateAfter)
-    }}
-    onDown=(() => {
-      open Monads;
-      let%Opt nextId = TreeTraversal.down(store.data, store.sharedViewData.expanded, node);
-      Store.act(store, SharedTypes.SetActive(nextId));
-      Some(nextId)
-    })
-    onUp=(() => {
-      open Monads;
-      let%Opt prevId = TreeTraversal.up(store.data, node);
-      Store.act(store, SharedTypes.SetActive(prevId));
-      Some(prevId)
-    })
-    onFocus=(_evt => {
-      Store.act(store, SharedTypes.SetActive(node.id))
-    })
   />
   | _ => str("Other contents")
 };
@@ -61,12 +75,12 @@ let component = ReasonReact.statelessComponent("NodeBody");
 let make =
     (
       ~store: Store.t('contents),
-      ~data as {node, selected, active, collapsed},
+      ~data as {node, selected, editPos, collapsed},
       ~renderChild,
       _children,
     ) => {
   ...component,
-  render: _self =>
+  render: _self => {
     <div>
       <div
         style=ReactDOMRe.Style.(
@@ -76,7 +90,7 @@ let make =
             ~alignItems="center",
             /* ~border="1px solid #ccc", */
             ~margin="1px",
-            ~outline=active ? "2px solid skyblue" : "none",
+            ~outline=editPos != None ? "2px solid skyblue" : "none",
             ()
           )
         )
@@ -84,14 +98,14 @@ let make =
           _evt =>
             Store.act(
               store,
-              SharedTypes.SetActive(node.id),
+              SharedTypes.SetActive(node.id, Default),
               /* Store.act(store, SharedTypes.SetContents(node.id, Normal("Clicked"))) */
             )
         }>
-        {node.children != []
+        {node.children != [] && node.id != store.data.root
         ? <div
           style=ReactDOMRe.Style.(
-            make(~padding="10px",~cursor="pointer",())
+            make(~padding="5px",~cursor="pointer",())
           )
           onMouseDown={
             evt => {
@@ -99,17 +113,23 @@ let make =
             }
           }
         >
-          {str(collapsed ? ">" : "v")}
+          {str(collapsed ? {j|▸|j} : {j|▾|j})}
         </div>
+
         : <div />}
         <div style=ReactDOMRe.Style.(make(~flex="1", ()))>
-        {renderContents(store, node, active, collapsed)}
+        {renderContents(store, node, editPos, collapsed)}
         </div>
       </div>
       {!collapsed
-        ? <div style={ReactDOMRe.Style.make(~paddingLeft="20px", ())}>
+        ? <div style={ReactDOMRe.Style.make(
+          ~paddingLeft="10px",
+          ~borderLeft="3px solid #ccc",
+          ~marginLeft="10px",
+          ())}>
             {node.children->List.map(renderChild)->List.toArray->ReasonReact.array}
           </div>
         : ReasonReact.null}
-    </div>,
+    </div>
+  },
 };

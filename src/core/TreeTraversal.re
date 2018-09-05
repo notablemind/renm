@@ -26,14 +26,18 @@ let rec prevChild = (children, id) => switch children {
 };
 
 let rec down = (data: data('a), expanded, node: SharedTypes.Node.t('a)) => {
-  if (node.children != [] && Set.String.has(expanded, node.id)) {
+  if (node.children != [] && (node.id == data.root || Set.String.has(expanded, node.id))) {
     List.head(node.children)
   } else if (node.id == data.root) {
     None
   } else {
     let%Opt parent = Map.String.get(data.nodes, node.parent);
     let%OptOr () = nextChild(parent.children, node.id);
-    down(data, Set.String.empty, parent)
+    if (parent.id == data.root) {
+      None
+    } else {
+      down(data, Set.String.empty, parent)
+    }
   }
 };
 

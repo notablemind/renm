@@ -64,9 +64,11 @@ let processAction:
   (list(edit('contents)), list(Event.t)) =
   (store, action) =>
     switch (action) {
-    | SetActive(id) when id != store.view.active => (
-        [View({...store.view, active: id})],
-        [Event.View(Node(store.view.active)), Event.View(Node(id))],
+    | SetActive(id, editPos) when id != store.view.active || store.view.editPos != editPos => (
+        [View({...store.view, active: id, editPos})],
+        id != store.view.active ?
+          [Event.View(Node(store.view.active)), Event.View(Node(id))] :
+          [Event.View(Node(id))],
       )
     | SetContents(id, contents) =>
       switch (get(store, id)) {

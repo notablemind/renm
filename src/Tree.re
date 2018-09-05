@@ -31,8 +31,10 @@ module StoreContext =
 let store =
   Store.create(
     ~root="a",
-    ~nodes=fromFixture("a", "a", `Node("Root", [`Leaf("a"), `Leaf("b")])),
+    ~nodes=fromFixture("a", "a", `Node("Root", [`Leaf("abcdefg"), `Leaf("bcdefghijklm")])),
   );
+
+[%bs.raw "window.store = store"];
 
 let component = ReasonReact.statelessComponent("Tree");
 
