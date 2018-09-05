@@ -14,25 +14,33 @@ let rec fromFixture = (pid, id, item) => switch item {
       (cid, fromFixture(id, cid, child))
     });
     [SharedTypes.Node.create(
-      ~id="a",
-      ~parent="a",
+      ~id,
+      ~parent=pid,
       ~contents=Quill.Normal(Quill.makeBlot(text)),
       ~children=List.map(childNodes, fst),
     )] @ (List.map(childNodes, snd) |. List.toArray |. List.concatMany)
 };
 
-module StoreContext =
-  Context.MakePair({
-    type t = Store.t(Quill.contents);
-    let defaultValue = Obj.magic(Js.undefined);
-  });
-
-
 let store =
   Store.create(
-    ~root="a",
-    ~nodes=fromFixture("a", "a", `Node("Root", [`Leaf("abcdefg"), `Leaf("bcdefghijklm")])),
+    ~root="root",
+    ~nodes=
+      fromFixture(
+        "root",
+        "root",
+        `Node(("Root",
+        [
+          `Leaf("Hello world"),
+          `Leaf("Lovely weather today"),
+          `Node("Here", [
+            `Leaf("We have"),
+            `Leaf("Some nesting")
+          ])
+        ]
+        )),
+      ),
   );
+
 
 [%bs.raw "window.store = store"];
 
@@ -40,14 +48,5 @@ let component = ReasonReact.statelessComponent("Tree");
 
 let make = _children => {
   ...component,
-  render: _self =>
-    <StoreContext.Provider value=store>
-      <div>
-        <StoreContext.Consumer>
-          ...{
-            store => <RenderNode store id=store.data.root />
-          }
-        </StoreContext.Consumer>
-      </div>
-    </StoreContext.Provider>,
+  render: _self => <RenderNode store id=store.data.root />
 };
