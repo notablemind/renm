@@ -125,16 +125,21 @@ let processAction:
         } else {
           newChildren
         };
-        [(id, newChildren), ...parents]
+        [(parent, newChildren), ...parents]
       });
       let parents = if (HashMap.String.has(byParent, newParent.id)) {
         parents
       } else {
-        [(newParent.id, Utils.insertManyIntoList(newParent.children, newIndex, orderedIds)), ...parents]
+        [(newParent, Utils.insertManyIntoList(newParent.children, newIndex, orderedIds)), ...parents]
       };
+      Js.log(parents);
       Some((
-        parents->List.map(((id, children)) => NodeChildren(id, children)),
-        parents->List.map(((id, _)) => Event.View(Node(id))),
+        List.concat(
+          parents->List.map(((node, children)) => NodeChildren(node.id, children)),
+          byParent->HashMap.String.reduce([], (children, _, more) => children @ more->List.map(child => Node({...child, parent: newParent.id})))
+        )
+        ,
+        parents->List.map(((node, _)) => Event.View(Node(node.id))),
       ));
     | CreateAfter =>
         let%Opt node = get(store, store.view.active);
@@ -223,6 +228,7 @@ let applyEdits = (store, edits) =>
 
 let act = (store, action) => {
   let%OptConsume (edits, events) = processAction(store, action);
+  /* Js.log4("act", action, edits, events); */
   applyEdits(store, edits);
   trigger(store, events);
 };

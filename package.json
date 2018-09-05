@@ -15,6 +15,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "bs-css": "^7.1.0",
     "css-loader": "^1.0.0",
     "file-loader": "^2.0.0",
     "fpack": "^0.5.4",

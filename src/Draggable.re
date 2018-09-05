@@ -30,7 +30,7 @@ external getBoundingClientRect:
   "";
 type state = {
   domMap: HashMap.String.t(Dom.element),
-  /* movingId, targetId, isTop */
+  /* movingId, targetId, isTop, (y, left, right) */
   current: option((string, string, bool, (float, float, float))),
 };
 let component = ReasonReact.reducerComponent("Draggable");
@@ -55,7 +55,7 @@ TODO
 - should I have the placeholder live inside of the node? that would be more rerendering... so prolly not
 
  */
-let make = (~onDrop, children) => {
+let make = (~onDrop, ~onStart, children) => {
   ...component,
   initialState: () =>
     ref({domMap: HashMap.String.make(~hintSize=10), current: None}),
@@ -86,11 +86,12 @@ let make = (~onDrop, children) => {
           render(
             ~onMouseDown=
               evt => {
-                /* ReactEvent.Mouse.stopPropagation(evt); */
+                ReactEvent.Mouse.stopPropagation(evt);
                 ReactEvent.Mouse.preventDefault(evt);
                 switch (self.state^.current) {
                 | Some(_) => ()
                 | None =>
+                  let blacklistedIds = onStart(id);
                   let onMouseMove = evt => {
                     let y = clientY(evt);
                     let%Lets.OptConsume (
@@ -103,6 +104,7 @@ let make = (~onDrop, children) => {
                         self.state^.domMap,
                         None,
                         (candidate, itemId, itemNode) => {
+                          let%Lets.Guard () = (!blacklistedIds->Set.String.has(itemId), candidate);
                           let (distance, above, position) =
                             findDistanceToNode(itemNode, y);
                           Some(
