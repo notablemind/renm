@@ -27,7 +27,6 @@ let renderContents = (store, node: SharedTypes.Node.t(Quill.contents), editPos, 
       NodeTypes.value: text,
       editPos,
       onChange: contents => {
-        /* Store.act(store, SharedTypes.SetContents(id, Normal(evtValue(evt)))) */
         Store.act(store, SharedTypes.SetContents(node.id, Quill.Normal(contents)))
       },
       onToggleCollapse:
@@ -61,6 +60,15 @@ let renderContents = (store, node: SharedTypes.Node.t(Quill.contents), editPos, 
         open Monads;
         let%Opt prevId = TreeTraversal.up(store.data, node);
         Store.act(store, SharedTypes.SetActive(prevId, End));
+        Some(prevId)
+      },
+      onBackspace: currentValue => {
+        open Monads;
+        let%Opt prevId = TreeTraversal.up(store.data, node);
+        switch (currentValue) {
+          | None => Store.act(store, SharedTypes.Remove(node.id, prevId))
+          | Some(contents) => Store.act(store, SharedTypes.JoinUp(node.id, Normal(contents), prevId))
+        };
         Some(prevId)
       },
       onFocus: _evt => {

@@ -112,6 +112,21 @@ let setupQuill = (element, props: ref(NodeTypes.props(blot))) => {
       !(atLeft(quill) && props^.onLeft() != None)
     );
   keyboard(quill)
+  ->addBinding({"key": 8, "collapsed": true}, () =>
+      if (atLeft(quill)) {
+        if (getLength(quill) == 1.) {
+          props^.onBackspace(None) == None;
+        } else {
+          props^.onBackspace(Some(getContents(quill))) == None;
+        };
+      } else {
+        true;
+      }
+    );
+  let () = [%bs.raw
+    {|quill.keyboard.bindings[8].unshift(quill.keyboard.bindings[8].pop())|}
+  ];
+  keyboard(quill)
   ->addBinding({"key": "Right", "collapsed": true}, () =>
       !(atRight(quill) && props^.onRight() != None)
     );
@@ -144,13 +159,13 @@ let setupQuill = (element, props: ref(NodeTypes.props(blot))) => {
       ()
     }
   );
-  on(quill, "text-change", (delta, oldDelta, _source) =>
-    props^.onChange(getContents(quill))
-  );
   setContents(quill, props^.value);
   if (props^.editPos != None) {
     focus(quill);
   };
+  on(quill, "text-change", (delta, oldDelta, _source) => {
+    props^.onChange(getContents(quill))
+  });
   quill;
 };
 

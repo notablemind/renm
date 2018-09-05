@@ -112,6 +112,7 @@ module Event = {
 };
 
 type edit('contents) =
+  | DeleteNode(Node.id)
   | Node(Node.t('contents))
   | NodeChildren(Node.id, list(Node.id))
   | NodeCollapsed(Node.id, bool)
@@ -126,12 +127,14 @@ type action('contents) =
   | AddToSelection(Node.id)
   | ClearSelection
   | Edit(editPos)
+  /** second arg is the thing to focus after */
+  | Remove(Node.id, Node.id)
   | SetContents(Node.id, 'contents)
   | Move(Set.String.t, Node.id, int)
   | CreateBefore
   | CreateAfter
   | CreateChild
   | SplitAt(int)
-  | JoinUp
+  | JoinUp(Node.id, 'contents, Node.id)
   | FocusNext
   | FocusPrev

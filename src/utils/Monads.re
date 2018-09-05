@@ -1,4 +1,12 @@
 
+module Guard = {
+  let let_ = ((condition, default), continuation) => if (condition) {
+    continuation()
+  } else {
+    default
+  }
+};
+
 module OptDefault = {
   let let_ = ((a, default), b) => switch (a) {
     | None => default
@@ -16,6 +24,14 @@ module Opt = {
   let let_ = (a, b) => switch (a) {
     | None => None
     | Some(x) => b(x)
+  }
+};
+
+module OptIf = {
+  let let_ = (a, b) => if (a) {
+    b()
+  } else {
+    None
   }
 };
 

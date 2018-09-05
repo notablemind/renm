@@ -59,29 +59,30 @@ let trigger = (store, evts) => {
   HashSet.forEach(fns, fn => fn());
 };
 
+open Monads;
+
 let processAction:
   (t('contents), action('contents)) =>
-  (list(edit('contents)), list(Event.t)) =
+  option((list(edit('contents)), list(Event.t))) =
   (store, action) =>
     switch (action) {
-    | SetActive(id, editPos) when id != store.view.active || store.view.editPos != editPos => (
+    | SetActive(id, editPos) =>
+      let%OptIf () = id != store.view.active || store.view.editPos != editPos;
+      Some((
         [View({...store.view, active: id, editPos})],
         id != store.view.active ?
           [Event.View(Node(store.view.active)), Event.View(Node(id))] :
           [Event.View(Node(id))],
-      )
+      ))
     | SetContents(id, contents) =>
-      switch (get(store, id)) {
-      | None => ([], [])
-      | Some(node) => ([Node({...node, contents})], [Event.Node(id)])
-      }
-    | SetCollapsed(id, collapsed) => (
+      let%Opt node = get(store, id);
+        Some(([Node({...node, contents})], [Event.Node(id)]))
+    | SetCollapsed(id, collapsed) => Some((
         [NodeCollapsed(id, collapsed)],
         [Event.View(Node(id))],
-      )
+      ))
     | CreateAfter =>
-      {
-        let%Monads.Opt node = get(store, store.view.active);
+        let%Opt node = get(store, store.view.active);
         let (pid, index) =
           TreeTraversal.nextChildPosition(
             store.data,
@@ -110,9 +111,20 @@ let processAction:
           edits,
           [Event.Node(pid), Event.View(Node(store.view.active))],
         ));
-      }
-      ->Monads.OptDefault.or_(([], []))
-    | _ => ([], [])
+    | Remove(id, nextId) =>
+      let%OptIf () = id != store.data.root;
+      let%Opt node = get(store, id);
+      let%Opt parent = get(store, node.parent);
+      Some((
+        [NodeChildren(parent.id, parent.children |. List.keep((!=)(node.id))), DeleteNode(node.id),
+        View({...store.view, active: nextId})
+        ],
+        [Event.Node(parent.id), Event.View(Node(nextId))]
+      ))
+    | _ => {
+      Js.log2("ignoring action", action);
+      None
+    }
     };
 
 let applyEdits = (store, edits) =>
@@ -123,6 +135,10 @@ let applyEdits = (store, edits) =>
       store.sharedViewData = collapsed
       ? collapse(store.sharedViewData, id)
       : expand(store.sharedViewData, id)
+    }
+    | DeleteNode(id) => store.data = {
+      ...store.data,
+      nodes: Map.String.remove(store.data.nodes, id)
     }
     | Create(n)
     | Node(n) =>
@@ -151,7 +167,7 @@ let applyEdits = (store, edits) =>
   );
 
 let act = (store, action) => {
-  let (edits, events) = processAction(store, action);
+  let%OptConsume (edits, events) = processAction(store, action);
   applyEdits(store, edits);
   trigger(store, events);
 };
