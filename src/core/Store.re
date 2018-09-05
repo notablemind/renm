@@ -59,7 +59,7 @@ let trigger = (store, evts) => {
   HashSet.forEach(fns, fn => fn());
 };
 
-open Monads;
+open Lets;
 
 let processAction:
   (t('contents), action('contents)) =>
@@ -98,7 +98,7 @@ let processAction:
             ~contents=Quill.Normal(Quill.makeBlot("")),
             ~children=[],
           );
-        let%Monads.Opt parent = get(store, pid);
+        let%Lets.Opt parent = get(store, pid);
         let edits = [
             Create(nnode),
             NodeChildren(pid, Utils.insertIntoList(parent.children, index, nid)),

@@ -1,0 +1,139 @@
+
+[@bs.val] external window: Dom.window = "";
+type mouseEvt;
+[@bs.send]
+external addEventListener: (Dom.window, string, mouseEvt => unit) => unit = "";
+[@bs.send]
+external removeEventListener: (Dom.window, string, mouseEvt => unit) => unit =
+  "";
+[@bs.get] external clientX: mouseEvt => float = "";
+[@bs.get] external clientY: mouseEvt => float = "";
+
+let placeholderStyle =
+  ReactDOMRe.Style.(
+    make(~backgroundColor="#ccc",
+    ~marginTop="-3px",
+    ~zIndex="1000",
+    ~height="6px", ~position="absolute")
+  );
+
+[@bs.send]
+external getBoundingClientRect:
+  Dom.element =>
+  {
+    .
+    "top": float,
+    "bottom": float,
+    "left": float,
+    "right": float,
+  } =
+  "";
+type state = {
+  domMap: HashMap.String.t(Dom.element),
+  /* movingId, targetId, isTop */
+  current: option((string, string, bool, (float, float, float))),
+};
+let component = ReasonReact.reducerComponent("Draggable");
+
+let findDistanceToNode = (domNode, y) => {
+  let rect = getBoundingClientRect(domNode);
+  let dist = y -. (rect##top +. rect##bottom) /. 2.;
+  (
+    abs_float(dist),
+    dist < 0.,
+    (dist < 0. ? rect##top : rect##bottom, rect##left, rect##right),
+  );
+};
+
+let make = (~onDrop, children) => {
+  ...component,
+  initialState: () =>
+    ref({domMap: HashMap.String.make(~hintSize=10), current: None}),
+  reducer: (current, state) => {
+    state := {...state^, current};
+    ReasonReact.Update(state);
+  },
+  render: self =>
+    <div>
+      {
+        switch (self.state^.current) {
+        | None => ReasonReact.null
+        | Some((draggingId, targetId, above, (top, left, right))) =>
+          <div
+            style={
+              placeholderStyle(
+                ~left=string_of_float(left) ++ "px",
+                ~width=string_of_float(right -. left) ++ "px",
+                ~top=string_of_float(top) ++ "px",
+                (),
+              )
+            }
+            /* {ReasonReact.string(targetId)} */
+          />
+        }
+      }
+      {
+        children((id, render) =>
+          render(
+            ~onMouseDown=
+              evt => {
+                ReactEvent.Mouse.preventDefault(evt);
+                switch (self.state^.current) {
+                | Some(_) => ()
+                | None =>
+                  /* self.send(Some((id, id, true))); */
+                  let onMouseMove = evt => {
+                    let y = clientY(evt);
+                    let%Lets.OptConsume (
+                      distance,
+                      targetId,
+                      above,
+                      position,
+                    ) =
+                      HashMap.String.reduce(
+                        self.state^.domMap,
+                        None,
+                        (candidate, itemId, itemNode) => {
+                          let (distance, above, position) =
+                            findDistanceToNode(itemNode, y);
+                          Some(
+                            switch (candidate) {
+                            | None => (distance, itemId, above, position)
+                            | Some((currentDist, _, _, _))
+                                when distance < currentDist => (
+                                distance,
+                                itemId,
+                                above,
+                                position,
+                              )
+                            | Some(current) => current
+                            },
+                          );
+                        },
+                      );
+                    self.send(Some((id, targetId, above, position)));
+                  };
+                  let rec onMouseUp = evt => {
+                    switch (self.state^.current) {
+                    | None => ()
+                    | Some((_, targetId, above, _)) =>
+                      onDrop(id, targetId, above)
+                    };
+                    self.send(None);
+                    removeEventListener(window, "mouseup", onMouseUp);
+                    removeEventListener(window, "mousemove", onMouseMove);
+                  };
+                  addEventListener(window, "mouseup", onMouseUp);
+                  addEventListener(window, "mousemove", onMouseMove);
+                };
+              },
+            ~registerRef=
+              node => {
+                let%Lets.OptConsume node = Js.toOption(node);
+                HashMap.String.set(self.state^.domMap, id, node);
+              },
+          )
+        )
+      }
+    </div>,
+};

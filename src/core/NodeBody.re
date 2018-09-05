@@ -42,7 +42,7 @@ let renderContents =
         },
         onEnter: () => Store.act(store, SharedTypes.CreateAfter),
         onDown: () => {
-          open Monads;
+          open Lets;
           let%Opt nextId =
             TreeTraversal.down(
               store.data,
@@ -53,7 +53,7 @@ let renderContents =
           Some(nextId);
         },
         onRight: () => {
-          open Monads;
+          open Lets;
           let%Opt nextId =
             TreeTraversal.down(
               store.data,
@@ -64,19 +64,19 @@ let renderContents =
           Some(nextId);
         },
         onLeft: () => {
-          open Monads;
+          open Lets;
           let%Opt prevId = TreeTraversal.up(store.data, node);
           Store.act(store, SharedTypes.SetActive(prevId, End));
           Some(prevId);
         },
         onUp: () => {
-          open Monads;
+          open Lets;
           let%Opt prevId = TreeTraversal.up(store.data, node);
           Store.act(store, SharedTypes.SetActive(prevId, End));
           Some(prevId);
         },
         onBackspace: currentValue => {
-          open Monads;
+          open Lets;
           let%Opt prevId = TreeTraversal.up(store.data, node);
           switch (currentValue) {
           | None => Store.act(store, SharedTypes.Remove(node.id, prevId))

@@ -185,7 +185,7 @@ let make = (~props: NodeTypes.props(blot), _children) => {
     newSelf.state.props := props
   },
   didUpdate: ({newSelf}) => {
-    let%Monads.OptConsume quill = newSelf.state.quill^;
+    let%Lets.OptConsume quill = newSelf.state.quill^;
     let props = newSelf.state.props^;
     if (hasFocus(quill) != (props.editPos != None)) {
       switch (props.editPos) {
