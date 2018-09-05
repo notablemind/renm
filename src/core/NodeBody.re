@@ -85,50 +85,76 @@ let make =
       ~store: Store.t('contents),
       ~data as {node, selected, editPos, collapsed},
       ~renderChild,
+      ~renderDraggable,
       _children,
     ) => {
   ...component,
   render: _self => {
-    <div>
+    <div style=ReactDOMRe.Style.(
+      make(
+        ~position="relative",
+        ()
+      )
+    )>
+
+    {
+      renderDraggable(node.id, (~onMouseDown, ~registerRef) =>
+
       <div
+        ref=registerRef
         style=ReactDOMRe.Style.(
           make(
             ~display="flex",
             ~flexDirection="row",
             ~alignItems="center",
-            /* ~border="1px solid #ccc", */
             ~margin="1px",
             ~outline=editPos != None ? "2px solid skyblue" : "none",
             ()
           )
         )
-        onMouseDown={
-          _evt =>
-            Store.act(
-              store,
-              SharedTypes.SetActive(node.id, Default),
-              /* Store.act(store, SharedTypes.SetContents(node.id, Normal("Clicked"))) */
-            )
-        }>
+        onMouseDown={_evt =>
+          Store.act(
+            store,
+            SharedTypes.SetActive(node.id, Default),
+          )
+        }
+        >
+        {node.id != store.data.root
+        ? <div
+        onMouseDown
+        style=ReactDOMRe.Style.(
+          make(
+            ~position="absolute",
+            ~top="0",
+            ~cursor="pointer",
+            ~left="-15px",
+            ()
+          )
+        )>
+          {str({j|✚|j})}
+        </div>
+        : ReasonReact.null}
         {node.children != [] && node.id != store.data.root
         ? <div
-          style=ReactDOMRe.Style.(
-            make(~padding="5px",~cursor="pointer",())
-          )
-          onMouseDown={
-            evt => {
-              Store.act(store, SharedTypes.SetCollapsed(node.id, !collapsed))
+            style=ReactDOMRe.Style.(
+              make(~padding="5px",~cursor="pointer",())
+            )
+            onMouseDown={
+              evt => {
+                Store.act(store, SharedTypes.SetCollapsed(node.id, !collapsed))
+              }
             }
-          }
-        >
-          {str(collapsed ? {j|▸|j} : {j|▾|j})}
-        </div>
-
+          >
+            {str(collapsed ? {j|▸|j} : {j|▾|j})}
+          </div>
         : <div />}
         <div style=ReactDOMRe.Style.(make(~flex="1", ()))>
         {renderContents(store, node, editPos, collapsed)}
         </div>
       </div>
+      )
+    }
+
       {!collapsed
         ? <div style={ReactDOMRe.Style.make(
           ~paddingLeft="10px",

@@ -41,12 +41,24 @@ let store =
       ),
   );
 
-
 [%bs.raw "window.store = store"];
 
 let component = ReasonReact.statelessComponent("Tree");
 
 let make = _children => {
   ...component,
-  render: _self => <RenderNode store id=store.data.root />
+  render: _self =>
+  <Draggable onDrop={(sourceId, targetId, above) => {
+    Js.log3(sourceId, targetId, above);
+    ()
+  }
+  }>
+  ...{renderDraggable => {
+    <RenderNode
+    store
+    renderDraggable
+    id=store.data.root
+    />
+  }}
+  </Draggable>
 };

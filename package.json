@@ -4,7 +4,7 @@
   "scripts": {
     "build": "bsb -make-world",
     "start": "bsb -make-world -w -ws _ ",
-    "serve": "http-server",
+    "serve": "http-server -p 6521 -c-1",
     "pack": "fpack --development --preprocess='\\.svg$:raw-loader'  src/Index.bs.js --no-cache -w --preprocess='\\.css$:style-loader!css-loader'",
     "clean": "bsb -clean-world",
     "test": "echo \"Error: no test specified\" && exit 1"
