@@ -41,57 +41,22 @@ let renderContents =
           false;
         },
         onEnter: () => Store.act(store, SharedTypes.CreateAfter),
-        onIndent: () => false,
-        onDedent: () => false,
-        onDown: () => {
-          open Lets;
-          let%Opt nextId =
-            TreeTraversal.down(
-              store.data,
-              store.sharedViewData.expanded,
-              node,
-            );
-          Store.act(store, SharedTypes.SetActive(nextId, End));
-          Some(nextId);
+        /** TODO indents n stuff */
+        onIndent: () => {
+          Actions.indent(store, node);
+          false
         },
-        onRight: () => {
-          open Lets;
-          let%Opt nextId =
-            TreeTraversal.down(
-              store.data,
-              store.sharedViewData.expanded,
-              node,
-            );
-          Store.act(store, SharedTypes.SetActive(nextId, Start));
-          Some(nextId);
+        onDedent: () => {
+          false
         },
-        onLeft: () => {
-          open Lets;
-          let%Opt prevId = TreeTraversal.up(store.data, store.sharedViewData.expanded, node);
-          Store.act(store, SharedTypes.SetActive(prevId, End));
-          Some(prevId);
-        },
-        onUp: () => {
-          open Lets;
-          let%Opt prevId = TreeTraversal.up(store.data, store.sharedViewData.expanded, node);
-          Store.act(store, SharedTypes.SetActive(prevId, End));
-          Some(prevId);
-        },
+        onDown: () => Actions.down(store, node),
+        onRight: () => Actions.right(store,node),
+        onLeft: () => Actions.left(store, node),
+        onUp: () => Actions.up(store, node),
         onBackspace: currentValue => {
-          open Lets;
-          let%Opt prevId = TreeTraversal.up(store.data, store.sharedViewData.expanded, node);
-          switch (currentValue) {
-          | None => Store.act(store, SharedTypes.Remove(node.id, prevId))
-          | Some(contents) =>
-            Store.act(
-              store,
-              SharedTypes.JoinUp(node.id, Normal(contents), prevId),
-            )
-          };
-          Some(prevId);
+          Actions.backspace(store, node, currentValue);
         },
-        onFocus: _evt =>
-          Store.act(store, SharedTypes.SetActive(node.id, Default)),
+        onFocus: _evt => Actions.focus(store, node)
       }
     />
   | _ => str("Other contents")

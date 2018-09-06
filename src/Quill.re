@@ -100,7 +100,6 @@ let setupQuill = (element, props: ref(NodeTypes.props(blot))) => {
                   ),
             },
           },
-          /* "toolbar": false, */
       },
     );
   keyboard(quill)

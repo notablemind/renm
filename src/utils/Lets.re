@@ -20,6 +20,13 @@ module OptDefault = {
   }
 };
 
+module OptForce = {
+  let let_ = (a, b) => switch (a) {
+    | None => failwith("Unwrapping an empty optional")
+    | Some(x) => b(x)
+  }
+};
+
 module Opt = {
   let let_ = (a, b) => switch (a) {
     | None => None
