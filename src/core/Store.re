@@ -115,14 +115,25 @@ let processAction:
       ))
     | Move(ids, target, dropPos) =>
       let%Opt node = store->get(target);
+      Js.log(dropPos);
       let%Opt (newParent, newIndex) = if (target == store.data.root) {
-        dropPos == Above ? None : Some((node, 0))
-      } else if (dropPos != Above && ((store.sharedViewData.expanded->Set.String.has(target) && node.children != []) || dropPos == Child)) {
+        dropPos == Above || dropPos == ChildAbove ? None : Some((node, 0))
+      } else if (
+        dropPos == Child
+        ||
+        (dropPos == Below && (store.sharedViewData.expanded->Set.String.has(target) && node.children != []))
+      ) {
         Some((node, 0))
       } else {
         let%Opt parent = store->get(node.parent);
         let%Opt index = TreeTraversal.childPos(parent.children, node.id);
-        Some((parent, dropPos == Above ? index : index + 1))
+        if (dropPos == ChildAbove) {
+          let%Opt id = TreeTraversal.prevChild(parent.children, node.id);
+          let%Opt node = store->get(id);
+          Some((node, List.length(node.children)))
+        } else {
+          Some((parent, dropPos == Above ? index : index + 1))
+        }
       };
       /* TODO actually order these */
       let orderedIds = Set.String.toList(ids);

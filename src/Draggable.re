@@ -38,9 +38,16 @@ let component = ReasonReact.reducerComponent("Draggable");
 let findDistanceToNode = (domNode, x, y) => {
   let rect = getBoundingClientRect(domNode);
   let dist = y -. (rect##top +. rect##bottom) /. 2.;
+  let dropPos =
+    switch (dist < 0., x > rect##left +. (rect##right -. rect##left) /. 3.) {
+    | (true, true) => SharedTypes.ChildAbove
+    | (true, false) => Above
+    | (false, true) => Child
+    | (false, false) => Below
+    };
   (
     abs_float(dist),
-    dist < 0. ? SharedTypes.Above : (x > rect##left +. (rect##right -. rect##left) /. 3.) ? Child : Below,
+    dropPos,
     (dist < 0. ? rect##top : rect##bottom, rect##left, rect##right),
   );
 };
@@ -69,7 +76,7 @@ let make = (~onDrop, ~onStart, children) => {
         switch (self.state^.current) {
         | None => ReasonReact.null
         | Some((draggingId, targetId, dropPos, (top, left, right))) =>
-          let left = dropPos == Child ? left +. 20. : left;
+          let left = dropPos == Child || dropPos == ChildAbove ? left +. 20. : left;
           <div
             style={
               placeholderStyle(

@@ -119,7 +119,7 @@ type edit('contents) =
   | Create(Node.t('contents))
   | View(view);
 
-type dropPos = Above | Below | Child;
+type dropPos = Above | Below | Child | ChildAbove;
 type action('contents) =
   | SetActive(Node.id, editPos)
   | SetMode(mode)
