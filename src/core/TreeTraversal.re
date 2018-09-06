@@ -53,12 +53,30 @@ let nextChildPosition = (data: data('a), expanded, node: SharedTypes.Node.t('a))
   }
 };
 
-let up = (data: data('a), node: SharedTypes.Node.t('a)) => {
+let rec lastOpenChild =
+        (data: data('a), expanded, node: SharedTypes.Node.t('a)) =>
+  if (Set.String.has(expanded, node.id) && node.children != []) {
+    {
+      let%Lets.Opt lastChild =
+        List.get(node.children, List.length(node.children) - 1);
+      let%Lets.Opt child = Map.String.get(data.nodes, lastChild);
+      Some(lastOpenChild(data, expanded, child));
+    }
+    ->(Lets.OptDefault.or_(node.id));
+  } else {
+    node.id;
+  };
+
+let up = (data: data('a), expanded, node: SharedTypes.Node.t('a)) => {
   if (node.id == data.root) {
     None
   } else {
     let%Opt parent = Map.String.get(data.nodes, node.parent);
-    let%OptOr () = prevChild(parent.children, node.id);
+    let%OptOr () = {
+      let%Opt id = prevChild(parent.children, node.id);
+      let%Opt node = Map.String.get(data.nodes, id);
+      Some(lastOpenChild(data, expanded, node))
+    };
     Some(parent.id)
   }
 };

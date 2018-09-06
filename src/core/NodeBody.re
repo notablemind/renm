@@ -65,19 +65,19 @@ let renderContents =
         },
         onLeft: () => {
           open Lets;
-          let%Opt prevId = TreeTraversal.up(store.data, node);
+          let%Opt prevId = TreeTraversal.up(store.data, store.sharedViewData.expanded, node);
           Store.act(store, SharedTypes.SetActive(prevId, End));
           Some(prevId);
         },
         onUp: () => {
           open Lets;
-          let%Opt prevId = TreeTraversal.up(store.data, node);
+          let%Opt prevId = TreeTraversal.up(store.data, store.sharedViewData.expanded, node);
           Store.act(store, SharedTypes.SetActive(prevId, End));
           Some(prevId);
         },
         onBackspace: currentValue => {
           open Lets;
-          let%Opt prevId = TreeTraversal.up(store.data, node);
+          let%Opt prevId = TreeTraversal.up(store.data, store.sharedViewData.expanded, node);
           switch (currentValue) {
           | None => Store.act(store, SharedTypes.Remove(node.id, prevId))
           | Some(contents) =>
