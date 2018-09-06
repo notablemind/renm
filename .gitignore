@@ -1,6 +1,6 @@
 *.bs.js
-/lib
-/node_modules
+lib
+node_modules
 .bsb.lock
 bundle
 

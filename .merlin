@@ -16,6 +16,8 @@ S src
 B lib/bs/src
 S src/utils
 B lib/bs/src/utils
+S src/app
+B lib/bs/src/app
 S src/core
 B lib/bs/src/core
 ####BSB GENERATED: NO EDIT}

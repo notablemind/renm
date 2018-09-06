@@ -20,26 +20,27 @@ let rec fromFixture = (pid, id, item) => switch item {
     )] @ (List.map(childNodes, snd) |. List.toArray |. List.concatMany)
 };
 
+let data = switch (Store.getItem("renm:store")->Js.Json.parseExn) {
+  | exception _ => SharedTypes.emptyData(~root="root")
+  | json => json->Serialize.fromJson
+};
+
+let sharedViewData = switch (Store.getItem("renm:viewData")->Js.Json.parseExn) {
+  | exception _ => SharedTypes.emptySharedViewData
+  | json => json->Serialize.fromJson
+};
+Js.log(sharedViewData)
+
 let store =
-  Store.create(
-    ~root="root",
-    ~nodes=
-      fromFixture(
-        "root",
-        "root",
-        `Node(("Root",
-        [
-          `Leaf("Hello world"),
-          `Leaf("Lovely weather today"),
-          `Node("Here", [
-            `Leaf("We have"),
-            `Leaf("Some nesting")
-          ])
-        ]
-        )),
-      ),
-  );
+  {...Store.create(
+    ~root=data.root,
+    ~nodes=[]
+  ), data: data, sharedViewData};
 
 [%bs.raw "window.store = store"];
+
+[%bs.raw {|
+x = 10
+|}];
 
 ReactDOMRe.renderToElementWithId(<Tree store />, "root");

@@ -1,6 +1,16 @@
 
 /* open Opens; */
 
+module type T = {
+  let x: int
+};
+module T = {
+  let x = 40;
+};
+
+Js.log(module T: T)
+Js.log(`Hello(2,3,4))
+
 let component = ReasonReact.statelessComponent("Tree");
 
 let rec visibleChildren = (store: Store.t('content), id) => {
@@ -19,8 +29,16 @@ let make = (~store: Store.t(Quill.contents), _children) => {
     <Draggable
       onStart={
         id => {
-          /* A set of all the selected IDs and their (visible) children */
-          visibleChildren(store, id)
+          if (store.view.selection->Set.String.has(id)) {
+            /* A set of all the selected IDs and their (visible) children */
+            store.view.selection->Set.String.reduce(
+              Set.String.empty,
+              (set, id) => set->Set.String.union(visibleChildren(store, id))
+            )
+          } else {
+            Store.act(store, SharedTypes.SetActive(id, store.view.editPos));
+            visibleChildren(store, id)
+          }
         }
       }
       onDrop={
@@ -29,7 +47,7 @@ let make = (~store: Store.t(Quill.contents), _children) => {
           store
           ->Store.act(
               SharedTypes.Move(
-                Set.String.empty->Set.String.add(sourceId),
+                store.view.selection->Set.String.add(sourceId),
                 targetId,
                 above,
               ),

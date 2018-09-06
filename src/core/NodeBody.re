@@ -117,13 +117,17 @@ let make =
                 ~flexDirection="row",
                 ~alignItems="center",
                 ~margin="1px",
-                ~outline=editPos != None ? "2px solid skyblue" : "none",
+                ~outline=editPos != None ? "2px solid skyblue" : (selected ? "1px solid skyblue" : "none"),
                 (),
               )
             )
-            onMouseDown={
-              _evt =>
+            onMouseDown={evt =>
+              if (ReactEvent.Mouse.metaKey(evt)) {
+                ReactEvent.Mouse.preventDefault(evt);
+                Store.act(store, SharedTypes.AddToSelection(node.id))
+              } else {
                 Store.act(store, SharedTypes.SetActive(node.id, Default))
+              }
             }>
             {
               node.id != store.data.root ?

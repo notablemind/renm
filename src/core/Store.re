@@ -81,13 +81,30 @@ let processAction:
   option((list(edit('contents)), list(Event.t))) =
   (store, action) =>
     switch (action) {
+    | AddToSelection(id) => {
+      if (store.view.selection->Set.String.isEmpty) {
+        Some((
+          [View({...store.view, selection: store.view.selection
+        ->Set.String.add(store.view.active)
+        ->Set.String.add(id)})],
+          [Event.View(Node(id)), Event.View(Node(store.view.active))]
+        ))
+      } else {
+        Some((
+          [View({...store.view, selection: store.view.selection ->Set.String.add(id)})],
+          [Event.View(Node(id))]
+        ))
+      };
+    }
     | SetActive(id, editPos) =>
+      /** TODO clear selection if id is same */
       let%OptIf () = id != store.view.active || store.view.editPos != editPos;
       Some((
-        [View({...store.view, active: id, editPos})],
-        id != store.view.active ?
+        [View({...store.view, active: id, editPos, selection: Set.String.empty})],
+        (id != store.view.active ?
           [Event.View(Node(store.view.active)), Event.View(Node(id))] :
-          [Event.View(Node(id))],
+          [Event.View(Node(id))]) @ (
+            Set.String.toList(store.view.selection)->List.map(id => Event.View(Node(id)))),
       ))
     | SetContents(id, contents) =>
       let%Opt node = get(store, id);
@@ -135,8 +152,8 @@ let processAction:
       Js.log(parents);
       Some((
         List.concat(
+          byParent->HashMap.String.reduce([], (children, _, more) => children @ more->List.map(child => Node({...child, parent: newParent.id}))),
           parents->List.map(((node, children)) => NodeChildren(node.id, children)),
-          byParent->HashMap.String.reduce([], (children, _, more) => children @ more->List.map(child => Node({...child, parent: newParent.id})))
         )
         ,
         parents->List.map(((node, _)) => Event.View(Node(node.id))),
@@ -226,9 +243,16 @@ let applyEdits = (store, edits) =>
     }
   );
 
+[@bs.scope "localStorage"] [@bs.val] external setItem: (string, string) => unit = "";
+[@bs.scope "localStorage"] [@bs.val] external getItem: (string) => string = "";
+
 let act = (store, action) => {
   let%OptConsume (edits, events) = processAction(store, action);
   /* Js.log4("act", action, edits, events); */
   applyEdits(store, edits);
   trigger(store, events);
+  Js.Global.setTimeout(() => {
+    setItem("renm:store", Js.Json.stringify(Serialize.toJson(store.data)));
+    setItem("renm:viewData", Js.Json.stringify(Serialize.toJson(store.sharedViewData)));
+  }, 0)->ignore;
 };
