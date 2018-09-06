@@ -140,9 +140,8 @@ let processAction:
         }
       };
       /* TODO actually order these */
-      let orderedIds = Set.String.toList(ids);
       let byParent = HashMap.String.make(~hintSize=10);
-      ids->Set.String.forEach(id => {
+      ids->List.forEach(id => {
         let%OptConsume node = store->get(id);
         let current = byParent->HashMap.String.get(node.parent)->OptDefault.or_([]);
         byParent->HashMap.String.set(node.parent, [node, ...current])
@@ -153,7 +152,7 @@ let processAction:
         let (newChildren, removedIndices) = removeMany(parent.children, childSet);
         let newChildren = if (id == newParent.id) {
           let newIndex = List.reduce(removedIndices, newIndex, (index, removed) => removed < newIndex ? index - 1 : index);
-          Utils.insertManyIntoList(newChildren, newIndex, orderedIds)
+          Utils.insertManyIntoList(newChildren, newIndex, ids)
         } else {
           newChildren
         };
@@ -162,7 +161,7 @@ let processAction:
       let parents = if (HashMap.String.has(byParent, newParent.id)) {
         parents
       } else {
-        [(newParent, Utils.insertManyIntoList(newParent.children, newIndex, orderedIds)), ...parents]
+        [(newParent, Utils.insertManyIntoList(newParent.children, newIndex, ids)), ...parents]
       };
       Js.log(parents);
       Some((

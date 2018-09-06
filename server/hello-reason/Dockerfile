@@ -2,7 +2,7 @@ FROM ocaml/opam:alpine as base
 
 RUN sudo apk update
 RUN sudo apk add m4
-RUN sh -c "cd ~/opam-repository && git pull"
+RUN sh -c "cd ~/opam-repository && git pull --quiet"
 RUN opam update
 RUN opam install dune reason
 

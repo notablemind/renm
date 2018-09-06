@@ -88,3 +88,18 @@ let up = (data: data('a), expanded, node: SharedTypes.Node.t('a)) => {
     Some(parent.id)
   }
 };
+
+let orderIds = (nodes, root, ids) => {
+  let rec loop = (id, collected) => {
+    let collected = Set.String.has(ids, id) ? [id, ...collected] : collected;
+    let%OptForce node = Map.String.get(nodes, id);
+    node.Node.children->List.reduce(collected, (collected, child) => loop(child, collected))
+  };
+  loop(root, []) |. List.reverse;
+};
+
+let cleanNodes = (nodes) => {
+  Map.String.map(nodes, (node) => {
+    {...node, Node.children: node.Node.children->List.keep(Map.String.has(nodes))}
+  })
+};

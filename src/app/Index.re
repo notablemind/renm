@@ -24,6 +24,7 @@ let data = switch (Store.getItem("renm:store")->Js.Json.parseExn) {
   | exception _ => SharedTypes.emptyData(~root="root")
   | json => json->Serialize.fromJson
 };
+let data = {...data, nodes: TreeTraversal.cleanNodes(data.nodes)};
 
 let sharedViewData = switch (Store.getItem("renm:viewData")->Js.Json.parseExn) {
   | exception _ => SharedTypes.emptySharedViewData

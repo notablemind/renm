@@ -47,7 +47,7 @@ let make = (~store: Store.t(Quill.contents), _children) => {
           store
           ->Store.act(
               SharedTypes.Move(
-                store.view.selection->Set.String.add(sourceId),
+                TreeTraversal.orderIds(store.data.nodes, store.view.root, store.view.selection->Set.String.add(sourceId)),
                 targetId,
                 dropPos,
               ),

@@ -16,7 +16,7 @@ let indent = (store, node: Node.t('t)) => {
   } else {
     (prev, Child)
   };
-  store->act(Move(Set.String.empty->Set.String.add(node.id), target, pos));
+  store->act(Move([node.id], target, pos));
 };
 
 let dedent = (store, node: Node.t('t)) => {
@@ -24,7 +24,7 @@ let dedent = (store, node: Node.t('t)) => {
   let module Opt = OptConsume;
   let%Opt parent = store->get(node.parent);
   let%Opt grandParent = store->get(node.parent);
-  let (left, right) = TreeTraversal.partitionChildren(parent.children, node.id);
+  let (_left, _right) = TreeTraversal.partitionChildren(parent.children, node.id);
   /* store->act(Move()) */
 
 };
