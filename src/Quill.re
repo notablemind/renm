@@ -38,7 +38,6 @@ type range = {. "index": float, "length": float};
 
 let atLeft = quill => {
   let sel = getSelection(quill);
-  Js.log2("Sel", sel);
   sel##length == 0.
   &&
   sel##index == 0.;
@@ -46,7 +45,6 @@ let atLeft = quill => {
 
 let atRight = quill => {
   let sel = getSelection(quill);
-  Js.log2("Sel", sel);
   sel##length == 0.
   &&
   sel##index == getLength(quill) -. 1.;
@@ -106,14 +104,24 @@ let setupQuill = (element, props: ref(NodeTypes.props(blot))) => {
       },
     );
   keyboard(quill)
+  ->addBinding({"key": "Tab", "collapsed": true, "shiftKey": true}, () => {
+      !props^.onDedent()
+  });
+  keyboard(quill)
+  ->addBinding({"key": "Tab", "collapsed": true}, () => {
+      !props^.onIndent()
+  });
+  let () = [%bs.raw
+    {|quill.keyboard.bindings[9].unshift(quill.keyboard.bindings[9].pop())|}
+  ];
+  keyboard(quill)
   ->addBinding({"key": "z", "collapsed": true, "altKey": true}, () =>
       props^.onToggleCollapse()
     );
   keyboard(quill)
   ->addBinding({"key": "Left"}, () => {
       !(atLeft(quill) && props^.onLeft() != None)
-  }
-    );
+    });
   let () = [%bs.raw
     {|quill.keyboard.bindings[37].unshift(quill.keyboard.bindings[37].pop())|}
   ];

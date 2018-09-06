@@ -11,5 +11,7 @@ type props('value) = {
   onFocus: unit => unit,
   onEnter: unit => unit,
   onToggleCollapse: unit => bool,
+  onIndent: unit => bool,
+  onDedent: unit => bool,
   /* active: bool, */
 };

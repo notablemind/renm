@@ -41,6 +41,8 @@ let renderContents =
           false;
         },
         onEnter: () => Store.act(store, SharedTypes.CreateAfter),
+        onIndent: () => false,
+        onDedent: () => false,
         onDown: () => {
           open Lets;
           let%Opt nextId =
