@@ -9,3 +9,10 @@
   (modules Server)
   (public_name Server.exe)
   (libraries cohttp lwt cohttp-lwt-unix))
+
+
+(executable
+  (name Client)
+  (modules Client)
+  (public_name Client.exe)
+  (libraries cohttp lwt cohttp-lwt-unix))

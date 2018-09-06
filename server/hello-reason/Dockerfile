@@ -33,5 +33,6 @@ RUN apk add m4
 RUN apk add gmp-dev
 
 COPY --from=base /home/opam/hello-reason/_build/default/bin/Hello.exe /hello
-COPY --from=base /home/opam/hello-reason/_build/default/bin/Server.exe /reddit
+COPY --from=base /home/opam/hello-reason/_build/default/bin/Server.exe /server
+COPY --from=base /home/opam/hello-reason/_build/default/bin/Client.exe /client
 CMD ["OCAMLRUNPARAM=b /hello"]
