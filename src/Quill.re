@@ -111,10 +111,12 @@ let setupQuill = (element, props: ref(NodeTypes.props(blot))) => {
     );
   keyboard(quill)
   ->addBinding({"key": "Left"}, () => {
-    Js.log("Left");
       !(atLeft(quill) && props^.onLeft() != None)
   }
     );
+  let () = [%bs.raw
+    {|quill.keyboard.bindings[37].unshift(quill.keyboard.bindings[37].pop())|}
+  ];
   keyboard(quill)
   ->addBinding({"key": 8, "collapsed": true}, () =>
       if (atLeft(quill)) {
