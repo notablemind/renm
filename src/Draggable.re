@@ -31,16 +31,16 @@ external getBoundingClientRect:
 type state = {
   domMap: HashMap.String.t(Dom.element),
   /* movingId, targetId, isTop, (y, left, right) */
-  current: option((string, string, bool, (float, float, float))),
+  current: option((string, string, SharedTypes.dropPos, (float, float, float))),
 };
 let component = ReasonReact.reducerComponent("Draggable");
 
-let findDistanceToNode = (domNode, y) => {
+let findDistanceToNode = (domNode, x, y) => {
   let rect = getBoundingClientRect(domNode);
   let dist = y -. (rect##top +. rect##bottom) /. 2.;
   (
     abs_float(dist),
-    dist < 0.,
+    dist < 0. ? SharedTypes.Above : (x > rect##left +. (rect##right -. rect##left) /. 3.) ? Child : Below,
     (dist < 0. ? rect##top : rect##bottom, rect##left, rect##right),
   );
 };
@@ -68,7 +68,8 @@ let make = (~onDrop, ~onStart, children) => {
       {
         switch (self.state^.current) {
         | None => ReasonReact.null
-        | Some((draggingId, targetId, above, (top, left, right))) =>
+        | Some((draggingId, targetId, dropPos, (top, left, right))) =>
+          let left = dropPos == Child ? left +. 20. : left;
           <div
             style={
               placeholderStyle(
@@ -93,11 +94,12 @@ let make = (~onDrop, ~onStart, children) => {
                 | None =>
                   let blacklistedIds = onStart(id);
                   let onMouseMove = evt => {
+                    let x = clientX(evt);
                     let y = clientY(evt);
                     let%Lets.OptConsume (
                       distance,
                       targetId,
-                      above,
+                      dropPos,
                       position,
                     ) =
                       HashMap.String.reduce(
@@ -106,7 +108,7 @@ let make = (~onDrop, ~onStart, children) => {
                         (candidate, itemId, itemNode) => {
                           let%Lets.Guard () = (!blacklistedIds->Set.String.has(itemId), candidate);
                           let (distance, above, position) =
-                            findDistanceToNode(itemNode, y);
+                            findDistanceToNode(itemNode, x, y);
                           Some(
                             switch (candidate) {
                             | None => (distance, itemId, above, position)
@@ -122,13 +124,13 @@ let make = (~onDrop, ~onStart, children) => {
                           );
                         },
                       );
-                    self.send(Some((id, targetId, above, position)));
+                    self.send(Some((id, targetId, dropPos, position)));
                   };
                   let rec onMouseUp = evt => {
                     switch (self.state^.current) {
                     | None => ()
-                    | Some((_, targetId, above, _)) =>
-                      onDrop(id, targetId, above)
+                    | Some((_, targetId, dropPos, _)) =>
+                      onDrop(id, targetId, dropPos)
                     };
                     self.send(None);
                     removeEventListener(window, "mouseup", onMouseUp);

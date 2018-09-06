@@ -113,16 +113,16 @@ let processAction:
         [NodeCollapsed(id, collapsed)],
         [Event.View(Node(id))],
       ))
-    | Move(ids, target, above) =>
+    | Move(ids, target, dropPos) =>
       let%Opt node = store->get(target);
       let%Opt (newParent, newIndex) = if (target == store.data.root) {
-        above ? None : Some((node, 0))
-      } else if (!above && store.sharedViewData.expanded->Set.String.has(target)) {
+        dropPos == Above ? None : Some((node, 0))
+      } else if (dropPos != Above && ((store.sharedViewData.expanded->Set.String.has(target) && node.children != []) || dropPos == Child)) {
         Some((node, 0))
       } else {
         let%Opt parent = store->get(node.parent);
         let%Opt index = TreeTraversal.childPos(parent.children, node.id);
-        Some((parent, above ? index : index + 1))
+        Some((parent, dropPos == Above ? index : index + 1))
       };
       /* TODO actually order these */
       let orderedIds = Set.String.toList(ids);
@@ -154,7 +154,7 @@ let processAction:
         List.concat(
           byParent->HashMap.String.reduce([], (children, _, more) => children @ more->List.map(child => Node({...child, parent: newParent.id}))),
           parents->List.map(((node, children)) => NodeChildren(node.id, children)),
-        )
+        )->List.concat(Set.String.has(store.sharedViewData.expanded, newParent.id) ? [] : [SharedTypes.NodeCollapsed(newParent.id, false)])
         ,
         parents->List.map(((node, _)) => Event.View(Node(node.id))),
       ));

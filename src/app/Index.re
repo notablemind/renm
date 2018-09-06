@@ -39,8 +39,13 @@ let store =
 
 [%bs.raw "window.store = store"];
 
-[%bs.raw {|
-x = 10
+let shareWithOtherTabs = [%bs.raw {|
+  function() {
+    var myWorker = new SharedWorker('worker.js');
+    addEventListener( 'beforeunload', function() {
+        port.postMessage( 'closing' );
+    });
+  }
 |}];
 
 ReactDOMRe.renderToElementWithId(<Tree store />, "root");

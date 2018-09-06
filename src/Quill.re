@@ -38,6 +38,7 @@ type range = {. "index": float, "length": float};
 
 let atLeft = quill => {
   let sel = getSelection(quill);
+  Js.log2("Sel", sel);
   sel##length == 0.
   &&
   sel##index == 0.;
@@ -45,6 +46,7 @@ let atLeft = quill => {
 
 let atRight = quill => {
   let sel = getSelection(quill);
+  Js.log2("Sel", sel);
   sel##length == 0.
   &&
   sel##index == getLength(quill) -. 1.;
@@ -108,8 +110,10 @@ let setupQuill = (element, props: ref(NodeTypes.props(blot))) => {
       props^.onToggleCollapse()
     );
   keyboard(quill)
-  ->addBinding({"key": "Left", "collapsed": true}, () =>
+  ->addBinding({"key": "Left"}, () => {
+    Js.log("Left");
       !(atLeft(quill) && props^.onLeft() != None)
+  }
     );
   keyboard(quill)
   ->addBinding({"key": 8, "collapsed": true}, () =>

@@ -119,6 +119,7 @@ type edit('contents) =
   | Create(Node.t('contents))
   | View(view);
 
+type dropPos = Above | Below | Child;
 type action('contents) =
   | SetActive(Node.id, editPos)
   | SetMode(mode)
@@ -130,7 +131,7 @@ type action('contents) =
   /** second arg is the thing to focus after */
   | Remove(Node.id, Node.id)
   | SetContents(Node.id, 'contents)
-  | Move(Set.String.t, Node.id, bool)
+  | Move(Set.String.t, Node.id, dropPos)
   | CreateBefore
   | CreateAfter
   | CreateChild

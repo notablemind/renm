@@ -42,14 +42,14 @@ let make = (~store: Store.t(Quill.contents), _children) => {
         }
       }
       onDrop={
-        (sourceId, targetId, above) => {
-          Js.log3(sourceId, targetId, above);
+        (sourceId, targetId, dropPos) => {
+          Js.log3(sourceId, targetId, dropPos);
           store
           ->Store.act(
               SharedTypes.Move(
                 store.view.selection->Set.String.add(sourceId),
                 targetId,
-                above,
+                dropPos,
               ),
             );
           ();
