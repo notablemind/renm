@@ -44,10 +44,11 @@ let renderContents =
         /** TODO indents n stuff */
         onIndent: () => {
           Actions.indent(store, node);
-          false
+          true
         },
         onDedent: () => {
-          false
+          Actions.dedent(store, node);
+          true
         },
         onDown: () => Actions.down(store, node),
         onRight: () => Actions.right(store,node),

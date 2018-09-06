@@ -11,6 +11,14 @@ let childPos = (children, id) => {
   loop(0, children)
 };
 
+let rec partitionChildren = (children, id) => switch children {
+  | [] => ([], [])
+  | [one, ...rest] when one == id => ([], rest)
+  | [one, ...rest] =>
+    let (left, right) = partitionChildren(rest, id);
+    ([one, ...left], right)
+};
+
 let rec nextChild = (children, id) => switch children {
   | [] => None
   | [one] => None

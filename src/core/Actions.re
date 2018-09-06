@@ -5,7 +5,7 @@ open SharedTypes;
 open Store;
 
 let indent = (store, node: Node.t('t)) => {
-  let%Guard () = (node.id != store.view.root, ());
+  let%UnitIf () = node.id != store.view.root;
   let module Opt = OptConsume;
   let%Opt parent = store->get(node.parent);
   let%Opt prev = TreeTraversal.prevChild(parent.children, node.id);
@@ -17,6 +17,16 @@ let indent = (store, node: Node.t('t)) => {
     (prev, Child)
   };
   store->act(Move(Set.String.empty->Set.String.add(node.id), target, pos));
+};
+
+let dedent = (store, node: Node.t('t)) => {
+  let%UnitIf () = node.id != store.view.root && node.parent != store.view.root;
+  let module Opt = OptConsume;
+  let%Opt parent = store->get(node.parent);
+  let%Opt grandParent = store->get(node.parent);
+  let (left, right) = TreeTraversal.partitionChildren(parent.children, node.id);
+  /* store->act(Move()) */
+
 };
 
 let right = (store, node) => {

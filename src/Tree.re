@@ -57,7 +57,7 @@ let make = (~store: Store.t(Quill.contents), _children) => {
       }>
       ...{
            renderDraggable =>
-             <RenderNode store renderDraggable id={store.data.root} />
+             <RenderNode store depth=0 renderDraggable id={store.data.root} />
          }
     </Draggable>,
 };

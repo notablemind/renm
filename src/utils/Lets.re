@@ -42,6 +42,14 @@ module OptIf = {
   }
 };
 
+module UnitIf = {
+  let let_ = (a, b) => if (a) {
+    b()
+  } else {
+    ()
+  }
+};
+
 module OptMap = {
   let let_ = (a, b) => switch (a) {
     | None => None

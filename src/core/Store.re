@@ -5,7 +5,7 @@ type t('contents) = {
   mutable data: data('contents),
   mutable view,
   mutable sharedViewData,
-  subs: Hashtbl.t(Event.t, list(unit => unit)),
+  subs: Hashtbl.t(Event.t, list((int, unit => unit))),
 };
 
 let create = (~root, ~nodes: list(SharedTypes.Node.t('contents))) => {
@@ -40,7 +40,7 @@ let subscribe = (store, id, fn) => {
 };
 
 module FnId = Id.MakeHashable({
-  type t = unit => unit;
+  type t = (int, unit => unit);
   let hash = Hashtbl.hash;
   let eq = (===)
 });
@@ -56,7 +56,11 @@ let trigger = (store, evts) => {
       | subs => List.forEach(subs, fn => HashSet.add(fns, fn))
     }
   });
-  HashSet.forEach(fns, fn => fn());
+  fns
+  ->HashSet.toArray
+  ->List.fromArray
+  ->List.sort(((a, _), (b, _)) => a - b)
+  ->List.forEach(fn => snd(fn, ()));
 };
 
 open Lets;
