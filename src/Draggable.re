@@ -11,7 +11,8 @@ external removeEventListener: (Dom.window, string, mouseEvt => unit) => unit =
 
 let placeholderStyle =
   ReactDOMRe.Style.(
-    make(~backgroundColor="#ccc",
+    make(
+      /* ~backgroundColor="#ccc", */
     ~marginTop="-3px",
     ~zIndex="1000",
     ~height="6px", ~position="absolute")
@@ -26,6 +27,8 @@ external getBoundingClientRect:
     "bottom": float,
     "left": float,
     "right": float,
+    "width": float,
+    "height": float,
   } =
   "";
 type state = {
@@ -62,7 +65,60 @@ TODO
 - should I have the placeholder live inside of the node? that would be more rerendering... so prolly not
 
  */
-let make = (~onDrop, ~onStart, children) => {
+
+
+let handleDrag = (~id, ~state, ~onStart, ~onDrop, ~testNode, ~updateMarker, ~clear, evt) => {
+  ReactEvent.Mouse.stopPropagation(evt);
+  ReactEvent.Mouse.preventDefault(evt);
+  let%Lets.UnitIf () = state^.current == None;
+  let blacklistedIds = onStart(id);
+  let onMouseMove = evt => {
+    let x = clientX(evt);
+    let y = clientY(evt);
+    let%Lets.OptConsume (distance, targetId, dropPos, position) =
+      HashMap.String.reduce(
+        state^.domMap,
+        None,
+        (candidate, itemId, itemNode) => {
+          let%Lets.Guard () = (
+            !blacklistedIds->Set.String.has(itemId),
+            candidate,
+          );
+          let%Lets.OptDefault (distance, above, position) = ({
+            let rect = getBoundingClientRect(itemNode);
+            testNode(itemId, x, y, rect);
+          }, candidate);
+          Some(
+            switch (candidate) {
+            | None => (distance, itemId, above, position)
+            | Some((currentDist, _, _, _)) when distance < currentDist => (
+                distance,
+                itemId,
+                above,
+                position,
+              )
+            | Some(current) => current
+            },
+          );
+        },
+      );
+    updateMarker(~id, ~targetId, ~dropPos, ~position);
+  };
+  let rec onMouseUp = evt => {
+    switch (state^.current) {
+    | None => ()
+    | Some((_, targetId, dropPos, _)) => onDrop(id, targetId, dropPos)
+    };
+    clear();
+    removeEventListener(window, "mouseup", onMouseUp);
+    removeEventListener(window, "mousemove", onMouseMove);
+  };
+  addEventListener(window, "mouseup", onMouseUp);
+  addEventListener(window, "mousemove", onMouseMove);
+};
+
+
+let make = (~onDrop, ~onStart, ~testNode, children) => {
   ...component,
   initialState: () =>
     ref({domMap: HashMap.String.make(~hintSize=10), current: None}),
@@ -80,6 +136,7 @@ let make = (~onDrop, ~onStart, children) => {
           <div
             style={
               placeholderStyle(
+                ~backgroundColor=(dropPos == Child ? "#aaf" : "#ccc"),
                 ~left=string_of_float(left) ++ "px",
                 ~width=string_of_float(right -. left) ++ "px",
                 ~top=string_of_float(top) ++ "px",
@@ -93,65 +150,21 @@ let make = (~onDrop, ~onStart, children) => {
         children((id, render) =>
           render(
             ~onMouseDown=
-              evt => {
-                ReactEvent.Mouse.stopPropagation(evt);
-                ReactEvent.Mouse.preventDefault(evt);
-                switch (self.state^.current) {
-                | Some(_) => ()
-                | None =>
-                  let blacklistedIds = onStart(id);
-                  let onMouseMove = evt => {
-                    let x = clientX(evt);
-                    let y = clientY(evt);
-                    let%Lets.OptConsume (
-                      distance,
-                      targetId,
-                      dropPos,
-                      position,
-                    ) =
-                      HashMap.String.reduce(
-                        self.state^.domMap,
-                        None,
-                        (candidate, itemId, itemNode) => {
-                          let%Lets.Guard () = (!blacklistedIds->Set.String.has(itemId), candidate);
-                          let (distance, above, position) =
-                            findDistanceToNode(itemNode, x, y);
-                          Some(
-                            switch (candidate) {
-                            | None => (distance, itemId, above, position)
-                            | Some((currentDist, _, _, _))
-                                when distance < currentDist => (
-                                distance,
-                                itemId,
-                                above,
-                                position,
-                              )
-                            | Some(current) => current
-                            },
-                          );
-                        },
-                      );
-                    self.send(Some((id, targetId, dropPos, position)));
-                  };
-                  let rec onMouseUp = evt => {
-                    switch (self.state^.current) {
-                    | None => ()
-                    | Some((_, targetId, dropPos, _)) =>
-                      onDrop(id, targetId, dropPos)
-                    };
-                    self.send(None);
-                    removeEventListener(window, "mouseup", onMouseUp);
-                    removeEventListener(window, "mousemove", onMouseMove);
-                  };
-                  addEventListener(window, "mouseup", onMouseUp);
-                  addEventListener(window, "mousemove", onMouseMove);
-                };
-              },
-            ~registerRef=
-              node => {
-                let%Lets.OptConsume node = Js.toOption(node);
-                HashMap.String.set(self.state^.domMap, id, node);
-              },
+              handleDrag(
+                ~id,
+                ~state=self.state,
+                ~onStart,
+                ~onDrop,
+                ~testNode,
+                ~updateMarker=
+                  (~id, ~targetId, ~dropPos, ~position) =>
+                    self.send(Some((id, targetId, dropPos, position))),
+                ~clear=() => self.send(None),
+              ),
+            ~registerRef=node => {
+              let%Lets.OptConsume node = Js.toOption(node);
+              HashMap.String.set(self.state^.domMap, id, node);
+            },
           )
         )
       }
