@@ -8,9 +8,6 @@ module T = {
   let x = 40;
 };
 
-Js.log(module T: T)
-Js.log(`Hello(2,3,4))
-
 let component = ReasonReact.statelessComponent("Tree");
 
 let rec visibleChildren = (store: Store.t('content), id) => {
@@ -43,7 +40,6 @@ let make = (~store: Store.t(Quill.contents), _children) => {
       }
       onDrop={
         (sourceId, targetId, dropPos) => {
-          Js.log3(sourceId, targetId, dropPos);
           store
           ->Store.act(
               SharedTypes.Move(

@@ -174,7 +174,6 @@ let setupQuill = (element, props: ref(NodeTypes.props(blot))) => {
   );
   setContents(quill, props^.value);
   if (props^.editPos != None) {
-    Js.log("Focusing");
     focus(quill);
   };
   on(quill, "text-change", (delta, oldDelta, _source) => {

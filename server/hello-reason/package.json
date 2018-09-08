@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "description": "Reason workflow with Esy",
   "license": "MIT",
+  "scripts": {
+    "docker": "docker build -t hello-reason . && docker run -d -p :8000 hello-reason"
+  },
   "esy": {
     "build": "refmterr dune build -p #{self.name}",
     "NOTE": "Optional release Section. Customizes result of `esy release`",

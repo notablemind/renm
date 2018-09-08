@@ -119,7 +119,6 @@ let processAction:
       ))
     | Move(ids, target, dropPos) =>
       let%Opt node = store->get(target);
-      Js.log(dropPos);
       let%Opt (newParent, newIndex) = if (target == store.data.root) {
         dropPos == Above || dropPos == ChildAbove ? None : Some((node, 0))
       } else if (
@@ -163,7 +162,6 @@ let processAction:
       } else {
         [(newParent, Utils.insertManyIntoList(newParent.children, newIndex, ids)), ...parents]
       };
-      Js.log(parents);
       Some((
         List.concat(
           byParent->HashMap.String.reduce([], (children, _, more) => children @ more->List.map(child => Node({...child, parent: newParent.id}))),
