@@ -104,15 +104,15 @@ let setupQuill = (element, props: ref(NodeTypes.props(blot))) => {
     );
   keyboard(quill)
   ->addBinding({"key": "Tab", "collapsed": true, "shiftKey": true}, () => {
+    Js.log("Shift key");
       !props^.onDedent()
   });
+  let () = [%bs.raw {|quill.keyboard.bindings[9].unshift(quill.keyboard.bindings[9].pop())|} ];
   keyboard(quill)
   ->addBinding({"key": "Tab", "collapsed": true}, () => {
       !props^.onIndent()
   });
-  let () = [%bs.raw
-    {|quill.keyboard.bindings[9].unshift(quill.keyboard.bindings[9].pop())|}
-  ];
+  let () = [%bs.raw {|quill.keyboard.bindings[9].unshift(quill.keyboard.bindings[9].pop())|} ];
   keyboard(quill)
   ->addBinding({"key": "z", "collapsed": true, "altKey": true}, () =>
       props^.onToggleCollapse()

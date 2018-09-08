@@ -120,7 +120,14 @@ let processAction:
     | Move(ids, target, dropPos) =>
       let%Opt node = store->get(target);
       let%Opt (newParent, newIndex) = if (target == store.data.root) {
-        dropPos == Above || dropPos == ChildAbove ? None : Some((node, 0))
+        switch dropPos {
+          | Above
+          | ChildAbove => None
+          | At(index) => Some((node, index))
+          | End => Some((node, max(0, List.length(node.children))))
+          | _ => Some((node, 0))
+        }
+        /* dropPos == Above || dropPos == ChildAbove ? None : Some((node, 0)) */
       } else if (
         dropPos == Child
         ||
@@ -128,14 +135,21 @@ let processAction:
       ) {
         Some((node, 0))
       } else {
-        let%Opt parent = store->get(node.parent);
-        let%Opt index = TreeTraversal.childPos(parent.children, node.id);
-        if (dropPos == ChildAbove) {
-          let%Opt id = TreeTraversal.prevChild(parent.children, node.id);
-          let%Opt node = store->get(id);
-          Some((node, List.length(node.children)))
-        } else {
-          Some((parent, dropPos == Above ? index : index + 1))
+        switch dropPos {
+          | Child => Some((node, 0))
+          | Below when (store.sharedViewData.expanded->Set.String.has(target) && node.children != []) => Some((node, 0))
+          | At(index) => Some((node, index))
+          | End => Some((node, max(0, List.length(node.children))))
+          | _ =>
+            let%Opt parent = store->get(node.parent);
+            let%Opt index = TreeTraversal.childPos(parent.children, node.id);
+            if (dropPos == ChildAbove) {
+              let%Opt id = TreeTraversal.prevChild(parent.children, node.id);
+              let%Opt node = store->get(id);
+              Some((node, List.length(node.children)))
+            } else {
+              Some((parent, dropPos == Above ? index : index + 1))
+            }
         }
       };
       /* TODO actually order these */
@@ -260,7 +274,7 @@ let applyEdits = (store, edits) =>
 
 let act = (store, action) => {
   let%OptConsume (edits, events) = processAction(store, action);
-  /* Js.log4("act", action, edits, events); */
+  Js.log4("act", action, edits, events);
   applyEdits(store, edits);
   trigger(store, events);
   Js.Global.setTimeout(() => {

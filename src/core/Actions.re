@@ -23,10 +23,11 @@ let dedent = (store, node: Node.t('t)) => {
   let%UnitIf () = node.id != store.view.root && node.parent != store.view.root;
   let module Opt = OptConsume;
   let%Opt parent = store->get(node.parent);
-  let%Opt grandParent = store->get(node.parent);
-  let (_left, _right) = TreeTraversal.partitionChildren(parent.children, node.id);
-  /* store->act(Move()) */
-
+  let%Opt grandParent = store->get(parent.parent);
+  let%Opt parentPos = TreeTraversal.childPos(grandParent.children, parent.id);
+  let (left, right) = TreeTraversal.partitionChildren(parent.children, node.id);
+  store->act(Move(right, node.id, End));
+  store->act(Move([node.id], grandParent.id, At(parentPos + 1)));
 };
 
 let right = (store, node) => {
