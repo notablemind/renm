@@ -11,8 +11,8 @@ let indent = (store, node: Node.t('t)) => {
   let%Opt prev = TreeTraversal.prevChild(parent.children, node.id);
   let%Opt prevNode = store->get(prev);
   let (target, pos) = if (prevNode.children != []) {
-    let%OptForce last = List.get(prevNode.children, List.length(prevNode.children) - 1);
-    (last, Below)
+    /* let%OptForce last = List.get(prevNode.children, List.length(prevNode.children) - 1); */
+    (prev, End)
   } else {
     (prev, Child)
   };

@@ -107,10 +107,13 @@ let make =
                       ~top="0",
                       ~cursor="pointer",
                       ~left="-15px",
+                      ~width="10px",
+                      ~height="10px",
+                      ~backgroundColor="#aaa",
+                      ~borderRadius="50%",
                       (),
                     )
                   )>
-                  {str({j|✚|j})}
                 </div> :
                 ReasonReact.null
             }
