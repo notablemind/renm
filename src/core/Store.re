@@ -274,7 +274,7 @@ let applyEdits = (store, edits) =>
 
 let act = (store, action) => {
   let%OptConsume (edits, events) = processAction(store, action);
-  Js.log4("act", action, edits, events);
+  /* Js.log4("act", action, edits, events); */
   applyEdits(store, edits);
   trigger(store, events);
   Js.Global.setTimeout(() => {

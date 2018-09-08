@@ -63,6 +63,62 @@ let renderContents =
   | _ => str("Other contents")
   };
 
+module Styles = {
+  open Css;
+  let handle = style([
+    cursor(`pointer),
+    left(px(-20)),
+    width(px(8)),
+    height(px(8)),
+    top(px(4)),
+    padding(px(5)),
+    hover([
+      backgroundColor(hex("eee")),
+    ]),
+    borderRadius(`percent(50.)),
+    position(`absolute),
+  ]);
+  let circle = style([
+    backgroundColor(hex("aaa")),
+    borderRadius(`percent(50.)),
+    width(px(8)),
+    height(px(8)),
+  ]);
+  let triangleDown = style([
+    width(px(0)),
+    height(px(0)),
+    borderLeft(px(5), `solid, `transparent),
+    borderRight(px(5), `solid, `transparent),
+    borderTop(px(8), `solid, hex("aaa")),
+    position(`absolute),
+    left(px(4)),
+    top(px(6)),
+  ]);
+  let triangleRight = style([
+    width(px(0)),
+    height(px(0)),
+    position(`absolute),
+    left(px(6)),
+    top(px(4)),
+    borderTop(px(5), `solid, `transparent),
+    borderBottom(px(5), `solid, `transparent),
+    borderLeft(px(8), `solid, hex("aaa")),
+  ]);
+};
+
+let renderHandle = (~onMouseDown, ~hasChildren, ~collapsed, ~toggleCollapsed) =>
+  <div
+    onMouseDown
+    onClick={_evt => {
+      hasChildren ? toggleCollapsed() : ()
+    }}
+    className=Styles.handle
+  >
+    <div
+      className=(hasChildren ? (collapsed ? Styles.triangleRight : Styles.triangleDown) : Styles.circle)
+    />
+  </div>;
+
 let component = ReasonReact.statelessComponent("NodeBody");
 let make =
     (
@@ -99,40 +155,13 @@ let make =
             }>
             {
               node.id != store.data.root ?
-                <div
-                  onMouseDown
-                  style=ReactDOMRe.Style.(
-                    make(
-                      ~position="absolute",
-                      ~top="0",
-                      ~cursor="pointer",
-                      ~left="-15px",
-                      ~width="10px",
-                      ~height="10px",
-                      ~backgroundColor="#aaa",
-                      ~borderRadius="50%",
-                      (),
-                    )
-                  )>
-                </div> :
-                ReasonReact.null
-            }
-            {
-              node.children != [] && node.id != store.data.root ?
-                <div
-                  style=ReactDOMRe.Style.(
-                    make(~padding="5px", ~cursor="pointer", ())
+                renderHandle(~onMouseDown, ~hasChildren=node.children != [], ~collapsed, ~toggleCollapsed={() => {
+                  Store.act(
+                    store,
+                    SharedTypes.SetCollapsed(node.id, !collapsed),
                   )
-                  onMouseDown={
-                    evt =>
-                      Store.act(
-                        store,
-                        SharedTypes.SetCollapsed(node.id, !collapsed),
-                      )
-                  }>
-                  {str(collapsed ? {j|▸|j} : {j|▾|j})}
-                </div> :
-                <div />
+                }}) :
+                ReasonReact.null
             }
             <div style=ReactDOMRe.Style.(make(~flex="1", ()))>
               {renderContents(store, node, editPos, collapsed)}
@@ -146,7 +175,7 @@ let make =
             style={
               ReactDOMRe.Style.make(
                 ~paddingLeft="10px",
-                ~borderLeft="3px solid #ccc",
+                ~borderLeft="3px solid #eee",
                 ~marginLeft="10px",
                 (),
               )

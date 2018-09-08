@@ -39,7 +39,7 @@ let findDistanceToNode = (domNode, x, y) => {
   let rect = getBoundingClientRect(domNode);
   let dist = y -. (rect##top +. rect##bottom) /. 2.;
   let dropPos =
-    switch (dist < 0., x > rect##left +. 50.) {
+    switch (dist < 0., x > rect##left +. (rect##right -. rect##left) /. 2.) {
     | (true, true) => SharedTypes.ChildAbove
     | (true, false) => Above
     | (false, true) => Child

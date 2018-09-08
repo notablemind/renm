@@ -11,7 +11,8 @@ module T = {
 let component = ReasonReact.statelessComponent("Tree");
 
 let rec visibleChildren = (store: Store.t('content), id) => {
-  let one = Set.String.empty->Set.String.add(id)
+  let one = Set.String.empty;
+  /* ->Set.String.add(id) */
   let%Lets.OptDefault node = (store->Store.get(id), one);
   if (node.children != [] && (id == store.data.root || store.sharedViewData.expanded->Set.String.has(id))) {
     node.children->List.reduce(one, (ids, id) => ids->Set.String.union(store->visibleChildren(id)))
