@@ -20,6 +20,8 @@ let rec fromFixture = (pid, id, item) => switch item {
     )] @ (List.map(childNodes, snd) |. List.toArray |. List.concatMany)
 };
 
+let nodes = fromFixture("root", "root", `Leaf("Hello folks"));
+
 let data = switch (Store.getItem("renm:store")->Js.Json.parseExn) {
   | exception _ => SharedTypes.emptyData(~root="root")
   | json => json->Serialize.fromJson
@@ -35,8 +37,12 @@ Js.log(sharedViewData)
 let store =
   {...Store.create(
     ~root=data.root,
+    /* ~root="root", */
     ~nodes=[]
-  ), data: data, sharedViewData};
+    /* ~nodes */
+  ),
+  data: data,
+  sharedViewData};
 
 [%bs.raw "window.store = store"];
 

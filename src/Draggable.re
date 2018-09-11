@@ -1,6 +1,6 @@
 
 [@bs.val] external window: Dom.window = "";
-type mouseEvt;
+type mouseEvt = ReactEvent.Mouse.t;
 [@bs.send]
 external addEventListener: (Dom.window, string, mouseEvt => unit) => unit = "";
 [@bs.send]
@@ -67,7 +67,10 @@ TODO
  */
 
 
+let minDist = 10.;
 let handleDrag = (~id, ~state, ~onStart, ~onDrop, ~testNode, ~updateMarker, ~clear, evt) => {
+  let initialX = clientX(evt);
+  let initialY = clientY(evt);
   ReactEvent.Mouse.stopPropagation(evt);
   ReactEvent.Mouse.preventDefault(evt);
   let%Lets.UnitIf () = state^.current == None;
@@ -76,34 +79,38 @@ let handleDrag = (~id, ~state, ~onStart, ~onDrop, ~testNode, ~updateMarker, ~cle
   let onMouseMove = evt => {
     let x = clientX(evt);
     let y = clientY(evt);
-    let%Lets.OptConsume (distance, targetId, dropPos, position) =
-      HashMap.String.reduce(
-        state^.domMap,
-        None,
-        (candidate, itemId, itemNode) => {
-          let%Lets.Guard () = (
-            !blacklistedIds->Set.String.has(itemId),
-            candidate,
-          );
-          let%Lets.OptDefault (distance, above, position) = ({
-            let rect = getBoundingClientRect(itemNode);
-            testNode(itemId, x, y, rect);
-          }, candidate);
-          Some(
-            switch (candidate) {
-            | None => (distance, itemId, above, position)
-            | Some((currentDist, _, _, _)) when distance < currentDist => (
-                distance,
-                itemId,
-                above,
-                position,
-              )
-            | Some(current) => current
-            },
-          );
-        },
-      );
-    updateMarker(~id, ~targetId, ~dropPos, ~position);
+    if (abs_float(x -. initialX) < minDist && abs_float(y -. initialY) < minDist) {
+      clear();
+    } else {
+      let%Lets.OptConsume (distance, targetId, dropPos, position) =
+        HashMap.String.reduce(
+          state^.domMap,
+          None,
+          (candidate, itemId, itemNode) => {
+            let%Lets.Guard () = (
+              !blacklistedIds->Set.String.has(itemId),
+              candidate,
+            );
+            let%Lets.OptDefault (distance, above, position) = ({
+              let rect = getBoundingClientRect(itemNode);
+              testNode(itemId, x, y, rect);
+            }, candidate);
+            Some(
+              switch (candidate) {
+              | None => (distance, itemId, above, position)
+              | Some((currentDist, _, _, _)) when distance < currentDist => (
+                  distance,
+                  itemId,
+                  above,
+                  position,
+                )
+              | Some(current) => current
+              },
+            );
+          },
+        );
+      updateMarker(~id, ~targetId, ~dropPos, ~position);
+    }
   };
   let rec onMouseUp = evt => {
     switch (state^.current) {

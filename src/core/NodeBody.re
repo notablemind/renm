@@ -73,23 +73,25 @@ module Styles = {
     top(px(4)),
     padding(px(5)),
     hover([
-      backgroundColor(hex("eee")),
+      backgroundColor(rgba(0, 0, 0, 0.05)),
     ]),
     borderRadius(`percent(50.)),
     position(`absolute),
   ]);
   let circle = style([
-    backgroundColor(hex("aaa")),
-    borderRadius(`percent(50.)),
-    width(px(8)),
-    height(px(8)),
+    backgroundColor(hex("ccc")),
+    borderRadius(px(2)),
+    width(px(7)),
+    marginTop(px(2)),
+    height(px(6)),
   ]);
   let triangleDown = style([
     width(px(0)),
     height(px(0)),
+    borderRadius(px(4)),
     borderLeft(px(5), `solid, `transparent),
     borderRight(px(5), `solid, `transparent),
-    borderTop(px(8), `solid, hex("aaa")),
+    borderTop(px(8), `solid, hex("ccc")),
     position(`absolute),
     left(px(4)),
     top(px(6)),
@@ -100,9 +102,10 @@ module Styles = {
     position(`absolute),
     left(px(6)),
     top(px(4)),
+    borderRadius(px(4)),
     borderTop(px(5), `solid, `transparent),
     borderBottom(px(5), `solid, `transparent),
-    borderLeft(px(8), `solid, hex("aaa")),
+    borderLeft(px(8), `solid, hex("ccc")),
   ]);
 };
 
@@ -141,7 +144,7 @@ let make =
                 ~flexDirection="row",
                 ~alignItems="center",
                 ~margin="1px",
-                ~outline=editPos != None ? "2px solid skyblue" : (selected ? "1px solid skyblue" : "none"),
+                ~outline=editPos != None ? "2px solid #9de3ff" : (selected ? "2px solid #d2ff95" : "none"),
                 (),
               )
             )

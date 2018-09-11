@@ -11,11 +11,11 @@ module T = {
 let component = ReasonReact.statelessComponent("Tree");
 
 let rec visibleChildren = (store: Store.t('content), id) => {
-  let one = Set.String.empty;
-  /* ->Set.String.add(id) */
+  let one = Set.String.empty
+  ->Set.String.add(id);
   let%Lets.OptDefault node = (store->Store.get(id), one);
   if (node.children != [] && (id == store.data.root || store.sharedViewData.expanded->Set.String.has(id))) {
-    node.children->List.reduce(one, (ids, id) => ids->Set.String.add(id)->Set.String.union(store->visibleChildren(id)))
+    node.children->List.reduce(one, (ids, id) => ids->Set.String.union(store->visibleChildren(id)))
   } else {
     one
   }
@@ -32,6 +32,8 @@ let make = (~store: Store.t(Quill.contents), _children) => {
         let dist = y -. (rect##top +. rect##bottom) /. 2.;
         let asChild = abs_float(dist) <= rect##height /. 4.;
         let canChild = !store.view.selection->Set.String.add(store.view.active)->Set.String.has(id);
+
+        let%Lets.OptIf () = id != store.view.root || dist > 0.;
 
         let dropPos = if (dist < 0.) {
           SharedTypes.Above
