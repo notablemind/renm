@@ -1,4 +1,9 @@
 
+module Async = {
+  let let_ = (promise, continuation) => Js.Promise.then_(continuation, promise);
+  let resolve = Js.Promise.resolve;
+};
+
 module Guard = {
   let let_ = ((condition, default), continuation) => if (condition) {
     continuation()

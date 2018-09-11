@@ -16,7 +16,7 @@ let getData = (store, id) =>
       editPos: id == store.view.active ? Some(store.view.editPos) : None,
       selected: Set.String.has(store.view.selection, id),
       collapsed:
-        id == store.data.root ?
+        id == store.view.root ?
           false : !Set.String.has(store.sharedViewData.expanded, id),
     })
   };
@@ -157,7 +157,7 @@ let make =
               }
             }>
             {
-              node.id != store.data.root ?
+              node.id != store.view.root ?
                 renderHandle(~onMouseDown, ~hasChildren=node.children != [], ~collapsed, ~toggleCollapsed={() => {
                   Store.act(
                     store,

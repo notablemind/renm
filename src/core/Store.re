@@ -8,6 +8,96 @@ type t('contents) = {
   subs: Hashtbl.t(Event.t, list((int, unit => unit))),
 };
 
+type selection = Ho;
+
+type change('changeType) = {
+  /* Do I need this? maybe */
+  id: string, /* this is ${sessionId}:${incrementing id} */
+  selectionId: string,
+  selectionPos: int,
+  typ: 'changeType,
+};
+
+type persisted('contents, 'change) = {
+  /* most recent first! b/c I need to be able to access head */
+  history: list(change('change)),
+  snapshot: data('contents),
+};
+
+/*
+
+Edge cases to examine:
+- what if a change is "garbage"? Somehow things have gotten out of sync
+- what if I do a sync, but don't persist that I'd saved it? Then my "unsynced" list is stale.
+  So I'll need recovery in the form of "dedup changes that are both in my unsynced & the server history"
+  I think that's fine, because I have IDs.
+  But I don't think the current sendChanges function accounts for that.
+
+  Because it means... I think I'd have to rewind?
+  no, I need to send, along with the list of changes, what I think
+  "head" is.
+  Yeah, then I think I'm all set.
+  Because I'm ~pretty confident that if I have something saved to
+  "history" locally, then it's synced to the server. B/c I'll do that
+  first.
+
+ */
+
+type world('contents, 'change) = {
+  mutable persisted: persisted('contents, 'change),
+  mutable syncing: list(change('contents)),
+  /* Locally, we also persist "unsynced" */
+  mutable unsynced: list(change('contents)),
+  /* which is snapshot + syncing + unsynced */
+  mutable current: data('contents),
+  ssubs: Hashtbl.t(Event.t, list((int, unit => unit))),
+};
+
+let tipId = history => {
+  let%Lets.Opt change = List.head(history);
+  Some(change.id)
+};
+
+type syncResult('change) = Commit | Rebase(list(change('change)))
+
+let sendChanges = (api, tipId, changes) => {
+  Lets.Async.resolve(Commit)
+};
+
+let applyChanges = (~subs=?, changes, snapshot) => snapshot;
+
+/* called (debounced) on adding an unsynced change */
+let sendChanges = (api, world) => {
+  if (world.syncing != []) {
+    failwith("Double sync?")
+  };
+  let%Lets.Guard () = (world.unsynced != [], Lets.Async.resolve());
+  world.syncing = world.unsynced;
+  world.unsynced = [];
+  let%Lets.Async result = api->sendChanges(world.persisted.history->tipId, world.syncing);
+  switch result {
+    | Commit =>
+      world.persisted = {
+        history: List.concat(world.persisted.history, world.syncing),
+        snapshot: if (world.unsynced == []) {
+          world.current;
+        } else {
+          applyChanges(world.syncing, world.persisted.snapshot);
+        }
+      };
+      world.syncing = [];
+    | Rebase(changes) =>
+      world.persisted = {
+        history: List.concat(world.persisted.history, changes),
+        snapshot: applyChanges(changes, world.persisted.snapshot),
+      };
+      /* TODO notify subscribers of the things that change */
+      world.current = applyChanges(~subs=world.ssubs, world.unsynced, world.persisted.snapshot);
+      world.syncing = [];
+  };
+  Lets.Async.resolve(())
+};
+
 let create = (~root, ~nodes: list(SharedTypes.Node.t('contents))) => {
   let nodeMap = List.reduce(nodes, Map.String.empty, (map, node) => Map.String.set(map, node.id, node));
   {
@@ -46,7 +136,7 @@ module FnId = Id.MakeHashable({
 });
 
 /** TODO maintain ordering... would be great */
-let trigger = (store, evts) => {
+let trigger = (store: t('a), evts) => {
   let id: Id.hashable(FnId.t, FnId.identity) = (module FnId);
   let fns = HashSet.make(~hintSize=10, ~id)
   /* let fns = Hashtbl.create(10); */
@@ -119,7 +209,7 @@ let processAction:
       ))
     | Move(ids, target, dropPos) =>
       let%Opt node = store->get(target);
-      let%Opt (newParent, newIndex) = if (target == store.data.root) {
+      let%Opt (newParent, newIndex) = if (target == store.view.root) {
         switch dropPos {
           | Above
           | ChildAbove => None
@@ -215,7 +305,7 @@ let processAction:
           [Event.Node(pid), Event.View(Node(store.view.active))],
         ));
     | Remove(id, nextId) =>
-      let%OptIf () = id != store.data.root;
+      let%OptIf () = id != store.view.root;
       let%Opt node = get(store, id);
       let%Opt parent = get(store, node.parent);
       Some((

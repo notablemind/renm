@@ -1,20 +1,11 @@
 
-/* open Opens; */
-
-module type T = {
-  let x: int
-};
-module T = {
-  let x = 40;
-};
-
 let component = ReasonReact.statelessComponent("Tree");
 
 let rec visibleChildren = (store: Store.t('content), id) => {
   let one = Set.String.empty
   ->Set.String.add(id);
   let%Lets.OptDefault node = (store->Store.get(id), one);
-  if (node.children != [] && (id == store.data.root || store.sharedViewData.expanded->Set.String.has(id))) {
+  if (node.children != [] && (id == store.view.root || store.sharedViewData.expanded->Set.String.has(id))) {
     node.children->List.reduce(one, (ids, id) => ids->Set.String.union(store->visibleChildren(id)))
   } else {
     one
@@ -42,13 +33,6 @@ let make = (~store: Store.t(Quill.contents), _children) => {
         } else {
           Below
         }
-        /* switch (hasChildren && isExpanded, dist < 0., asChild) {
-          | (_, true, _) => SharedTypes.Above
-          | (true, _, _) => Child
-          | (_, _, true) => Child
-          | (false, true) => Child
-          | (false, false) => Below
-          }; */
         Some((
           abs_float(dist),
           dropPos,
@@ -84,7 +68,7 @@ let make = (~store: Store.t(Quill.contents), _children) => {
       }>
       ...{
            renderDraggable =>
-             <RenderNode store depth=0 renderDraggable id={store.data.root} />
+             <RenderNode store depth=0 renderDraggable id={store.view.root} />
          }
     </Draggable>,
 };
