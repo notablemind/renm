@@ -1,7 +1,9 @@
 
 module Async = {
+  type t('a) = Js.Promise.t('a);
   let let_ = (promise, continuation) => Js.Promise.then_(continuation, promise);
   let resolve = Js.Promise.resolve;
+  let reject = Js.Promise.reject;
 };
 
 module Guard = {
@@ -36,7 +38,12 @@ module Opt = {
   let let_ = (a, b) => switch (a) {
     | None => None
     | Some(x) => b(x)
-  }
+  };
+  let map = (a, b) => switch a {
+    | None => None
+    | Some(x) => Some(b(x))
+  };
+  let flatMap = let_;
 };
 
 module OptIf = {
