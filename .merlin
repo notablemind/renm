@@ -14,6 +14,8 @@ S /Users/jared/clone/apps/renm/node_modules/bs-css/lib/ocaml
 B /Users/jared/clone/apps/renm/node_modules/bs-css/lib/ocaml
 S src
 B lib/bs/src
+S src/sync
+B lib/bs/src/sync
 S src/utils
 B lib/bs/src/utils
 S src/app

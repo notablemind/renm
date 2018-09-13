@@ -15,7 +15,7 @@ type contents =
 type node = Node.t(contents, option(prefix));
 
 type change =
-              /*           node,     pid, idx */
+  /*           node,     pid, idx */
   | RemoveNode(node, Node.id, int)
           /*    pid, idx, node */
   | AddNode(Node.id, int, node)
