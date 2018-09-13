@@ -22,6 +22,7 @@ module Node = {
     author: string,
     created: date,
     completed: bool,
+    trashed: option(date),
     /* Applies to everything but children */
     modified: date,
     childrenModified: date,
@@ -38,6 +39,7 @@ module Node = {
     parent,
     author: "me",
     contents,
+    trashed: None,
     tags: Set.String.empty,
     created: Js.Date.now(),
     completed: false,
