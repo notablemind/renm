@@ -9,18 +9,12 @@ type quill;
 
 [%bs.raw {|require("quill-mention")|}];
 
-type delta;
-type blot;
+type blot = NodeType.blot;
 let makeBlot: string => blot = [%bs.raw {|
 function(text) {
   return [{insert: text.endsWith('\n') ? text : text + '\n'}]
 }
 |}];
-
-let applyDelta = (blot, delta) => {
-  /* TODO */
-  blot
-};
 
 [@bs.send] external setText: (quill, string) => unit = "";
 [@bs.send] external getText: (quill) => string = "";
@@ -70,13 +64,6 @@ let atBottom = quill => {
   getBounds(quill, sel##index)##top ==
   getBounds(quill, getLength(quill))##top;
 };
-
-
-
-type contents =
-| Normal(blot)
-| Todo(blot)
-| Code(string, string);
 
 let onSelectionChange = (quill, fn: (Js.null(range), Js.null(range), string) => unit) => {
   on(quill, "selection-change", fn)

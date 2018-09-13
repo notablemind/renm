@@ -171,7 +171,6 @@ let processAction:
             }
         }
       };
-      /* TODO actually order these */
       let byParent = HashMap.String.make(~hintSize=10);
       ids->List.forEach(id => {
         let%OptConsume node = store->get(id);
@@ -217,7 +216,7 @@ let processAction:
           SharedTypes.Node.create(
             ~id=nid,
             ~parent=pid,
-            ~contents=Quill.Normal(Quill.makeBlot("")),
+            ~contents=NodeType.Normal(Quill.makeBlot("")),
             ~prefix=None,
             ~children=[],
           );

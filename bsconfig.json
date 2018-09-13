@@ -5,10 +5,13 @@
   },
   "bsc-flags": ["-open Belt", "-bs-g"],
   "ppx-flags": ["../../tools/let-anything/lib/bs/native/let_anything.native"],
-  "sources": {
+  "sources": [{
     "dir" : "src",
     "subdirs" : true
-  },
+  }, {
+    "dir": "test",
+    "type": "dev"
+  }],
   "warnings": {
     "number": "-44-27"
   },

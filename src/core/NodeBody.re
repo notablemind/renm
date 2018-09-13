@@ -24,7 +24,7 @@ let getData = (store, id) =>
 let evtValue = evt => ReactEvent.Form.target(evt)##value;
 
 let renderContents =
-    (store, node: SharedTypes.Node.t(Quill.contents, option(World.prefix)), editPos, collapsed) =>
+    (store, node: SharedTypes.Node.t(NodeType.contents, option(NodeType.prefix)), editPos, collapsed) =>
   switch (node.contents) {
   | Normal(text) =>
     <Quill
@@ -34,7 +34,7 @@ let renderContents =
         onChange: contents =>
           Store.act(
             store,
-            SharedTypes.SetContents(node.id, Quill.Normal(contents)),
+            SharedTypes.SetContents(node.id, NodeType.Normal(contents)),
           ),
         onToggleCollapse: () => {
           Store.act(store, SharedTypes.SetCollapsed(node.id, !collapsed));

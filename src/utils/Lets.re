@@ -47,11 +47,19 @@ module Try = {
   let try_ = (a, b) => switch a {
     | Result.Error(e) => b(e)
     | Ok(_) => a
-  }
+  };
+  let force = t => switch t {
+    | Result.Error(e) => failwith("Force unwrapped an Error()")
+    | Ok(v) => v
+  };
 };
 
 module TryWrap = {
   let let_ = Try.map;
+};
+
+module TryForce = {
+  let let_ = (a, b) => b(Try.force(a));
 };
 
 module Opt = {
@@ -62,6 +70,10 @@ module Opt = {
   let map = (a, b) => switch a {
     | None => None
     | Some(x) => Some(b(x))
+  };
+  let force = value => switch value {
+    | None => failwith("Force unwrapped a none")
+    | Some(x) => x
   };
   let orError = (value, error) => switch value {
     | Some(v) => Result.Ok(v)

@@ -12,7 +12,7 @@ let rec visibleChildren = (store: Store.t('content, 'prefix), id) => {
   }
 };
 
-let make = (~store: Store.t(Quill.contents, option(World.prefix)), _children) => {
+let make = (~store: Store.t(NodeType.contents, option(NodeType.prefix)), _children) => {
   ...component,
   render: _self =>
     <Draggable
