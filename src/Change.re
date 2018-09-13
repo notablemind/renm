@@ -25,7 +25,7 @@ let reverse = change => switch change {
 
 let rebase = (~current, ~base) => switch (current, base) {
   | (ChangeContents(aid, ado, aundo), ChangeContents(bid, bdo, bundo)) when aid == bid =>
-    ChangeContents(aid, Delta.transform(ado, bdo), Delta.transform(aundo, bdo))
+    ChangeContents(aid, Delta.transform(bdo, ado), Delta.transform(bdo, aundo))
 
     /* TODO test this all up */
   | (MoveNode(prevPid, pidx, nextPid, nidx, id), MoveNode(prevPid2, pidx2, nextPid2, nidx2, id2)) =>

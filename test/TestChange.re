@@ -133,11 +133,20 @@ let rebaseTests = [
   ),
   (
     "Change text",
-    [ChangeContents("a", Delta.makeInsert(6, " isthe best"), Delta.makeDelete(6, 12))],
+    [ChangeContents("a", Delta.makeInsert(1, "1234"), Delta.makeDelete(1, 4))],
+    [ChangeContents("a", Delta.makeInsert(6, " is the best"), Delta.makeDelete(6, 12))],
+    data => {
+      let node = data.nodes->Map.String.get("a")->Opt.force;
+      contentsEq(node.contents, "A1234 leaf is the best")
+    }
+  ),
+  (
+    "Change text reversed",
+    [ChangeContents("a", Delta.makeInsert(6, " is the best"), Delta.makeDelete(6, 12))],
     [ChangeContents("a", Delta.makeInsert(1, "1234"), Delta.makeDelete(1, 4))],
     data => {
       let node = data.nodes->Map.String.get("a")->Opt.force;
-      contentsEq(node.contents, "A123 leaf is the best")
+      contentsEq(node.contents, "A1234 leaf is the best")
     }
   )
 ];
