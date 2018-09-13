@@ -1,8 +1,8 @@
 
 open SharedTypes;
 
-type t('contents) = {
-  mutable data: data('contents),
+type t('contents, 'prefix) = {
+  mutable data: data('contents, 'prefix),
   mutable view,
   mutable sharedViewData,
   subs: Hashtbl.t(Event.t, list((int, unit => unit))),
@@ -27,7 +27,7 @@ Edge cases to examine:
 
  */
 
-let create = (~root, ~nodes: list(SharedTypes.Node.t('contents))) => {
+let create = (~root, ~nodes: list(SharedTypes.Node.t('contents, 'prefix))) => {
   let nodeMap = List.reduce(nodes, Map.String.empty, (map, node) => Map.String.set(map, node.id, node));
   {
     data: {...emptyData(~root), nodes: nodeMap},
@@ -65,7 +65,7 @@ module FnId = Id.MakeHashable({
 });
 
 /** TODO maintain ordering... would be great */
-let trigger = (store: t('a), evts) => {
+let trigger = (store: t('a, 'b), evts) => {
   let id: Id.hashable(FnId.t, FnId.identity) = (module FnId);
   let fns = HashSet.make(~hintSize=10, ~id)
   /* let fns = Hashtbl.create(10); */
@@ -100,8 +100,8 @@ let removeMany = (children, ids) => {
 };
 
 let processAction:
-  (t('contents), action('contents)) =>
-  option((list(edit('contents)), list(Event.t))) =
+  (t('contents, 'prefix), action('contents)) =>
+  option((list(edit('contents, 'prefix)), list(Event.t))) =
   (store, action) =>
     switch (action) {
     | AddToSelection(id) => {
@@ -218,6 +218,7 @@ let processAction:
             ~id=nid,
             ~parent=pid,
             ~contents=Quill.Normal(Quill.makeBlot("")),
+            ~prefix=None,
             ~children=[],
           );
         let%Lets.Opt parent = get(store, pid);

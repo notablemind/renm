@@ -6,6 +6,7 @@ let rec fromFixture = (pid, id, item) => switch item {
       ~parent=pid,
       ~contents=Quill.Normal(Quill.makeBlot(text)),
       ~children=[],
+      ~prefix=None,
     )]
   | `Node(text, children) =>
     let childNodes = children |. List.map(child => {
@@ -17,6 +18,7 @@ let rec fromFixture = (pid, id, item) => switch item {
       ~parent=pid,
       ~contents=Quill.Normal(Quill.makeBlot(text)),
       ~children=List.map(childNodes, fst),
+      ~prefix=None,
     )] @ (List.map(childNodes, snd) |. List.toArray |. List.concatMany)
 };
 

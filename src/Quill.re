@@ -9,6 +9,7 @@ type quill;
 
 [%bs.raw {|require("quill-mention")|}];
 
+type delta;
 type blot;
 let makeBlot: string => blot = [%bs.raw {|
 function(text) {

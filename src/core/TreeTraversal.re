@@ -33,7 +33,7 @@ let rec prevChild = (children, id) => switch children {
   | [_, ...rest] => prevChild(rest, id)
 };
 
-let rec down = (data: data('a), expanded, node: SharedTypes.Node.t('a)) => {
+let rec down = (data: data('a, 'b), expanded, node: SharedTypes.Node.t('a, 'b)) => {
   if (node.children != [] && (node.id == data.root || Set.String.has(expanded, node.id))) {
     List.head(node.children)
   } else if (node.id == data.root) {
@@ -49,7 +49,7 @@ let rec down = (data: data('a), expanded, node: SharedTypes.Node.t('a)) => {
   }
 };
 
-let nextChildPosition = (data: data('a), expanded, node: SharedTypes.Node.t('a)) => {
+let nextChildPosition = (data: data('a, 'b), expanded, node: SharedTypes.Node.t('a, 'b)) => {
   if (node.id == data.root || (node.children != [] && Set.String.has(expanded, node.id))) {
     (node.id, 0)
   } else {
@@ -62,7 +62,7 @@ let nextChildPosition = (data: data('a), expanded, node: SharedTypes.Node.t('a))
 };
 
 let rec lastOpenChild =
-        (data: data('a), expanded, node: SharedTypes.Node.t('a)) =>
+        (data: data('a, 'b), expanded, node: SharedTypes.Node.t('a, 'b)) =>
   if (Set.String.has(expanded, node.id) && node.children != []) {
     {
       let%Lets.Opt lastChild =
@@ -75,7 +75,7 @@ let rec lastOpenChild =
     node.id;
   };
 
-let up = (data: data('a), expanded, node: SharedTypes.Node.t('a)) => {
+let up = (data: data('a, 'b), expanded, node: SharedTypes.Node.t('a, 'b)) => {
   if (node.id == data.root) {
     None
   } else {

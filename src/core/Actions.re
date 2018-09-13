@@ -4,7 +4,7 @@ open Lets;
 open SharedTypes;
 open Store;
 
-let indent = (store, node: Node.t('t)) => {
+let indent = (store, node: Node.t('t, 'p)) => {
   let%UnitIf () = node.id != store.view.root;
   let module Opt = OptConsume;
   let%Opt parent = store->get(node.parent);
@@ -19,7 +19,7 @@ let indent = (store, node: Node.t('t)) => {
   store->act(Move([node.id], target, pos));
 };
 
-let dedent = (store, node: Node.t('t)) => {
+let dedent = (store, node: Node.t('t, 'p)) => {
   let%UnitIf () = node.id != store.view.root && node.parent != store.view.root;
   let module Opt = OptConsume;
   let%Opt parent = store->get(node.parent);
@@ -69,6 +69,6 @@ let backspace = (store, node, currentValue) => {
   Some(prevId);
 };
 
-let focus = (store, node: Node.t('a)) =>
+let focus = (store, node: Node.t('a, 'p)) =>
   Store.act(store, SharedTypes.SetActive(node.id, Default));
 

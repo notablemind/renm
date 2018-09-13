@@ -1,7 +1,7 @@
 open Opens;
 
-type data('contents) = {
-  node: SharedTypes.Node.t('contents),
+type data('contents, 'prefix) = {
+  node: SharedTypes.Node.t('contents, 'prefix),
   selected: bool,
   editPos: option(SharedTypes.editPos),
   collapsed: bool,
@@ -24,7 +24,7 @@ let getData = (store, id) =>
 let evtValue = evt => ReactEvent.Form.target(evt)##value;
 
 let renderContents =
-    (store, node: SharedTypes.Node.t(Quill.contents), editPos, collapsed) =>
+    (store, node: SharedTypes.Node.t(Quill.contents, option(World.prefix)), editPos, collapsed) =>
   switch (node.contents) {
   | Normal(text) =>
     <Quill
@@ -125,7 +125,7 @@ let renderHandle = (~onMouseDown, ~hasChildren, ~collapsed, ~toggleCollapsed) =>
 let component = ReasonReact.statelessComponent("NodeBody");
 let make =
     (
-      ~store: Store.t('contents),
+      ~store: Store.t('contents, 'prefix),
       ~data as {node, selected, editPos, collapsed},
       ~renderChild,
       ~renderDraggable,

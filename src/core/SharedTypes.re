@@ -16,34 +16,40 @@ module Tag = {
 module Node = {
   type id = string;
 
-  type t('contents) = {
+  type t('contents, 'prefix) = {
     id: id,
     parent: id,
-    contents: 'contents,
-    tags: list(Tag.id),
+    author: string,
     created: date,
     completed: bool,
     /* Applies to everything but children */
     modified: date,
     childrenModified: date,
     children: list(string),
+
+    /* contentsy-stuff */
+    contents: 'contents,
+    tags: Set.String.t,
+    prefix: 'prefix,
   };
 
-  let create = (~id, ~parent, ~contents, ~children) => {
+  let create = (~id, ~parent, ~contents, ~prefix, ~children) => {
     id,
     parent,
+    author: "me",
     contents,
-    tags: [],
+    tags: Set.String.empty,
     created: Js.Date.now(),
     completed: false,
     modified: Js.Date.now(),
     childrenModified: Js.Date.now(),
     children,
+    prefix,
   }
 };
 
-type data('contents) = {
-  nodes: Map.String.t(Node.t('contents)),
+type data('contents, 'prefix) = {
+  nodes: Map.String.t(Node.t('contents, 'prefix)),
   tags: Map.String.t(Tag.t),
   root: Node.id,
 };
@@ -111,12 +117,12 @@ module Event = {
   | View(View.event)
 };
 
-type edit('contents) =
+type edit('contents, 'prefix) =
   | DeleteNode(Node.id)
-  | Node(Node.t('contents))
+  | Node(Node.t('contents, 'prefix))
   | NodeChildren(Node.id, list(Node.id))
   | NodeCollapsed(Node.id, bool)
-  | Create(Node.t('contents))
+  | Create(Node.t('contents, 'prefix))
   | View(view);
 
 type dropPos = Above | Below | Child | ChildAbove | At(int) | End;

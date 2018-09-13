@@ -1,7 +1,7 @@
 
 let component = ReasonReact.statelessComponent("Tree");
 
-let rec visibleChildren = (store: Store.t('content), id) => {
+let rec visibleChildren = (store: Store.t('content, 'prefix), id) => {
   let one = Set.String.empty
   ->Set.String.add(id);
   let%Lets.OptDefault node = (store->Store.get(id), one);
@@ -12,7 +12,7 @@ let rec visibleChildren = (store: Store.t('content), id) => {
   }
 };
 
-let make = (~store: Store.t(Quill.contents), _children) => {
+let make = (~store: Store.t(Quill.contents, option(World.prefix)), _children) => {
   ...component,
   render: _self =>
     <Draggable
