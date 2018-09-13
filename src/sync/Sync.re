@@ -21,11 +21,20 @@ module Queue: {
   let toList = t => List.reverse(t)
 };
 
+let rec tryReduce = (list, initial, fn) => switch list {
+  | [] => Result.Ok(initial)
+  | [one, ...rest] => switch (fn(initial, one)) {
+    | Result.Error(e) => Result.Error(e)
+    | Ok(v) => tryReduce(rest, v, fn)
+  }
+}
+
 module F = (Config: {
   type data;
   type change;
+  type error;
   let rebase: (~current: change, ~base: change) => change;
-  let apply: (~notify: 'a => unit=?, data, change) => data;
+  let apply: (~notify: 'a => unit=?, data, change) => Result.t(data, error);
   let reverse: change => change;
 }) => {
   type persisted = {
@@ -41,10 +50,11 @@ module F = (Config: {
   type notSyncing;
   type syncing;
 
-  let applyChange = (~notify, world: world('a), change): world('a) => {
+  let applyChange = (~notify, world: world('a), change): Result.t(world('a), Config.error) => {
+    let%Lets.TryWrap current = Config.apply(~notify, world.current, change);
     {
       ...world,
-      current: Config.apply(~notify, world.current, change),
+      current,
       unsynced: Queue.append(world.unsynced, change),
     }
   };
@@ -61,35 +71,49 @@ module F = (Config: {
     }
   };
 
-  let commit = (world: world(syncing)): world(notSyncing) => {
+  let commit =
+      (world: world(syncing)): Belt.Result.t(world(notSyncing), Config.error) => {
+    let%Lets.TryWrap snapshot =
+      if (world.unsynced == Queue.empty) {
+        Result.Ok(world.current);
+      } else {
+        world.syncing
+        ->Queue.toList
+        ->tryReduce(world.persisted.snapshot, Config.apply);
+      };
     {
       ...world,
       persisted: {
-        history: History.append(world.persisted.history, world.syncing->Queue.toList),
-        snapshot: if (world.unsynced == Queue.empty) {
-          world.current
-        } else {
-          world.syncing->Queue.toList->List.reduce(world.persisted.snapshot, Config.apply)
-        }
+        history:
+          History.append(world.persisted.history, world.syncing->Queue.toList),
+        snapshot,
       },
       syncing: Queue.empty,
-    }
+    };
   };
 
   let rebaseChanges = (origChanges, baseChanges) => {
     origChanges->List.map(change => baseChanges->List.reduce(change, (current, base) => Config.rebase(~current, ~base)))
   };
 
-  let applyRebase = (~notify, world: world('anyStatus), changes): world(notSyncing) => {
+  let applyRebase =
+      (~notify, world: world('anyStatus), changes)
+      : Belt.Result.t(world(notSyncing), Config.error) => {
+    open Lets;
+    let%Try snapshot =
+      changes->tryReduce(world.persisted.snapshot, Config.apply);
+    let%TryWrap current =
+      world.unsynced
+      ->Queue.toList
+      ->tryReduce(world.persisted.snapshot, Config.apply(~notify));
     {
       ...world,
       persisted: {
         history: History.append(world.persisted.history, changes),
-        snapshot: changes->List.reduce(world.persisted.snapshot, Config.apply),
+        snapshot,
       },
-      current: world.unsynced->Queue.toList->List.reduce(world.persisted.snapshot, Config.apply(~notify)),
+      current,
       syncing: Queue.empty,
-    }
+    };
   };
-
 };

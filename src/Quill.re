@@ -17,6 +17,11 @@ function(text) {
 }
 |}];
 
+let applyDelta = (blot, delta) => {
+  /* TODO */
+  blot
+};
+
 [@bs.send] external setText: (quill, string) => unit = "";
 [@bs.send] external getText: (quill) => string = "";
 [@bs.send] external getContents: (quill) => blot = "";

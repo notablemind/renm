@@ -34,6 +34,26 @@ module OptForce = {
   }
 };
 
+module Try = {
+  let let_ = (a, b) => switch (a) {
+    | Result.Error(e) => Result.Error(e)
+    | Ok(x) => b(x)
+  };
+  let map = (a, b) => switch a {
+    | Result.Error(e) => Result.Error(e)
+    | Ok(x) => Ok(b(x))
+  };
+  let flatMap = let_;
+  let try_ = (a, b) => switch a {
+    | Result.Error(e) => b(e)
+    | Ok(_) => a
+  }
+};
+
+module TryWrap = {
+  let let_ = Try.map;
+};
+
 module Opt = {
   let let_ = (a, b) => switch (a) {
     | None => None
@@ -42,6 +62,10 @@ module Opt = {
   let map = (a, b) => switch a {
     | None => None
     | Some(x) => Some(b(x))
+  };
+  let orError = (value, error) => switch value {
+    | Some(v) => Result.Ok(v)
+    | None => Result.Error(error)
   };
   let flatMap = let_;
 };
@@ -62,7 +86,7 @@ module UnitIf = {
   }
 };
 
-module OptMap = {
+module OptWrap = {
   let let_ = (a, b) => switch (a) {
     | None => None
     | Some(x) => Some(b(x))
