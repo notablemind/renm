@@ -1,17 +1,11 @@
 
-let makeBlot: string => NodeType.blot = [%bs.raw {|
-function(text) {
-  return [{insert: text.endsWith('\n') ? text : text + '\n'}]
-}
-|}];
-
 let rec fromFixture = (pid, item) =>
   switch (item) {
   | `Leaf(id, text) => (id, [
       SharedTypes.Node.create(
         ~id,
         ~parent=pid,
-        ~contents=NodeType.Normal(makeBlot(text)),
+        ~contents=NodeType.Normal(Delta.fromString(text)),
         ~children=[],
         ~prefix=None,
       ),
@@ -24,7 +18,7 @@ let rec fromFixture = (pid, item) =>
       SharedTypes.Node.create(
         ~id,
         ~parent=pid,
-        ~contents=NodeType.Normal(makeBlot(text)),
+        ~contents=NodeType.Normal(Delta.fromString(text)),
         ~children=List.map(childNodes, fst),
         ~prefix=None,
       ),
@@ -60,7 +54,7 @@ let leaf = (id, parent, text) =>
   SharedTypes.Node.create(
     ~id,
     ~parent,
-    ~contents=NodeType.Normal(makeBlot(text)),
+    ~contents=NodeType.Normal(Delta.fromString(text)),
     ~children=[],
     ~prefix=None,
   );
@@ -73,17 +67,46 @@ let changeTests = [
       let root = data.nodes->Map.String.get("root")->Opt.force;
       root.children == ["a", "a1", "b", "c", "i"];
     },
+    data => {
+      let root = data.nodes->Map.String.get("root")->Opt.force;
+      root.children == ["a", "b", "c", "i"];
+    },
   ),
+  (
+    "Change contents",
+    ChangeContents(
+      "a",
+      Delta.make([||])->Delta.delete(1),
+      Delta.make([||])->Delta.insert("A"),
+    ),
+    data => {
+      let node = data.nodes->Map.String.get("a")->Opt.force;
+      switch (node.contents) {
+        | NodeType.Normal(delta) => Delta.deepEqual(delta, Delta.make([||])->Delta.insert(" leaf"))
+        | _ => false
+      }
+    },
+    data => {
+      let node = data.nodes->Map.String.get("a")->Opt.force;
+      switch (node.contents) {
+        | NodeType.Normal(delta) => Delta.deepEqual(delta, Delta.make([||])->Delta.insert("A leaf"))
+        | _ => false
+      }
+    }
+  )
 ];
 
-changeTests->List.forEachWithIndex((index, (title, change, check)) => {
-  switch (Change.apply(data, change)) {
-    | Error(err) => failwith("ERROR : " ++ title)
-    | Ok(data) => if (check(data)) {
-      Js.log("Ok : " ++ title)
+changeTests->List.forEachWithIndex((index, (title, change, check, backCheck)) => {
+  let%TryForce data = Change.apply(data, change);
+  if (check(data)) {
+    let%TryForce data = Change.apply(data, Change.reverse(change));
+    if (backCheck(data)) {
+      Js.log("Ok : " ++ title);
     } else {
-      failwith("Check failed : " ++ title)
+      failwith("Back Check failed : " ++ title)
     }
+  } else {
+    failwith("Check failed : " ++ title)
   }
 });
 

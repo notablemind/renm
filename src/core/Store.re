@@ -216,7 +216,7 @@ let processAction:
           SharedTypes.Node.create(
             ~id=nid,
             ~parent=pid,
-            ~contents=NodeType.Normal(Quill.makeBlot("")),
+            ~contents=NodeType.Normal(Delta.fromString("")),
             ~prefix=None,
             ~children=[],
           );

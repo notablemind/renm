@@ -1,17 +1,7 @@
 
 open SharedTypes;
 
-type delta;
-
-let transform = (delta, base) => {
-  /* STOPSHIP */
-  delta
-};
-
-let applyDelta = (blot, delta) => {
-  /* STOPSHIP */
-  blot
-};
+type delta = Delta.delta;
 
 type data = SharedTypes.data(NodeType.contents, option(NodeType.prefix));
 
@@ -35,7 +25,7 @@ let reverse = change => switch change {
 
 let rebase = (~current, ~base) => switch (current, base) {
   | (ChangeContents(aid, ado, aundo), ChangeContents(bid, bdo, bundo)) when aid == bid =>
-    ChangeContents(aid, transform(ado, bdo), transform(aundo, bdo))
+    ChangeContents(aid, Delta.transform(ado, bdo), Delta.transform(aundo, bdo))
 
     /* TODO test this all up */
   | (MoveNode(prevPid, pidx, nextPid, nidx, id), MoveNode(prevPid2, pidx2, nextPid2, nidx2, id2)) =>
@@ -86,9 +76,9 @@ let apply = (~notify: option('a => unit)=?, data: data, change) => {
     | ChangeContents(id, delta, _) => {
       let%Lets.TryWrap node = data.nodes->Map.String.get(id)->Lets.Opt.orError(MissingNode(id));
       let node = switch (node.contents) {
-        | Normal(blot) => {
+        | Normal(current) => {
           ...node,
-          contents: NodeType.Normal(applyDelta(blot, delta)),
+          contents: NodeType.Normal(Delta.compose(current, delta)),
         }
         | _ => node
       };

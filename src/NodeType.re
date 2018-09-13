@@ -3,10 +3,8 @@ type prefix =
 | Todo(bool)
 | Rating(int)
 
-type blot;
-
 type contents =
-| Normal(blot)
+| Normal(Delta.delta)
 | Code(string, string)
 | Tweet(string)
 | Youtube(string);

@@ -9,17 +9,10 @@ type quill;
 
 [%bs.raw {|require("quill-mention")|}];
 
-type blot = NodeType.blot;
-let makeBlot: string => blot = [%bs.raw {|
-function(text) {
-  return [{insert: text.endsWith('\n') ? text : text + '\n'}]
-}
-|}];
-
 [@bs.send] external setText: (quill, string) => unit = "";
 [@bs.send] external getText: (quill) => string = "";
-[@bs.send] external getContents: (quill) => blot = "";
-[@bs.send] external setContents: (quill, blot) => unit = "";
+[@bs.send] external getContents: (quill) => Delta.delta = "";
+[@bs.send] external setContents: (quill, Delta.delta) => unit = "";
 [@bs.send] external hasFocus: (quill) => bool = "";
 [@bs.send] external focus: (quill) => unit = "";
 [@bs.send] external blur: (quill) => unit = "";
@@ -70,7 +63,7 @@ let onSelectionChange = (quill, fn: (Js.null(range), Js.null(range), string) => 
 };
 
 
-let setupQuill = (element, props: ref(NodeTypes.props(blot))) => {
+let setupQuill = (element, props: ref(NodeTypes.props(Delta.delta))) => {
   let quill =
     makeQuill(
       element,
@@ -176,13 +169,13 @@ let setupQuill = (element, props: ref(NodeTypes.props(blot))) => {
 
 
 type state = {
-  props: ref(NodeTypes.props(blot)),
+  props: ref(NodeTypes.props(Delta.delta)),
   quill: ref(option(quill)),
 };
 
 let component = ReasonReact.reducerComponent("Quill");
 
-let make = (~props: NodeTypes.props(blot), _children) => {
+let make = (~props: NodeTypes.props(Delta.delta), _children) => {
   ...component,
   initialState: () => {props: ref(props), quill: ref(None)},
   reducer: ((), state) => ReasonReact.NoUpdate,

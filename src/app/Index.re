@@ -4,7 +4,7 @@ let rec fromFixture = (pid, id, item) => switch item {
   | `Leaf(text) => [SharedTypes.Node.create(
       ~id,
       ~parent=pid,
-      ~contents=NodeType.Normal(Quill.makeBlot(text)),
+      ~contents=NodeType.Normal(Delta.fromString(text)),
       ~children=[],
       ~prefix=None,
     )]
@@ -16,7 +16,7 @@ let rec fromFixture = (pid, id, item) => switch item {
     [SharedTypes.Node.create(
       ~id,
       ~parent=pid,
-      ~contents=NodeType.Normal(Quill.makeBlot(text)),
+      ~contents=NodeType.Normal(Delta.fromString(text)),
       ~children=List.map(childNodes, fst),
       ~prefix=None,
     )] @ (List.map(childNodes, snd) |. List.toArray |. List.concatMany)
