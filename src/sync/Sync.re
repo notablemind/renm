@@ -32,59 +32,64 @@ module F = (Config: {
     snapshot: Config.data,
     history: History.t(Config.change),
   };
-  type world = {
-    mutable persisted,
-    mutable syncing: Queue.t(Config.change),
-    mutable unsynced: Queue.t(Config.change),
-    mutable current: Config.data,
-    /* TODO subs */
+  type world('status) = {
+    persisted,
+    syncing: Queue.t(Config.change),
+    unsynced: Queue.t(Config.change),
+    current: Config.data,
   };
+  type notSyncing;
+  type syncing;
 
-  let applyChange = (~notify, world, change) => {
-    /* TODO subs? */
-    world.current = Config.apply(~notify, world.current, change);
-    world.unsynced = Queue.append(world.unsynced, change);
-  };
-
-  let prepareSync = world => {
-    if (world.syncing != Queue.empty) {
-      failwith("Double sync")
-    } else if (world.unsynced == Queue.empty) {
-      None
-    } else {
-      world.syncing = world.unsynced;
-      world.unsynced = Queue.empty;
-      Some((History.latest(world.persisted.history), world.syncing))
+  let applyChange = (~notify, world: world('a), change): world('a) => {
+    {
+      ...world,
+      current: Config.apply(~notify, world.current, change),
+      unsynced: Queue.append(world.unsynced, change),
     }
   };
 
-  let commit = (world) => {
-    if (world.syncing == Queue.empty) {
-      failwith("Cannot commit outside of a sync")
-    };
-    world.persisted = {
-      history: History.append(world.persisted.history, world.syncing->Queue.toList),
-      snapshot: if (world.unsynced == Queue.empty) {
-        world.current
-      } else {
-        world.syncing->Queue.toList->List.reduce(world.persisted.snapshot, Config.apply)
-      }
-    };
-    world.syncing = Queue.empty;
+  let prepareSync = (world: world(notSyncing)): option((world(syncing), option(Config.change), Queue.t(Config.change))) => {
+    if (world.unsynced == Queue.empty) {
+      None
+    } else {
+      Some((
+        {...world, syncing: world.unsynced, unsynced: Queue.empty},
+        History.latest(world.persisted.history),
+        world.unsynced,
+      ));
+    }
+  };
+
+  let commit = (world: world(syncing)): world(notSyncing) => {
+    {
+      ...world,
+      persisted: {
+        history: History.append(world.persisted.history, world.syncing->Queue.toList),
+        snapshot: if (world.unsynced == Queue.empty) {
+          world.current
+        } else {
+          world.syncing->Queue.toList->List.reduce(world.persisted.snapshot, Config.apply)
+        }
+      },
+      syncing: Queue.empty,
+    }
   };
 
   let rebaseChanges = (origChanges, baseChanges) => {
     origChanges->List.map(change => baseChanges->List.reduce(change, (current, base) => Config.rebase(~current, ~base)))
   };
 
-  let rebase = (~notify, world, changes) => {
-    world.persisted = {
-      history: History.append(world.persisted.history, changes),
-      snapshot: changes->List.reduce(world.persisted.snapshot, Config.apply),
-    };
-    /* TODO notify */
-    world.current = world.unsynced->Queue.toList->List.reduce(world.persisted.snapshot, Config.apply(~notify));
-    world.syncing = Queue.empty;
+  let applyRebase = (~notify, world: world('anyStatus), changes): world(notSyncing) => {
+    {
+      ...world,
+      persisted: {
+        history: History.append(world.persisted.history, changes),
+        snapshot: changes->List.reduce(world.persisted.snapshot, Config.apply),
+      },
+      current: world.unsynced->Queue.toList->List.reduce(world.persisted.snapshot, Config.apply(~notify)),
+      syncing: Queue.empty,
+    }
   };
 
 };
