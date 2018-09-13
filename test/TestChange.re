@@ -59,6 +59,16 @@ let leaf = (id, parent, text) =>
     ~prefix=None,
   );
 
+let contentsEq = (contents, string) => switch contents {
+  | NodeType.Normal(delta) => if (!Delta.deepEqual(delta, Delta.fromString(string))) {
+    Js.log2(delta, string);
+    false
+  } else {
+    true
+  }
+  | _ => false
+};
+
 let changeTests = [
   (
     "AddNode",
@@ -80,18 +90,10 @@ let changeTests = [
       Delta.make([||])->Delta.insert("A"),
     ),
     data => {
-      let node = data.nodes->Map.String.get("a")->Opt.force;
-      switch (node.contents) {
-        | NodeType.Normal(delta) => Delta.deepEqual(delta, Delta.make([||])->Delta.insert(" leaf"))
-        | _ => false
-      }
+      contentsEq((data.nodes->Map.String.get("a")->Opt.force).contents, " leaf")
     },
     data => {
-      let node = data.nodes->Map.String.get("a")->Opt.force;
-      switch (node.contents) {
-        | NodeType.Normal(delta) => Delta.deepEqual(delta, Delta.make([||])->Delta.insert("A leaf"))
-        | _ => false
-      }
+      contentsEq((data.nodes->Map.String.get("a")->Opt.force).contents, "A leaf")
     }
   )
 ];
@@ -128,6 +130,15 @@ let rebaseTests = [
       let root = data.nodes->Map.String.get("root")->Opt.force;
       root.children == ["a", "a1", "b", "b1", "c", "i"];
     },
+  ),
+  (
+    "Change text",
+    [ChangeContents("a", Delta.makeInsert(6, " isthe best"), Delta.makeDelete(6, 12))],
+    [ChangeContents("a", Delta.makeInsert(1, "1234"), Delta.makeDelete(1, 4))],
+    data => {
+      let node = data.nodes->Map.String.get("a")->Opt.force;
+      contentsEq(node.contents, "A123 leaf is the best")
+    }
   )
 ];
 

@@ -17,3 +17,23 @@ let fromString = str => make([|
 
 [@bs.send] external transform: (delta, delta) => delta = "";
 [@bs.send] external compose: (delta, delta) => delta = "";
+
+let makeDelete = (idx, num) => {
+  let delta = make([||]);
+  let delta = if (idx > 0) {
+    delta->retain(idx)
+  } else {
+    delta
+  };
+  delta->delete(num)
+};
+
+let makeInsert = (idx, text) => {
+  let delta = make([||]);
+  let delta = if (idx > 0) {
+    delta->retain(idx)
+  } else {
+    delta
+  };
+  delta->insert(text)
+};
