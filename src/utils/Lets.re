@@ -49,7 +49,10 @@ module Try = {
     | Ok(_) => a
   };
   let force = t => switch t {
-    | Result.Error(e) => failwith("Force unwrapped an Error()")
+    | Result.Error(e) => {
+      Js.log(e);
+      failwith("Force unwrapped an Error()")
+    }
     | Ok(v) => v
   };
 };

@@ -70,6 +70,7 @@ let contentsEq = (contents, string) => switch contents {
 };
 
 let expectBoth = (one, two, data) => one(data) && two(data);
+let expectAll = (fns, data) => !List.some(fns, fn => !fn(data));
 
 let expectChildren = (id, children, data) => {
   let node = data.nodes->Map.String.get(id)->Opt.force;
@@ -172,6 +173,21 @@ let rebaseTests = [
     [RemoveNode(1, data.nodes->Map.String.get("b")->Opt.force)],
     [MoveNode("root", 1, "root", 3, "b")],
     expectChildren("root", ["a", "c", "i"])
+  ),
+  (
+    "Many moves",
+    [
+      MoveNode("root", 1, "a", 0, "b"),
+      MoveNode("a", 0, "c", 2, "b"),
+    ],
+    [
+      /* MoveNode("root", 1, "root", 3, "b") */
+    ],
+    expectAll([
+      expectChildren("root", ["a", "c", "i"]),
+      expectChildren("a", []),
+      expectChildren("c", ["d", "e", "b", "f", "h"])
+    ])
   )
 ];
 

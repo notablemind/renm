@@ -37,6 +37,22 @@ let changeContents = (node, change) => SharedTypes.Node.(
   | _ => node
   });
 
+let rebasePosAdd = (pid, idx, pid2, idx2) => {
+  if (pid == pid2 && idx2 <= idx) {
+    idx + 1
+  } else {
+    idx
+  }
+};
+
+let rebasePosRemove = (pid, idx, pid2, idx2) => {
+  if (pid == pid2 && idx2 <= idx) {
+    idx + 1
+  } else {
+    idx
+  }
+};
+
 let rebase = (~current, ~base) => switch (current, base) {
   /* Apply the things that change the node to the Nodes saved in "add" and "remove" */
   | (RemoveNode(idx, node), ChangeContents(aid, ado, aundo)) when aid == node.id => {
