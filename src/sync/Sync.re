@@ -14,20 +14,38 @@ module Queue: {
   let empty: t('t);
   let append: (t('t), 't) => t('t);
   let toList: t('t) => list('t);
+  let tryReduce: (t('t), 'a, ('a, 't) => Result.t('a, 'e)) => Result.t('a, 'e);
 } = {
   type t('t) = list('t);
   let empty = [];
   let append = (q, item) => [item, ...q];
   let toList = t => List.reverse(t)
+
+  let rec tryReduce = (list, initial, fn) => switch list {
+    | [] => Result.Ok(initial)
+    | [one, ...rest] =>
+      let%Lets.Try result = tryReduce(rest, initial, fn);
+      fn(result, one);
+  };
+
+};
+
+type change('change, 'rebase) = {
+  apply: 'change,
+  revert: 'change,
+  rebase: 'rebase,
+  sessionId: string,
+  changeset: string,
+  author: string,
+  wasUndo: bool,
 };
 
 let rec tryReduce = (list, initial, fn) => switch list {
   | [] => Result.Ok(initial)
-  | [one, ...rest] => switch (fn(initial, one)) {
-    | Result.Error(e) => Result.Error(e)
-    | Ok(v) => tryReduce(rest, v, fn)
-  }
-}
+  | [one, ...rest] =>
+    let%Lets.Try result = fn(initial, one);
+    tryReduce(rest, result, fn);
+};
 
 module F = (Config: {
   type data;
@@ -38,22 +56,15 @@ module F = (Config: {
   let apply: (~notify: 'a => unit=?, data, change) =>
     Result.t((data, change, rebaseItem), error);
 }) => {
-  type change = {
-    apply: Config.change,
-    revert: Config.change,
-    sessionId: string,
-    changeset: string,
-    author: string,
-    wasUndo: bool,
-  };
+  type thisChange = change(Config.change, Config.rebaseItem);
   type persisted = {
     snapshot: Config.data,
-    history: History.t(change),
+    history: History.t(thisChange),
   };
   type world('status) = {
     persisted,
-    syncing: Queue.t(change),
-    unsynced: Queue.t(change),
+    syncing: Queue.t(thisChange),
+    unsynced: Queue.t(thisChange),
     current: Config.data,
   };
   type notSyncing;
@@ -72,6 +83,7 @@ module F = (Config: {
     let change = {
       apply: change,
       revert,
+      rebase,
       sessionId,
       changeset,
       author,
@@ -84,7 +96,7 @@ module F = (Config: {
     }
   };
 
-  let prepareSync = (world: world(notSyncing)): option((world(syncing), option(change), Queue.t(change))) => {
+  let prepareSync = (world: world(notSyncing)): option((world(syncing), option(thisChange), Queue.t(thisChange))) => {
     if (world.unsynced == Queue.empty) {
       None
     } else {
@@ -98,13 +110,16 @@ module F = (Config: {
 
   let commit =
       (world: world(syncing)): Belt.Result.t(world(notSyncing), Config.error) => {
-    let%Lets.TryWrap snapshot =
+    let%Lets.TryWrap (snapshot, unsynced) =
       if (world.unsynced == Queue.empty) {
-        Result.Ok(world.current);
+        Result.Ok((world.current, world.unsynced));
       } else {
         world.syncing
-        ->Queue.toList
-        ->tryReduce(world.persisted.snapshot, Config.apply);
+        /* ->Queue.toList */
+        ->Queue.tryReduce((world.persisted.snapshot, Queue.empty), ((data, changes), change) => {
+          let%Lets.Try (data, revert, rebase) = Config.apply(data, change.apply);
+          Ok((data, Queue.append(changes, {...change, revert, rebase})))
+        });
       };
     {
       ...world,
@@ -118,19 +133,24 @@ module F = (Config: {
   };
 
   let rebaseChanges = (origChanges, baseChanges) => {
-    origChanges->List.map(change => baseChanges->List.reduce(change, (current, base) => Config.rebase(~current, ~base)))
+    origChanges->List.map(change => baseChanges->List.reduce(change, (current, base) => Config.rebase(current, base.rebase)))
   };
 
   let applyRebase =
       (~notify, world: world('anyStatus), changes)
       : Belt.Result.t(world(notSyncing), Config.error) => {
     open Lets;
-    let%Try snapshot =
-      changes->tryReduce(world.persisted.snapshot, Config.apply);
-    let%TryWrap current =
+    let%Try (snapshot, changes) =
+      changes->tryReduce((world.persisted.snapshot, []), ((current, changes), change) => {
+        let%Lets.Try (data, revert, rebase) = Config.apply(current, change.apply);
+        Ok((data, [{...change, revert, rebase}, ...changes]))
+      });
+    let%TryWrap (current, unsynced) =
       world.unsynced
-      ->Queue.toList
-      ->tryReduce(world.persisted.snapshot, Config.apply(~notify));
+      ->Queue.tryReduce((world.persisted.snapshot, Queue.empty), ((current, changes), change) => {
+        let%Lets.Try (data, revert, rebase) = Config.apply(~notify, current, change.apply);
+        Ok((data, Queue.append(changes, {...change, revert, rebase})))
+      });
     {
       ...world,
       persisted: {
