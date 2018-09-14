@@ -32,26 +32,51 @@ let rec tryReduce = (list, initial, fn) => switch list {
 module F = (Config: {
   type data;
   type change;
+  type rebaseItem;
   type error;
-  let rebase: (~current: change, ~base: change) => change;
-  let apply: (~notify: 'a => unit=?, data, change) => Result.t(data, error);
-  let reverse: change => change;
+  let rebase: (change, rebaseItem) => change;
+  let apply: (~notify: 'a => unit=?, data, change) =>
+    Result.t((data, change, rebaseItem), error);
 }) => {
+  type change = {
+    apply: Config.change,
+    revert: Config.change,
+    sessionId: string,
+    changeset: string,
+    author: string,
+    wasUndo: bool,
+  };
   type persisted = {
     snapshot: Config.data,
-    history: History.t(Config.change),
+    history: History.t(change),
   };
   type world('status) = {
     persisted,
-    syncing: Queue.t(Config.change),
-    unsynced: Queue.t(Config.change),
+    syncing: Queue.t(change),
+    unsynced: Queue.t(change),
     current: Config.data,
   };
   type notSyncing;
   type syncing;
 
-  let applyChange = (~notify, world: world('a), change): Result.t(world('a), Config.error) => {
-    let%Lets.TryWrap current = Config.apply(~notify, world.current, change);
+  let applyChange = (
+    ~notify,
+    ~sessionId,
+    ~changeset,
+    ~author,
+    ~wasUndo,
+    world: world('a),
+    change: Config.change
+  ): Result.t(world('a), Config.error) => {
+    let%Lets.TryWrap (current, revert, rebase) = Config.apply(~notify, world.current, change);
+    let change = {
+      apply: change,
+      revert,
+      sessionId,
+      changeset,
+      author,
+      wasUndo,
+    };
     {
       ...world,
       current,
@@ -59,7 +84,7 @@ module F = (Config: {
     }
   };
 
-  let prepareSync = (world: world(notSyncing)): option((world(syncing), option(Config.change), Queue.t(Config.change))) => {
+  let prepareSync = (world: world(notSyncing)): option((world(syncing), option(change), Queue.t(change))) => {
     if (world.unsynced == Queue.empty) {
       None
     } else {
