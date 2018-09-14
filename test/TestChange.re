@@ -73,7 +73,12 @@ let expectBoth = (one, two, data) => one(data) && two(data);
 
 let expectChildren = (id, children, data) => {
   let node = data.nodes->Map.String.get(id)->Opt.force;
-  node.children == children;
+  if (node.children != children) {
+    Js.log2(node.children, children);
+    false
+  } else {
+    true
+  }
 };
 
 let expectContents = (id, string, data) => {
@@ -111,8 +116,11 @@ let changeTests = [
   ),
   (
     "Move",
-    [MoveNode("root", 1, "a", 0, "b")],
-    expectBoth(expectChildren("a", ["b"]), expectChildren("root", ["a", "c", "i"])),
+    [
+      MoveNode("root", 1, "a", 0, "b"),
+      MoveNode("root", 1, "a", 0, "c")
+    ],
+    expectBoth(expectChildren("a", ["c", "b"]), expectChildren("root", ["a", "i"])),
     expectBoth(expectChildren("a", []), expectChildren("root", ["a", "b", "c", "i"])),
   )
 ];
