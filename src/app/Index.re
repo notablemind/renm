@@ -49,7 +49,9 @@ Js.log(sharedViewData)
 Js.log(world)
 
 let store =
-  {...Store.create(
+  {
+    ...Store.create(
+      ~sessionId=Utils.newId(),
     ~root=world.current.root,
     /* ~root="root", */
     ~nodes=[]

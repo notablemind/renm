@@ -1,16 +1,4 @@
 
-module History : {
-  type t('a);
-  let latest: t('a) => option('a);
-  let append: (t('a), list('a)) => t('a);
-  let empty: t('a);
-} = {
-  type t('a) = list('a);
-  let latest = List.head;
-  let append = (t, items) => List.reverse(items) @ t
-  let empty = [];
-};
-
 module Queue: {
   type t('t);
   let empty: t('t);
@@ -35,13 +23,26 @@ module Queue: {
 };
 
 type change('change, 'rebase) = {
+  changeId: string,
   apply: 'change,
   revert: 'change,
   rebase: 'rebase,
   sessionId: string,
-  changeset: string,
+  changeset: option(string),
   author: string,
   wasUndo: bool,
+};
+
+module History : {
+  type t('change, 'rebase);
+  let latestId: t('change, 'rebase) => option(string);
+  let append: (t('change, 'rebase), list(change('change, 'rebase))) => t('change, 'rebase);
+  let empty: t('change, 'rebase);
+} = {
+  type t('change, 'rebase) = list(change('change, 'rebase));
+  let latestId = t => List.head(t)->Lets.Opt.map(c => c.changeId);
+  let append = (t, items) => List.reverse(items) @ t
+  let empty = [];
 };
 
 let rec tryReduce = (list, initial, fn) => switch list {
@@ -79,7 +80,7 @@ module F = (Config: {
   type thisChange = change(Config.change, Config.rebaseItem);
   type persisted = {
     snapshot: Config.data,
-    history: History.t(thisChange),
+    history: History.t(Config.change, Config.rebaseItem),
   };
   type world('status) = {
     persisted,
@@ -101,6 +102,7 @@ module F = (Config: {
   };
 
   let applyChange = (
+    ~changeId,
     ~sessionId,
     ~changeset,
     ~author,
@@ -110,6 +112,7 @@ module F = (Config: {
   ): Result.t(world('a), Config.error) => {
     let%Lets.TryWrap (current, revert, rebase) = Config.apply(world.current, change);
     let change = {
+      changeId,
       apply: change,
       revert,
       rebase,
@@ -125,13 +128,13 @@ module F = (Config: {
     }
   };
 
-  let prepareSync = (world: world(notSyncing)): option((world(syncing), option(thisChange), Queue.t(thisChange))) => {
+  let prepareSync = (world: world(notSyncing)): option((world(syncing), option(string), Queue.t(thisChange))) => {
     if (world.unsynced == Queue.empty) {
       None
     } else {
       Some((
         {...world, syncing: world.unsynced, unsynced: Queue.empty},
-        History.latest(world.persisted.history),
+        History.latestId(world.persisted.history),
         world.unsynced,
       ));
     }

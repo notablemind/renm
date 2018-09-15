@@ -2,6 +2,9 @@
 open SharedTypes;
 
 type t('status) = {
+  sessionId: string,
+  mutable changeNum: int,
+  mutable changeSet: option((string, float, string)),
   mutable world: World.world('status),
   mutable view: View.view,
   mutable sharedViewData: View.sharedViewData,
@@ -21,9 +24,12 @@ let makeNodeMap = (nodes: list(SharedTypes.Node.t('contents, 'prefix))) =>
     Map.String.set(map, node.id, node)
   );
 
-let create = (~root, ~nodes: list(SharedTypes.Node.t('contents, 'prefix))) => {
+let create = (~sessionId, ~root, ~nodes: list(SharedTypes.Node.t('contents, 'prefix))) => {
   let nodeMap = makeNodeMap(nodes);
   {
+    sessionId,
+    changeNum: 0,
+    changeSet: None,
     world: World.make({...emptyData(~root), nodes: nodeMap}, Sync.History.empty),
     view: View.emptyView(~root, ~id=0),
     sharedViewData: View.emptySharedViewData,
@@ -143,6 +149,20 @@ let actView = (store, action) => {
   }, 0)->ignore;
 };
 
+/** TODO test this to see if it makes sense */
+let changeSetTimeout = 100.;
+
+let updateChangeSet = (changeSet, action) => {
+  let now = Js.Date.now();
+  switch (changeSet, action) {
+    | (Some((session, time, id)), ChangeContents(cid, _)) when id == cid && now -. time < changeSetTimeout => {
+      Some((session, now, id))
+    }
+    | (_, ChangeContents(id, _)) => Some((Utils.newId(), now, id))
+    | (_, _) => None
+  }
+};
+
 let act = (store, action) => {
   let {ActionResults.viewActions, changes} = processAction(store, action);
 
@@ -154,15 +174,21 @@ let act = (store, action) => {
   store.view = view;
   store.sharedViewData = sharedViewData;
 
+  store.changeSet = updateChangeSet(store.changeSet, action);
+
   let%Lets.TryLog changeEvents =
     changes->Sync.tryReduce([], (events, change) => {
       let%Lets.TryWrap more = Change.events(store.world.current.nodes, change);
       events->List.concat(more)
     })
 
+  let changeId = store.sessionId ++ string_of_int(store.changeNum);
+  store.changeNum = store.changeNum + 1;
+
   switch (World.applyChange(
-    ~sessionId="this-session",
-    ~changeset="all-one-set",
+    ~changeId,
+    ~sessionId=store.sessionId,
+    ~changeset=store.changeSet->Lets.Opt.map(((cid, _, _)) => cid),
     ~author="jared",
     ~wasUndo=false,
     store.world,
