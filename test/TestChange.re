@@ -95,41 +95,59 @@ let changeTests = [
   ),
   (
     "Change contents",
-    [ChangeContents("a", Delta.makeDelete(0, 1), Delta.makeInsert(0, "A"))],
+    [ChangeContents("a", Delta.makeDelete(0, 1))],
     expectContents("a", " leaf"),
     expectContents("a", "A leaf"),
   ),
   (
     "Change contents twice",
     [
-      ChangeContents("a", Delta.makeDelete(2, 1), Delta.makeInsert(2, "l")),
-      ChangeContents("a", Delta.makeDelete(0, 1), Delta.makeInsert(0, "A")),
-      ChangeContents("a", Delta.makeInsert(0, "Hi"), Delta.makeDelete(0, 2)),
+      ChangeContents("a", Delta.makeDelete(2, 1)),
+      ChangeContents("a", Delta.makeDelete(0, 1)),
+      ChangeContents("a", Delta.makeInsert(0, "Hi")),
     ],
     expectContents("a", "Hi eaf"),
     expectContents("a", "A leaf"),
   ),
   (
     "Move within",
-    [MoveNode("root", 1, "root", 3, "b")],
+    [MoveNode("root", 3, "b")],
     expectChildren("root", ["a", "c", "i", "b"]),
     expectChildren("root", ["a", "b", "c", "i"])
   ),
   (
     "Move",
     [
-      MoveNode("root", 1, "a", 0, "b"),
-      MoveNode("root", 1, "a", 0, "c")
+      MoveNode( "a", 0, "b"),
+      MoveNode( "a", 0, "c")
     ],
     expectBoth(expectChildren("a", ["c", "b"]), expectChildren("root", ["a", "i"])),
     expectBoth(expectChildren("a", []), expectChildren("root", ["a", "b", "c", "i"])),
   )
 ];
 
+let processChangesWithReverts = (changes, initial) => {
+  changes->Sync.tryReduce((initial, []), ((data, reverts), change) => {
+    let%Try (data, revert, _) = Change.apply(data, change);
+    Ok((data, [revert, ...reverts]))
+  });
+};
+
+let processChangesWithRebases = (changes, initial) => {
+  changes->Sync.tryReduce((initial, []), ((data, rebases), change) => {
+    let%Try (data, _, rebase) = Change.apply(data, change);
+    Ok((data, [rebase, ...rebases]))
+  });
+};
+
 changeTests->List.forEachWithIndex((index, (hello, changes, check, backCheck)) => {
-  let%TryForce data = changes->Sync.tryReduce(data, Change.apply);
+  let%TryForce (data, reverts) = changes->processChangesWithReverts(data);
   if (check(data)) {
-    let%TryForce data = changes->List.reverse->List.map(Change.reverse)->Sync.tryReduce(data, Change.apply);
+    /* TODO do these "revers" need to be reversed? */
+    let%TryForce data = reverts->List.reverse->Sync.tryReduce(data, (data, change) => {
+      let%Try (data, _, _) = Change.apply(data, change)
+      Ok(data)
+    });
     if (backCheck(data)) {
       Js.log("Ok : " ++ hello);
     } else {
@@ -158,30 +176,30 @@ let rebaseTests = [
   ),
   (
     "Change text",
-    [ChangeContents("a", Delta.makeInsert(1, "1234"), Delta.makeDelete(1, 4))],
-    [ChangeContents("a", Delta.makeInsert(6, " is the best"), Delta.makeDelete(6, 12))],
+    [ChangeContents("a", Delta.makeInsert(1, "1234"))],
+    [ChangeContents("a", Delta.makeInsert(6, " is the best"))],
     expectContents("a", "A1234 leaf is the best"),
   ),
   (
     "Change text reversed",
-    [ChangeContents("a", Delta.makeInsert(6, " is the best"), Delta.makeDelete(6, 12))],
-    [ChangeContents("a", Delta.makeInsert(1, "1234"), Delta.makeDelete(1, 4))],
+    [ChangeContents("a", Delta.makeInsert(6, " is the best"))],
+    [ChangeContents("a", Delta.makeInsert(1, "1234"))],
     expectContents("a", "A1234 leaf is the best"),
   ),
   (
     "Move + remove",
-    [RemoveNode(1, data.nodes->Map.String.get("b")->Opt.force)],
-    [MoveNode("root", 1, "root", 3, "b")],
+    [RemoveNode("b")],
+    [MoveNode( "root", 3, "b")],
     expectChildren("root", ["a", "c", "i"])
   ),
   (
     "Many moves",
     [
-      MoveNode("root", 1, "a", 0, "b"),
-      MoveNode("a", 0, "c", 2, "b"),
+      MoveNode( "a", 0, "b"),
+      MoveNode( "c", 2, "b"),
     ],
     [
-      /* MoveNode("root", 1, "root", 3, "b") */
+      MoveNode( "root", 3, "b")
     ],
     expectAll([
       expectChildren("root", ["a", "c", "i"]),
@@ -191,10 +209,14 @@ let rebaseTests = [
   )
 ];
 
+let processRebases = (origChanges, rebases) => {
+  origChanges->List.map(change => rebases->List.reduce(change, (current, base) => Change.rebase(current, base)))
+};
+
 rebaseTests->List.forEachWithIndex((index, (title, changes, base, check)) => {
-  let rebased = World.rebaseChanges(changes, base);
-  let%TryForce data = base->Sync.tryReduce(data, Change.apply);
-  let%TryForce data = rebased->Sync.tryReduce(data, Change.apply);
+  let%TryForce (withBase, rebases) = base->processChangesWithRebases(data);
+  let rebasedChanges = changes->processRebases(rebases);
+  let%TryForce (data, _) = rebasedChanges->processChangesWithRebases(withBase);
   if (check(data)) {
     Js.log("Ok : " ++ title)
   } else {
@@ -205,24 +227,22 @@ rebaseTests->List.forEachWithIndex((index, (title, changes, base, check)) => {
 let undoTests = [
   (
     "Change + delete + undo",
-    [RemoveNode(0, data.nodes->Map.String.get("a")->Opt.force)],
-    [ChangeContents("a", Delta.makeInsert(1, "1234"), Delta.makeDelete(1, 4))],
+    [RemoveNode("a")],
+    [ChangeContents("a", Delta.makeInsert(1, "1234"))],
     expectContents("a", "A1234 leaf")
   )
 ];
 
 undoTests->List.forEachWithIndex((index, (title, changes, base, check)) => {
-  let rebased = World.rebaseChanges(changes, base);
-  let%TryForce data = base->Sync.tryReduce(data, Change.apply);
-  let%TryForce data = rebased->Sync.tryReduce(data, Change.apply);
-  let%OptForce last = rebased->List.get(List.length(rebased) - 1);
-  let%TryForce data = Change.apply(data, Change.reverse(last));
+  let%TryForce (withBase, rebases) = base->processChangesWithRebases(data);
+  let rebasedChanges = changes->processRebases(rebases);
+  let%TryForce (data, reverts) = rebasedChanges->processChangesWithReverts(withBase);
+
+  let%OptForce last = reverts->List.get(List.length(reverts) - 1);
+  let%TryForce (data, _, _) = Change.apply(data, last);
   if (check(data)) {
     Js.log("Ok : " ++ title)
   } else {
     failwith("Check failed : " ++ title)
   }
 });
-
-
-

@@ -47,6 +47,7 @@ let rec tryReduce = (list, initial, fn) => switch list {
     tryReduce(rest, result, fn);
 };
 
+
 module F = (Config: {
   type data;
   type change;
@@ -56,6 +57,21 @@ module F = (Config: {
   let apply: (~notify: 'a => unit=?, data, change) =>
     Result.t((data, change, rebaseItem), error);
 }) => {
+  let reduceChanges = (changes, initial) => {
+    changes->tryReduce((initial, []), ((current, changes), change) => {
+      let%Lets.Try (data, revert, rebase) = Config.apply(current, change.apply);
+      Ok((data, [{...change, revert, rebase}, ...changes]))
+    });
+  };
+
+  let queueReduceChanges = (changes, initial) => {
+    changes
+        ->Queue.tryReduce((initial, Queue.empty), ((data, changes), change) => {
+          let%Lets.Try (data, revert, rebase) = Config.apply(data, change.apply);
+          Ok((data, Queue.append(changes, {...change, revert, rebase})))
+        });
+  };
+
   type thisChange = change(Config.change, Config.rebaseItem);
   type persisted = {
     snapshot: Config.data,
@@ -114,12 +130,7 @@ module F = (Config: {
       if (world.unsynced == Queue.empty) {
         Result.Ok((world.current, world.unsynced));
       } else {
-        world.syncing
-        /* ->Queue.toList */
-        ->Queue.tryReduce((world.persisted.snapshot, Queue.empty), ((data, changes), change) => {
-          let%Lets.Try (data, revert, rebase) = Config.apply(data, change.apply);
-          Ok((data, Queue.append(changes, {...change, revert, rebase})))
-        });
+        world.syncing->queueReduceChanges(world.persisted.snapshot)
       };
     {
       ...world,
@@ -141,16 +152,9 @@ module F = (Config: {
       : Belt.Result.t(world(notSyncing), Config.error) => {
     open Lets;
     let%Try (snapshot, changes) =
-      changes->tryReduce((world.persisted.snapshot, []), ((current, changes), change) => {
-        let%Lets.Try (data, revert, rebase) = Config.apply(current, change.apply);
-        Ok((data, [{...change, revert, rebase}, ...changes]))
-      });
+      changes->reduceChanges(world.persisted.snapshot);
     let%TryWrap (current, unsynced) =
-      world.unsynced
-      ->Queue.tryReduce((world.persisted.snapshot, Queue.empty), ((current, changes), change) => {
-        let%Lets.Try (data, revert, rebase) = Config.apply(~notify, current, change.apply);
-        Ok((data, Queue.append(changes, {...change, revert, rebase})))
-      });
+      world.unsynced->queueReduceChanges(world.persisted.snapshot);
     {
       ...world,
       persisted: {

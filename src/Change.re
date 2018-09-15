@@ -49,6 +49,7 @@ type rebaseItem =
   | Nothing
   | RemoveChild(Node.id, int)
   | AddChild(Node.id, int)
+  | MoveChild(Node.id, int, Node.id, int)
   | Contents(Node.id, delta);
 
 type change =
@@ -85,21 +86,48 @@ let rebasePosRemove = (pid, idx, pid2, idx2) => {
   }
 };
 
-let rebase = (~current, ~base) => switch (current, base) {
-  | (ChangeContents(aid, ado), ChangeContents(bid, bdo)) when aid == bid =>
+let rebase = (change, rebaseItem) => switch (change, rebaseItem) {
+  | (ChangeContents(aid, ado), Contents(bid, bdo)) when aid == bid =>
     ChangeContents(aid, Delta.transform(bdo, ado))
 
-    /* TODO test this all up */
-  | (MoveNode(nextPid, nidx, id), MoveNode(nextPid2, nidx2, id2)) =>
-  /* let nidx */
+  | (MoveNode(nextPid, nidx, id), MoveChild(pid1, idx1, pid2, idx2)) =>
+    let nidx =
+      pid1 == nextPid && idx1 < nidx
+      ? nidx - 1
+      : nidx;
+    let nidx =
+      pid2 == nextPid && idx2 < nidx
+      ? nidx + 1
+      : nidx;
     MoveNode(nextPid, nidx, id)
+  | (MoveNode(nextPid, nidx, id), RemoveChild(pid, idx)) when pid == nextPid =>
+    MoveNode(nextPid, idx < nidx ? nidx - 1 : nidx, id)
+  | (MoveNode(nextPid, nidx, id), AddChild(pid, idx)) when pid == nextPid =>
+    MoveNode(nextPid, idx < nidx ? nidx + 1 : nidx, id)
 
-  | _ => current
+  | (AddNode(idx, node), MoveChild(pid1, idx1, pid2, idx2)) =>
+    let idx =
+      pid1 == node.parent && idx1 < idx
+      ? idx - 1
+      : idx;
+    let idx =
+      pid2 == node.parent && idx2 < idx
+      ? idx + 1
+      : idx;
+    AddNode(idx, node)
+  | (AddNode(idx, node), AddChild(pid, pidx)) when pid == node.parent =>
+    AddNode(pidx < idx ? idx + 1 : idx, node)
+  | (AddNode(idx, node), RemoveChild(pid, pidx)) when pid == node.parent =>
+    AddNode(pidx < idx ? idx - 1 : idx, node)
+
+  | _ => change
 };
 
 type error =
 | MissingNode(Node.id)
+/* parent, id */
 | MissingParent(Node.id, Node.id)
+/* parent, id */
 | NotInChildren(Node.id, Node.id)
 | InvalidChildIndex(Node.id, int)
 | ChildNotAtIndex(Node.id, int, Node.id)
@@ -111,40 +139,55 @@ let apply = (~notify: option('a => unit)=?, data: data, change) => {
   switch change {
     | Trash(id, time) => Result.Error(MissingNode(id))
     | UnTrash(id) => Result.Error(MissingNode(id))
+
     | ChangeContents(id, delta) => {
       let%Lets.TryWrap node = data.nodes->Map.String.get(id)->Lets.Opt.orError(MissingNode(id));
       let node = changeContents(node, delta);
-      {...data, nodes: data.nodes->Map.String.set(id, node)}
+      (
+        {...data, nodes: data.nodes->Map.String.set(id, node)},
+        ChangeContents(id, delta), /* TODO undo */
+        Contents(id, delta)
+      )
     }
     | AddNode(idx, node) => {
       let%Lets.TryWrap parent = data.nodes->Map.String.get(node.parent)->Lets.Opt.orError(MissingParent(node.parent, node.id));
-      {
-        ...data,
-        nodes: data.nodes
-          ->Map.String.set(node.id, node)
-          ->Map.String.set(node.parent, {
-            ...parent,
-            children: Utils.insertIntoList(parent.children, idx, node.id),
-          })
-      }
+      (
+        {
+          ...data,
+          nodes: data.nodes
+            ->Map.String.set(node.id, node)
+            ->Map.String.set(node.parent, {
+              ...parent,
+              children: Utils.insertIntoList(parent.children, idx, node.id),
+            })
+        },
+        RemoveNode(node.id),
+        AddChild(node.parent, idx)
+      )
     }
     | RemoveNode(id) => {
       let%Lets.Try node = data.nodes->Map.String.get(id)->Lets.Opt.orError(MissingNode(id));
-      let%Lets.TryWrap parent = data.nodes->Map.String.get(node.parent)->Lets.Opt.orError(MissingParent(node.parent, node.id));
-      {
-        ...data,
-        nodes: data.nodes
-          ->Map.String.remove(node.id)
-          ->Map.String.set(node.parent, {
-            ...parent,
-            children: parent.children->List.keep((!=)(node.id))
-          })
-      }
+      let%Lets.Try parent = data.nodes->Map.String.get(node.parent)->Lets.Opt.orError(MissingParent(node.parent, node.id));
+      let%Lets.TryWrap idx = parent.children->TreeTraversal.childPos(id)->Lets.Opt.orError(NotInChildren(node.parent, node.id));
+      (
+        {
+          ...data,
+          nodes: data.nodes
+            ->Map.String.remove(node.id)
+            ->Map.String.set(node.parent, {
+              ...parent,
+              children: parent.children->List.keep((!=)(node.id))
+            })
+        },
+        AddNode(idx, node),
+        RemoveChild(node.parent, idx)
+      )
     }
     | MoveNode(nextPid, nidx, id) => {
       open Lets;
       let%Try node = data.nodes->Map.String.get(id)->Opt.orError(MissingNode(id));
       let%Try parent = data.nodes->Map.String.get(node.parent)->Opt.orError(MissingParent(node.parent, id));
+      let%Try idx = parent.children->TreeTraversal.childPos(id)->Lets.Opt.orError(NotInChildren(node.parent, node.id));
       let%Try nodes = if (node.parent == nextPid) {
         let rest = parent.children->List.keep((!=)(id));
         let children = Utils.insertIntoList(rest, nidx, id);
@@ -163,7 +206,7 @@ let apply = (~notify: option('a => unit)=?, data: data, change) => {
         ->Map.String.set(id, {...node, parent: nextPid})
         ->Ok
       };
-      Ok({...data, nodes})
+      Ok(({...data, nodes}, MoveNode(node.parent, idx, id), MoveChild(node.parent, idx, nextPid, nidx)))
     }
   }
 };
