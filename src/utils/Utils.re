@@ -18,3 +18,16 @@ let rec insertManyIntoList = (list, index, items) => switch list {
   | [one, ...rest] when index == 0 => items @ list
   | [one, ...rest] => [one, ...insertManyIntoList(rest, index - 1, items)]
 };
+
+let dedup = items => {
+  let seen = Hashtbl.create(5);
+  items
+  ->List.keep(item =>
+      if (Hashtbl.mem(seen, item)) {
+        false;
+      } else {
+        Hashtbl.add(seen, item, ());
+        true;
+      }
+    );
+};

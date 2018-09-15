@@ -10,12 +10,7 @@ let indent = (store, node: Node.t('t, 'p)) => {
   let%Opt parent = store->get(node.parent);
   let%Opt prev = TreeTraversal.prevChild(parent.children, node.id);
   let%Opt prevNode = store->get(prev);
-  let (target, pos) = if (prevNode.children != []) {
-    /* let%OptForce last = List.get(prevNode.children, List.length(prevNode.children) - 1); */
-    (prev, End)
-  } else {
-    (prev, Child)
-  };
+  let (target, pos) = (prev, prevNode.children->List.length);
   store->act(Move([node.id], target, pos));
 };
 
@@ -26,49 +21,49 @@ let dedent = (store, node: Node.t('t, 'p)) => {
   let%Opt grandParent = store->get(parent.parent);
   let%Opt parentPos = TreeTraversal.childPos(grandParent.children, parent.id);
   let (left, right) = TreeTraversal.partitionChildren(parent.children, node.id);
-  store->act(Move(right, node.id, End));
-  store->act(Move([node.id], grandParent.id, At(parentPos + 1)));
+  store->act(Move(right, node.id, node.children->List.length));
+  store->act(Move([node.id], grandParent.id, parentPos + 1));
 };
 
 let right = (store, node) => {
   let%Opt nextId =
-    TreeTraversal.down(store.data, store.sharedViewData.expanded, node);
-  Store.act(store, SharedTypes.SetActive(nextId, Start));
+    TreeTraversal.down(store.world.current, store.sharedViewData.expanded, node);
+  Store.act(store, Store.SetActive(nextId, Start));
   Some(nextId);
 };
 
 let left = (store, node) => {
   let%Opt prevId =
-    TreeTraversal.up(store.data, store.sharedViewData.expanded, node);
-  Store.act(store, SharedTypes.SetActive(prevId, End));
+    TreeTraversal.up(store.world.current, store.sharedViewData.expanded, node);
+  Store.act(store, Store.SetActive(prevId, End));
   Some(prevId);
 };
 
 let down = (store, node) => {
   let%Opt nextId =
-    TreeTraversal.down(store.data, store.sharedViewData.expanded, node);
-  Store.act(store, SharedTypes.SetActive(nextId, End));
+    TreeTraversal.down(store.world.current, store.sharedViewData.expanded, node);
+  Store.act(store, Store.SetActive(nextId, End));
   Some(nextId);
 };
 
 let up = (store, node) => {
   let%Opt prevId =
-    TreeTraversal.up(store.data, store.sharedViewData.expanded, node);
-  Store.act(store, SharedTypes.SetActive(prevId, End));
+    TreeTraversal.up(store.world.current, store.sharedViewData.expanded, node);
+  Store.act(store, Store.SetActive(prevId, End));
   Some(prevId);
 };
 
 let backspace = (store, node, currentValue) => {
   let%Opt prevId =
-    TreeTraversal.up(store.data, store.sharedViewData.expanded, node);
+    TreeTraversal.up(store.world.current, store.sharedViewData.expanded, node);
   switch (currentValue) {
-  | None => Store.act(store, SharedTypes.Remove(node.id, prevId))
+  | None => Store.act(store, Store.Remove(node.id, prevId))
   | Some(contents) =>
-    Store.act(store, SharedTypes.JoinUp(node.id, Normal(contents), prevId))
+    Store.act(store, Store.JoinUp(node.id, Normal(contents), prevId))
   };
   Some(prevId);
 };
 
 let focus = (store, node: Node.t('a, 'p)) =>
-  Store.act(store, SharedTypes.SetActive(node.id, Default));
+  Store.act(store, Store.SetActive(node.id, Default));
 

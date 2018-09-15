@@ -62,6 +62,25 @@ type change =
   | ChangeContents(Node.id, delta)
   | SetContents(Node.id, NodeType.contents)
 
+open Lets;
+let events = (data: Map.String.t(NodeType.t), change) => switch change {
+  | Trash(id, _) =>
+    let%Try node = data->Map.String.get(id)->Opt.orError("No node " ++ id);
+    Ok([Event.Node(id), Event.Node(node.parent)])
+  | UnTrash(id) =>
+    let%Try node = data->Map.String.get(id)->Opt.orError("No node " ++ id);
+    Ok([Event.Node(id), Event.Node(node.parent)])
+  | RemoveNode(id) =>
+    let%Try node = data->Map.String.get(id)->Opt.orError("No node " ++ id);
+    Ok([Event.Node(id), Event.Node(node.parent)])
+  | AddNode(_, node) =>
+    Ok([Event.Node(node.id), Event.Node(node.parent)])
+  | MoveNode(nextPid, _, id) =>
+    let%Try node = data->Map.String.get(id)->Opt.orError("No node " ++ id);
+    Ok([Event.Node(id), Event.Node(node.parent), Event.Node(nextPid)])
+  | ChangeContents(id, _) | SetContents(id, _) => Ok([Event.Node(id)])
+};
+
 type error =
 | MissingNode(Node.id)
 /* parent, id */

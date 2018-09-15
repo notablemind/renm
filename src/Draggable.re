@@ -34,11 +34,11 @@ external getBoundingClientRect:
 type state = {
   domMap: HashMap.String.t(Dom.element),
   /* movingId, targetId, isTop, (y, left, right) */
-  current: option((string, string, SharedTypes.dropPos, (float, float, float))),
+  current: option((string, (string, int), (float, float, float))),
 };
 let component = ReasonReact.reducerComponent("Draggable");
 
-let findDistanceToNode = (domNode, x, y) => {
+/* let findDistanceToNode = (domNode, x, y) => {
   let rect = getBoundingClientRect(domNode);
   let dist = y -. (rect##top +. rect##bottom) /. 2.;
   let dropPos =
@@ -53,7 +53,7 @@ let findDistanceToNode = (domNode, x, y) => {
     dropPos,
     (dist < 0. ? rect##top : rect##bottom, rect##left, rect##right),
   );
-};
+}; */
 
 /**
 TODO
@@ -82,7 +82,7 @@ let handleDrag = (~id, ~state, ~onStart, ~onDrop, ~testNode, ~updateMarker, ~cle
     if (abs_float(x -. initialX) < minDist && abs_float(y -. initialY) < minDist) {
       clear();
     } else {
-      let%Lets.OptConsume (distance, targetId, dropPos, position) =
+      let%Lets.OptConsume (distance, dropPos, position) =
         HashMap.String.reduce(
           state^.domMap,
           None,
@@ -91,17 +91,16 @@ let handleDrag = (~id, ~state, ~onStart, ~onDrop, ~testNode, ~updateMarker, ~cle
               !blacklistedIds->Set.String.has(itemId),
               candidate,
             );
-            let%Lets.OptDefault (distance, above, position) = ({
+            let%Lets.OptDefault (distance, dropPos, position) = ({
               let rect = getBoundingClientRect(itemNode);
               testNode(itemId, x, y, rect);
             }, candidate);
             Some(
               switch (candidate) {
-              | None => (distance, itemId, above, position)
-              | Some((currentDist, _, _, _)) when distance < currentDist => (
+              | None => (distance, dropPos, position)
+              | Some((currentDist, _, _)) when distance < currentDist => (
                   distance,
-                  itemId,
-                  above,
+                  dropPos,
                   position,
                 )
               | Some(current) => current
@@ -109,13 +108,13 @@ let handleDrag = (~id, ~state, ~onStart, ~onDrop, ~testNode, ~updateMarker, ~cle
             );
           },
         );
-      updateMarker(~id, ~targetId, ~dropPos, ~position);
+      updateMarker(~id, ~dropPos, ~position);
     }
   };
   let rec onMouseUp = evt => {
     switch (state^.current) {
     | None => ()
-    | Some((_, targetId, dropPos, _)) => onDrop(id, targetId, dropPos)
+    | Some((_, dropPos, _)) => onDrop(id, dropPos)
     };
     clear();
     removeEventListener(window, "mouseup", onMouseUp);
@@ -139,12 +138,11 @@ let make = (~onDrop, ~onStart, ~testNode, children) => {
       {
         switch (self.state^.current) {
         | None => ReasonReact.null
-        | Some((draggingId, targetId, dropPos, (top, left, right))) =>
-          let left = dropPos == Child || dropPos == ChildAbove ? left +. 20. : left;
+        | Some((draggingId, dropPos, (top, left, right))) =>
           <div
             style={
               placeholderStyle(
-                ~backgroundColor=(dropPos == Child ? "#aaf" : "#ccc"),
+                ~backgroundColor=("#aaf"),
                 ~left=string_of_float(left) ++ "px",
                 ~width=string_of_float(right -. left) ++ "px",
                 ~top=string_of_float(top) ++ "px",
@@ -165,8 +163,8 @@ let make = (~onDrop, ~onStart, ~testNode, children) => {
                 ~onDrop,
                 ~testNode,
                 ~updateMarker=
-                  (~id, ~targetId, ~dropPos, ~position) =>
-                    self.send(Some((id, targetId, dropPos, position))),
+                  (~id, ~dropPos, ~position) =>
+                    self.send(Some((id, dropPos, position))),
                 ~clear=() => self.send(None),
               ),
             ~registerRef=node => {

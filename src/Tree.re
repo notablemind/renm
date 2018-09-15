@@ -1,7 +1,7 @@
 
 let component = ReasonReact.statelessComponent("Tree");
 
-let rec visibleChildren = (store: Store.t('content, 'prefix), id) => {
+let rec visibleChildren = (store: Store.t('status), id) => {
   let one = Set.String.empty
   ->Set.String.add(id);
   let%Lets.OptDefault node = (store->Store.get(id), one);
@@ -12,12 +12,14 @@ let rec visibleChildren = (store: Store.t('content, 'prefix), id) => {
   }
 };
 
-let make = (~store: Store.t(NodeType.contents, option(NodeType.prefix)), _children) => {
+let make = (~store: Store.t('status), _children) => {
   ...component,
   render: _self =>
     <Draggable
       testNode={(id, x, y, rect) => {
         let%Lets.Opt node = store->Store.get(id);
+        let%Lets.Opt parent = store->Store.get(node.parent);
+        let%Lets.Opt idx = TreeTraversal.childPos(parent.children, id);
         let hasChildren = node.children != [];
         let isExpanded = store.sharedViewData.expanded->Set.String.has(id);
         let dist = y -. (rect##top +. rect##bottom) /. 2.;
@@ -27,11 +29,11 @@ let make = (~store: Store.t(NodeType.contents, option(NodeType.prefix)), _childr
         let%Lets.OptIf () = id != store.view.root || dist > 0.;
 
         let dropPos = if (dist < 0.) {
-          SharedTypes.Above
+          (parent.id, idx)
         } else if (canChild && ((hasChildren && isExpanded) || asChild)) {
-          Child
+          (node.id, 0)
         } else {
-          Below
+          (parent.id, idx + 1)
         }
         Some((
           abs_float(dist),
@@ -48,19 +50,19 @@ let make = (~store: Store.t(NodeType.contents, option(NodeType.prefix)), _childr
               (set, id) => set->Set.String.union(visibleChildren(store, id))
             )
           } else {
-            Store.act(store, SharedTypes.SetActive(id, store.view.editPos));
+            Store.act(store, Store.SetActive(id, store.view.editPos));
             visibleChildren(store, id)
           }
         }
       }
       onDrop={
-        (sourceId, targetId, dropPos) => {
+        (sourceId, (parentId, idx)) => {
           store
           ->Store.act(
-              SharedTypes.Move(
-                TreeTraversal.orderIds(store.data.nodes, store.view.root, store.view.selection->Set.String.add(sourceId)),
-                targetId,
-                dropPos,
+              Store.Move(
+                TreeTraversal.orderIds(store.world.current.nodes, store.view.root, store.view.selection->Set.String.add(sourceId)),
+                parentId,
+                idx,
               ),
             );
           ();

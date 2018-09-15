@@ -34,13 +34,16 @@ let renderContents =
         onChange: contents =>
           Store.act(
             store,
-            SharedTypes.SetContents(node.id, NodeType.Normal(contents)),
+            Store.SetContents(node.id, NodeType.Normal(contents)),
           ),
         onToggleCollapse: () => {
-          Store.act(store, SharedTypes.SetCollapsed(node.id, !collapsed));
+          Store.act(store, Store.SetCollapsed(node.id, !collapsed));
           false;
         },
-        onEnter: () => Store.act(store, SharedTypes.CreateAfter),
+        onEnter: () => {
+          ()
+          /* TODO Store.act(store, Store.CreateAfter) */
+        },
         /** TODO indents n stuff */
         onIndent: () => {
           Actions.indent(store, node);
@@ -125,7 +128,7 @@ let renderHandle = (~onMouseDown, ~hasChildren, ~collapsed, ~toggleCollapsed) =>
 let component = ReasonReact.statelessComponent("NodeBody");
 let make =
     (
-      ~store: Store.t('contents, 'prefix),
+      ~store: Store.t('status),
       ~data as {node, selected, editPos, collapsed},
       ~renderChild,
       ~renderDraggable,
@@ -151,9 +154,9 @@ let make =
             onMouseDown={evt =>
               if (ReactEvent.Mouse.metaKey(evt)) {
                 ReactEvent.Mouse.preventDefault(evt);
-                Store.act(store, SharedTypes.AddToSelection(node.id))
+                Store.act(store, Store.AddToSelection(node.id))
               } else {
-                Store.act(store, SharedTypes.SetActive(node.id, Default))
+                Store.act(store, Store.SetActive(node.id, Default))
               }
             }>
             {
@@ -161,7 +164,7 @@ let make =
                 renderHandle(~onMouseDown, ~hasChildren=node.children != [], ~collapsed, ~toggleCollapsed={() => {
                   Store.act(
                     store,
-                    SharedTypes.SetCollapsed(node.id, !collapsed),
+                    Store.SetCollapsed(node.id, !collapsed),
                   )
                 }}) :
                 ReasonReact.null
