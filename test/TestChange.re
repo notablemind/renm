@@ -143,8 +143,7 @@ let processChangesWithRebases = (changes, initial) => {
 changeTests->List.forEachWithIndex((index, (hello, changes, check, backCheck)) => {
   let%TryForce (data, reverts) = changes->processChangesWithReverts(data);
   if (check(data)) {
-    /* TODO do these "revers" need to be reversed? */
-    let%TryForce data = reverts->List.reverse->Sync.tryReduce(data, (data, change) => {
+    let%TryForce data = reverts->Sync.tryReduce(data, (data, change) => {
       let%Try (data, _, _) = Change.apply(data, change)
       Ok(data)
     });

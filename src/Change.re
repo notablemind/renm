@@ -61,13 +61,30 @@ type change =
   | MoveNode(Node.id, int, Node.id)
   | ChangeContents(Node.id, delta)
 
+type error =
+| MissingNode(Node.id)
+/* parent, id */
+| MissingParent(Node.id, Node.id)
+/* parent, id */
+| NotInChildren(Node.id, Node.id)
+| InvalidChildIndex(Node.id, int)
+| ChildNotAtIndex(Node.id, int, Node.id)
+/* id, node.parent, pid */
+| ParentMismatch(Node.id, Node.id, Node.id)
+| WrongNodeType(Node.id, string)
+;
+
 let changeContents = (node, change) => SharedTypes.Node.(
   switch (node.contents) {
-  | NodeType.Normal(contents) => {
+  | NodeType.Normal(contents) =>
+    let newContents = Delta.compose(contents, change);
+    let undo = Delta.diff(newContents, contents);
+    Js.log3("New contents", newContents, undo);
+    Result.Ok(({
       ...node,
-      contents: NodeType.Normal(Delta.compose(contents, change)),
-    }
-  | _ => node
+      contents: NodeType.Normal(newContents),
+    }, undo))
+  | _ => Result.Error(WrongNodeType(node.id, "Not normal"))
   });
 
 let rebasePosAdd = (pid, idx, pid2, idx2) => {
@@ -123,29 +140,17 @@ let rebase = (change, rebaseItem) => switch (change, rebaseItem) {
   | _ => change
 };
 
-type error =
-| MissingNode(Node.id)
-/* parent, id */
-| MissingParent(Node.id, Node.id)
-/* parent, id */
-| NotInChildren(Node.id, Node.id)
-| InvalidChildIndex(Node.id, int)
-| ChildNotAtIndex(Node.id, int, Node.id)
-/* id, node.parent, pid */
-| ParentMismatch(Node.id, Node.id, Node.id)
-;
-
 let apply = (~notify: option('a => unit)=?, data: data, change) => {
   switch change {
     | Trash(id, time) => Result.Error(MissingNode(id))
     | UnTrash(id) => Result.Error(MissingNode(id))
 
     | ChangeContents(id, delta) => {
-      let%Lets.TryWrap node = data.nodes->Map.String.get(id)->Lets.Opt.orError(MissingNode(id));
-      let node = changeContents(node, delta);
+      let%Lets.Try node = data.nodes->Map.String.get(id)->Lets.Opt.orError(MissingNode(id));
+      let%Lets.TryWrap (node, undoDelta) = changeContents(node, delta);
       (
         {...data, nodes: data.nodes->Map.String.set(id, node)},
-        ChangeContents(id, delta), /* TODO undo */
+        ChangeContents(id, undoDelta), /* TODO undo */
         Contents(id, delta)
       )
     }

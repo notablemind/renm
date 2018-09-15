@@ -14,6 +14,7 @@ let fromString = str => make([|
 [@bs.send] external retain: (delta, int) => delta = "";
 [@bs.send] external delete: (delta, int) => delta = "";
 [@bs.send] external insert: (delta, string) => delta = "";
+[@bs.send] external diff: (delta, delta) => delta = "";
 
 [@bs.send] external transform: (delta, delta) => delta = "";
 [@bs.send] external compose: (delta, delta) => delta = "";
