@@ -3,10 +3,12 @@ module History : {
   type t('a);
   let latest: t('a) => option('a);
   let append: (t('a), list('a)) => t('a);
+  let empty: t('a);
 } = {
   type t('a) = list('a);
   let latest = List.head;
   let append = (t, items) => List.reverse(items) @ t
+  let empty = [];
 };
 
 module Queue: {
@@ -14,12 +16,14 @@ module Queue: {
   let empty: t('t);
   let append: (t('t), 't) => t('t);
   let toList: t('t) => list('t);
+  let ofList: list('t) => t('t);
   let tryReduce: (t('t), 'a, ('a, 't) => Result.t('a, 'e)) => Result.t('a, 'e);
 } = {
   type t('t) = list('t);
   let empty = [];
   let append = (q, item) => [item, ...q];
-  let toList = t => List.reverse(t)
+  let toList = t => List.reverse(t);
+  let ofList = t => List.reverse(t);
 
   let rec tryReduce = (list, initial, fn) => switch list {
     | [] => Result.Ok(initial)
@@ -47,7 +51,6 @@ let rec tryReduce = (list, initial, fn) => switch list {
     tryReduce(rest, result, fn);
 };
 
-
 module F = (Config: {
   type data;
   type change;
@@ -57,6 +60,7 @@ module F = (Config: {
   let apply: (~notify: 'a => unit=?, data, change) =>
     Result.t((data, change, rebaseItem), error);
 }) => {
+  /* TODO do I want to ignore & collect & report errors? or just abort... */
   let reduceChanges = (changes, initial) => {
     changes->tryReduce((initial, []), ((current, changes), change) => {
       let%Lets.Try (data, revert, rebase) = Config.apply(current, change.apply);
@@ -85,6 +89,16 @@ module F = (Config: {
   };
   type notSyncing;
   type syncing;
+
+  let make = (current, history): world(notSyncing) => {
+    persisted: {
+      snapshot: current,
+      history,
+    },
+    current,
+    syncing: Queue.empty,
+    unsynced: Queue.empty,
+  };
 
   let applyChange = (
     ~notify,

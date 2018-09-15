@@ -60,6 +60,7 @@ type change =
           /* nextPid, idx, id */
   | MoveNode(Node.id, int, Node.id)
   | ChangeContents(Node.id, delta)
+  | SetContents(Node.id, NodeType.contents)
 
 type error =
 | MissingNode(Node.id)
@@ -144,6 +145,16 @@ let apply = (~notify: option('a => unit)=?, data: data, change) => {
   switch change {
     | Trash(id, time) => Result.Error(MissingNode(id))
     | UnTrash(id) => Result.Error(MissingNode(id))
+
+    | SetContents(id, contents) => {
+      let%Lets.TryWrap node = data.nodes->Map.String.get(id)->Lets.Opt.orError(MissingNode(id));
+
+      (
+        {...data, nodes: data.nodes->Map.String.set(id, {...node, contents})},
+        SetContents(id, node.contents),
+        Nothing
+      )
+    }
 
     | ChangeContents(id, delta) => {
       let%Lets.Try node = data.nodes->Map.String.get(id)->Lets.Opt.orError(MissingNode(id));

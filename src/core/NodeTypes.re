@@ -1,7 +1,7 @@
 
 type props('value) = {
   value: 'value,
-  editPos: option(SharedTypes.editPos),
+  editPos: option(View.editPos),
   onChange: ('value) => unit,
   onUp: unit => option(SharedTypes.Node.id),
   onDown: unit => option(SharedTypes.Node.id),

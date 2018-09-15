@@ -3,7 +3,7 @@ open Opens;
 type data('contents, 'prefix) = {
   node: SharedTypes.Node.t('contents, 'prefix),
   selected: bool,
-  editPos: option(SharedTypes.editPos),
+  editPos: option(View.editPos),
   collapsed: bool,
 };
 

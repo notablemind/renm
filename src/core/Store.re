@@ -3,8 +3,8 @@ open SharedTypes;
 
 type t('contents, 'prefix) = {
   mutable data: data('contents, 'prefix),
-  mutable view,
-  mutable sharedViewData,
+  mutable view: View.view,
+  mutable sharedViewData: View.sharedViewData,
   subs: Hashtbl.t(Event.t, list((int, unit => unit))),
 };
 
@@ -31,8 +31,8 @@ let create = (~root, ~nodes: list(SharedTypes.Node.t('contents, 'prefix))) => {
   let nodeMap = List.reduce(nodes, Map.String.empty, (map, node) => Map.String.set(map, node.id, node));
   {
     data: {...emptyData(~root), nodes: nodeMap},
-    view: emptyView(~root, ~id=0),
-    sharedViewData: emptySharedViewData,
+    view: View.emptyView(~root, ~id=0),
+    sharedViewData: View.emptySharedViewData,
     subs: Hashtbl.create(10),
   }
 };
@@ -120,7 +120,6 @@ let processAction:
       };
     }
     | SetActive(id, editPos) =>
-      /** TODO clear selection if id is same */
       let%OptIf () = id != store.view.active || store.view.editPos != editPos;
       Some((
         [View({...store.view, active: id, editPos, selection: Set.String.empty})],
