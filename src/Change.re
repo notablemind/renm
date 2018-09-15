@@ -99,7 +99,6 @@ let changeContents = (node, change) => SharedTypes.Node.(
   | NodeType.Normal(contents) =>
     let newContents = Delta.compose(contents, change);
     let undo = Delta.diff(newContents, contents);
-    Js.log3("New contents", newContents, undo);
     Result.Ok(({
       ...node,
       contents: NodeType.Normal(newContents),

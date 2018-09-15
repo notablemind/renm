@@ -75,7 +75,6 @@ let handleDrag = (~id, ~state, ~onStart, ~onDrop, ~testNode, ~updateMarker, ~cle
   ReactEvent.Mouse.preventDefault(evt);
   let%Lets.UnitIf () = state^.current == None;
   let blacklistedIds = onStart(id);
-  Js.log2("backlist", blacklistedIds);
   let onMouseMove = evt => {
     let x = clientX(evt);
     let y = clientY(evt);
