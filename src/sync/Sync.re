@@ -57,7 +57,7 @@ module F = (Config: {
   type rebaseItem;
   type error;
   let rebase: (change, rebaseItem) => change;
-  let apply: (~notify: 'a => unit=?, data, change) =>
+  let apply: (data, change) =>
     Result.t((data, change, rebaseItem), error);
 }) => {
   /* TODO do I want to ignore & collect & report errors? or just abort... */
@@ -101,7 +101,6 @@ module F = (Config: {
   };
 
   let applyChange = (
-    ~notify,
     ~sessionId,
     ~changeset,
     ~author,
@@ -109,7 +108,7 @@ module F = (Config: {
     world: world('a),
     change: Config.change
   ): Result.t(world('a), Config.error) => {
-    let%Lets.TryWrap (current, revert, rebase) = Config.apply(~notify, world.current, change);
+    let%Lets.TryWrap (current, revert, rebase) = Config.apply(world.current, change);
     let change = {
       apply: change,
       revert,
@@ -162,21 +161,21 @@ module F = (Config: {
   };
 
   let applyRebase =
-      (~notify, world: world('anyStatus), changes)
-      : Belt.Result.t(world(notSyncing), Config.error) => {
+      (world: world('anyStatus), changes) : Belt.Result.t(world(notSyncing), Config.error) => {
     open Lets;
     let%Try (snapshot, changes) =
       changes->reduceChanges(world.persisted.snapshot);
     let%TryWrap (current, unsynced) =
       world.unsynced->queueReduceChanges(world.persisted.snapshot);
     {
-      ...world,
+      /* ...world, */
       persisted: {
         history: History.append(world.persisted.history, changes),
         snapshot,
       },
       current,
       syncing: Queue.empty,
+      unsynced,
     };
   };
 };

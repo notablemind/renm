@@ -65,6 +65,13 @@ module TryForce = {
   let let_ = (a, b) => b(Try.force(a));
 };
 
+module TryLog = {
+  let let_ = (a, b) => switch a {
+    | Result.Error(e) => Js.log(e)
+    | Ok(v) => b(v)
+  }
+};
+
 module Opt = {
   let let_ = (a, b) => switch (a) {
     | None => None

@@ -182,9 +182,31 @@ let act = (store, action) => {
     | None => ()
     | Some(viewData) => store.sharedViewData = viewData
   };
-  Js.log4("act", action, changes, events);
+  /* Js.log4("act", action, changes, events); */
+  let%Lets.TryLog changeEvents =
+    changes->Sync.tryReduce([], (events, change) => {
+      let%Lets.TryWrap more = Change.events(store.world.current.nodes, change);
+      events->List.concat(more)
+    })
+    /* ->List.reduce([], List.concat); */
+
+  switch (World.applyChange(
+    ~sessionId="this-session",
+    ~changeset="all-one-set",
+    ~author="jared",
+    ~wasUndo=false,
+    store.world,
+    changes
+  )) {
+    | Result.Error(error) => {
+      Js.log(error);
+    }
+    | Ok(world) => {
+      store.world = world;
+    }
+  };
   /* applyEdits(store, edits); */
-  Subscription.trigger(store.subs, events);
+  Subscription.trigger(store.subs, events @ changeEvents);
   Js.Global.setTimeout(() => {
     setItem("renm:store", Js.Json.stringify(Serialize.toJson(store.world)));
     setItem("renm:viewData", Js.Json.stringify(Serialize.toJson(store.sharedViewData)));

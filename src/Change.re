@@ -160,7 +160,7 @@ let rebase = (change, rebaseItem) => switch (change, rebaseItem) {
   | _ => change
 };
 
-let apply = (~notify: option('a => unit)=?, data: data, change) => {
+let apply = (data: data, change) => {
   switch change {
     | Trash(id, time) => Result.Error(MissingNode(id))
     | UnTrash(id) => Result.Error(MissingNode(id))
