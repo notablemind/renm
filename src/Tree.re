@@ -28,7 +28,7 @@ let make = (~store: Store.t('status), _children) => {
 
         let%Lets.OptIf () = id != store.view.root || dist > 0.;
 
-        let dropPos = if (dist < 0.) {
+        let (destId, idx) = if (dist < 0.) {
           (parent.id, idx)
         } else if (canChild && ((hasChildren && isExpanded) || asChild)) {
           (node.id, 0)
@@ -37,8 +37,9 @@ let make = (~store: Store.t('status), _children) => {
         }
         Some((
           abs_float(dist),
-          dropPos,
-          (dist < 0. ? rect##top : rect##bottom, rect##left, rect##right),
+          (destId, idx),
+          (dist < 0. ? rect##top : rect##bottom,
+          rect##left +. (destId == id ? 20. : 0.), rect##right),
         ));
       }}
       onStart={
