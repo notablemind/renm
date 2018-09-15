@@ -30,7 +30,7 @@ type change('change, 'rebase) = {
   sessionId: string,
   changeset: option(string),
   author: string,
-  wasUndo: bool,
+  undoIds: list(string),
 };
 
 module History : {
@@ -78,12 +78,9 @@ module F = (Config: {
   };
 
   type thisChange = change(Config.change, Config.rebaseItem);
-  type persisted = {
+  type world('status) = {
     snapshot: Config.data,
     history: History.t(Config.change, Config.rebaseItem),
-  };
-  type world('status) = {
-    persisted,
     syncing: Queue.t(thisChange),
     unsynced: Queue.t(thisChange),
     current: Config.data,
@@ -92,10 +89,8 @@ module F = (Config: {
   type syncing;
 
   let make = (current, history): world(notSyncing) => {
-    persisted: {
-      snapshot: current,
-      history,
-    },
+    snapshot: current,
+    history,
     current,
     syncing: Queue.empty,
     unsynced: Queue.empty,
@@ -106,7 +101,7 @@ module F = (Config: {
     ~sessionId,
     ~changeset,
     ~author,
-    ~wasUndo,
+    ~undoIds,
     world: world('a),
     change: Config.change
   ): Result.t(world('a), Config.error) => {
@@ -119,7 +114,7 @@ module F = (Config: {
       sessionId,
       changeset,
       author,
-      wasUndo,
+      undoIds,
     };
     {
       ...world,
@@ -134,7 +129,7 @@ module F = (Config: {
     } else {
       Some((
         {...world, syncing: world.unsynced, unsynced: Queue.empty},
-        History.latestId(world.persisted.history),
+        History.latestId(world.history),
         world.unsynced,
       ));
     }
@@ -146,15 +141,13 @@ module F = (Config: {
       if (world.unsynced == Queue.empty) {
         Result.Ok((world.current, world.unsynced));
       } else {
-        world.syncing->queueReduceChanges(world.persisted.snapshot)
+        world.syncing->queueReduceChanges(world.snapshot)
       };
     {
       ...world,
-      persisted: {
-        history:
-          History.append(world.persisted.history, world.syncing->Queue.toList),
-        snapshot,
-      },
+      history:
+        History.append(world.history, world.syncing->Queue.toList),
+      snapshot,
       syncing: Queue.empty,
     };
   };
@@ -167,15 +160,13 @@ module F = (Config: {
       (world: world('anyStatus), changes) : Belt.Result.t(world(notSyncing), Config.error) => {
     open Lets;
     let%Try (snapshot, changes) =
-      changes->reduceChanges(world.persisted.snapshot);
+      changes->reduceChanges(world.snapshot);
     let%TryWrap (current, unsynced) =
-      world.unsynced->queueReduceChanges(world.persisted.snapshot);
+      world.unsynced->queueReduceChanges(world.snapshot);
     {
       /* ...world, */
-      persisted: {
-        history: History.append(world.persisted.history, changes),
-        snapshot,
-      },
+      history: History.append(world.history, changes),
+      snapshot,
       current,
       syncing: Queue.empty,
       unsynced,

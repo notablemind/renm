@@ -190,7 +190,7 @@ let act = (store, action) => {
     ~sessionId=store.sessionId,
     ~changeset=store.changeSet->Lets.Opt.map(((cid, _, _)) => cid),
     ~author="jared",
-    ~wasUndo=false,
+    ~undoIds=[],
     store.world,
     changes
   )) {
@@ -201,7 +201,7 @@ let act = (store, action) => {
       store.world = world;
     }
   };
-  /* applyEdits(store, edits); */
+
   Subscription.trigger(store.subs, viewEvents @ changeEvents);
   Js.Global.setTimeout(() => {
     setItem("renm:store", Js.Json.stringify(Serialize.toJson(store.world)));
