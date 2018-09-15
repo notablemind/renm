@@ -40,12 +40,13 @@ let viewNode = (store, id) => {
 };
 
 type action =
-  | SetActive(Node.id, View.editPos)
+  /* | ViewAction(View.action) */
+  /* | SetActive(Node.id, View.editPos)
   | SetMode(View.mode)
   | SetCollapsed(Node.id, bool)
   | AddToSelection(Node.id)
   | ClearSelection
-  | Edit(View.editPos)
+  | Edit(View.editPos) */
 
   /* actions that change the data */
 
@@ -62,13 +63,14 @@ type action =
 module ActionResults = {
   type actionResults = {
     changes: list(Change.change),
-    view: option(View.view),
-    viewData: option(View.sharedViewData),
-    events: list(Event.t)
+    viewActions: list(View.action),
+    /* view: option(View.view), */
+    /* viewData: option(View.sharedViewData), */
+    /* events: list(Event.t) */
   };
 };
 
-let blank = {ActionResults.changes: [], view: None, viewData: None, events: []};
+let blank = {ActionResults.changes: [], viewActions: []};
 
 /* open Lets; */
 
@@ -76,64 +78,19 @@ let blank = {ActionResults.changes: [], view: None, viewData: None, events: []};
  */
 let processAction = (store, action): ActionResults.actionResults =>
   switch (action) {
-  /*** TODO clear selection if id is same */
-  | SetActive(id, editPos) =>
-    if (id != store.view.active || store.view.editPos != editPos) {
-
-      {
-        ...blank,
-        view: Some({
-          ...store.view,
-          active: id,
-          editPos,
-          selection: Set.String.empty->Set.String.add(id),
-        }),
-      events:
-      (
-        id != store.view.active ?
-          viewNode(store, store.view.active) @ viewNode(store, id) :
-          viewNode(store, id)
-      )
-      @ Set.String.toList(store.view.selection)
-        ->List.map(id => viewNode(store, id))
-        ->List.reduce([], List.concat),
-      }
-    } else {blank}
-
-  | SetMode(mode) =>
-    {...blank, view: Some({...store.view, mode}), events: [Event.View(Mode)]}
-  
-  | SetCollapsed(id, collapsed) =>
-    {...blank, viewData: Some({
-      expanded: (collapsed ? Set.String.remove : Set.String.add)(store.sharedViewData.expanded, id)
-    }),
-    events: viewNode(store, id)}
-
-  | AddToSelection(id) =>
-    {...blank, view: Some({...store.view, selection: store.view.selection->Set.String.add(id)}
-      ),
-      events: viewNode(store, id)}
-
-  | ClearSelection =>
-    {...blank, view: Some({...store.view, selection: store.view.selection->Set.String.add(store.view.active)}
-      ),
-    events: store.view.selection->Set.String.reduce([], (evts, id) => viewNode(store, id) @ evts)
-    }
-  
-  | Edit(editPos) =>
-    {...blank, view: Some({...store.view, editPos},), events: viewNode(store, store.view.active)}
-
+  /* | ViewAction(viewAction) => {...blank, viewActions: [viewAction]} */
   /* OK, it's the ones that actually change. maybe I want a polymorphic type here? dunno */
   | Remove(id, focusNext) =>
-    {...blank,
-    changes: [RemoveNode(id)],
-      view: Some({...store.view, selection: Set.String.empty->Set.String.add(id)},
+    {
+      changes: [RemoveNode(id)],
+      viewActions: [View.SetActive(focusNext, Default)]
+      /* view: Some({...store.view, selection: Set.String.empty->Set.String.add(id)},
       ),
       events:
       store.view.selection->Set.String.reduce([], (evts, id) => evts->List.concat(viewNode(store, id)))
       ->List.concat(
         viewNode(store, focusNext)
-      )
+      ) */
     }
 
   | SetContents(id, contents) =>
@@ -147,12 +104,13 @@ let processAction = (store, action): ActionResults.actionResults =>
     let changes =
       ids->List.reverse->List.map(id => (Change.MoveNode(pid, index, id)));
 
-    {...blank, changes: changes}
+    {changes: changes, viewActions: [View.SetCollapsed(pid, false)]}
 
   | Create(idx, node) =>
-    {...blank,
+    {
     changes: [AddNode(idx, node)],
-      view: Some(
+    viewActions: [View.SetActive(node.id, Default)]
+      /* view: Some(
         {
           ...store.view,
           active: node.id,
@@ -161,7 +119,7 @@ let processAction = (store, action): ActionResults.actionResults =>
         /* TODO clear selection */
       ),
       events:
-        [Event.View(Node(store.view.active))],
+        [Event.View(Node(store.view.active))], */
     }
 
   | SplitAt(_) => blank
@@ -172,23 +130,35 @@ let processAction = (store, action): ActionResults.actionResults =>
 [@bs.scope "localStorage"] [@bs.val] external setItem: (string, string) => unit = "";
 [@bs.scope "localStorage"] [@bs.val] external getItem: (string) => Js.nullable(string) = "";
 
+let actView = (store, action) => {
+  let (view, sharedViewData, events) = View.processViewAction(store.view, store.sharedViewData, action);
+
+  store.view = view;
+  store.sharedViewData = sharedViewData;
+
+  Subscription.trigger(store.subs, events);
+
+  Js.Global.setTimeout(() => {
+    setItem("renm:viewData", Js.Json.stringify(Serialize.toJson(store.sharedViewData)));
+  }, 0)->ignore;
+};
+
 let act = (store, action) => {
-  let {ActionResults.view, viewData, changes, events} = processAction(store, action);
-  switch view {
-    | None => ()
-    | Some(view) => store.view = view
-  };
-  switch viewData {
-    | None => ()
-    | Some(viewData) => store.sharedViewData = viewData
-  };
-  /* Js.log4("act", action, changes, events); */
+  let {ActionResults.viewActions, changes} = processAction(store, action);
+
+  let (view, sharedViewData, viewEvents) = viewActions->List.reduce((store.view, store.sharedViewData, []), ((v, svd, evts), action) => {
+    let (v, svg, nevts) = View.processViewAction(v, svd, action);
+    (v, svg, nevts @ evts)
+  });
+
+  store.view = view;
+  store.sharedViewData = sharedViewData;
+
   let%Lets.TryLog changeEvents =
     changes->Sync.tryReduce([], (events, change) => {
       let%Lets.TryWrap more = Change.events(store.world.current.nodes, change);
       events->List.concat(more)
     })
-    /* ->List.reduce([], List.concat); */
 
   switch (World.applyChange(
     ~sessionId="this-session",
@@ -206,7 +176,7 @@ let act = (store, action) => {
     }
   };
   /* applyEdits(store, edits); */
-  Subscription.trigger(store.subs, events @ changeEvents);
+  Subscription.trigger(store.subs, viewEvents @ changeEvents);
   Js.Global.setTimeout(() => {
     setItem("renm:store", Js.Json.stringify(Serialize.toJson(store.world)));
     setItem("renm:viewData", Js.Json.stringify(Serialize.toJson(store.sharedViewData)));

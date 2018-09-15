@@ -37,7 +37,7 @@ let renderContents =
             Store.SetContents(node.id, NodeType.Normal(contents)),
           ),
         onToggleCollapse: () => {
-          Store.act(store, Store.SetCollapsed(node.id, !collapsed));
+          Store.actView(store, View.SetCollapsed(node.id, !collapsed));
           false;
         },
         onEnter: () => {
@@ -153,17 +153,17 @@ let make =
             onMouseDown={evt =>
               if (ReactEvent.Mouse.metaKey(evt)) {
                 ReactEvent.Mouse.preventDefault(evt);
-                Store.act(store, Store.AddToSelection(node.id))
+                Store.actView(store, AddToSelection(node.id))
               } else {
-                Store.act(store, Store.SetActive(node.id, Default))
+                Store.actView(store, SetActive(node.id, Default))
               }
             }>
             {
               node.id != store.view.root ?
                 renderHandle(~onMouseDown, ~hasChildren=node.children != [], ~collapsed, ~toggleCollapsed={() => {
-                  Store.act(
+                  Store.actView(
                     store,
-                    Store.SetCollapsed(node.id, !collapsed),
+                    SetCollapsed(node.id, !collapsed),
                   )
                 }}) :
                 ReasonReact.null

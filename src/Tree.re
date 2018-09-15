@@ -50,7 +50,7 @@ let make = (~store: Store.t('status), _children) => {
               (set, id) => set->Set.String.union(visibleChildren(store, id))
             )
           } else {
-            Store.act(store, Store.SetActive(id, store.view.editPos));
+            Store.actView(store, SetActive(id, store.view.editPos));
             visibleChildren(store, id)
           }
         }

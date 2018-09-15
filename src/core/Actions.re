@@ -28,28 +28,28 @@ let dedent = (store, node: Node.t('t, 'p)) => {
 let right = (store, node) => {
   let%Opt nextId =
     TreeTraversal.down(store.world.current, store.sharedViewData.expanded, node);
-  Store.act(store, Store.SetActive(nextId, Start));
+  Store.actView(store, View.SetActive(nextId, Start));
   Some(nextId);
 };
 
 let left = (store, node) => {
   let%Opt prevId =
     TreeTraversal.up(store.world.current, store.sharedViewData.expanded, node);
-  Store.act(store, Store.SetActive(prevId, End));
+  Store.actView(store, SetActive(prevId, End));
   Some(prevId);
 };
 
 let down = (store, node) => {
   let%Opt nextId =
     TreeTraversal.down(store.world.current, store.sharedViewData.expanded, node);
-  Store.act(store, Store.SetActive(nextId, End));
+  Store.actView(store, SetActive(nextId, End));
   Some(nextId);
 };
 
 let up = (store, node) => {
   let%Opt prevId =
     TreeTraversal.up(store.world.current, store.sharedViewData.expanded, node);
-  Store.act(store, Store.SetActive(prevId, End));
+  Store.actView(store, SetActive(prevId, End));
   Some(prevId);
 };
 
@@ -86,5 +86,5 @@ let backspace = (store, node, currentValue) => {
 };
 
 let focus = (store, node: Node.t('a, 'p)) =>
-  Store.act(store, Store.SetActive(node.id, Default));
+  Store.actView(store, SetActive(node.id, Default));
 
