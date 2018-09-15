@@ -41,8 +41,7 @@ let renderContents =
           false;
         },
         onEnter: () => {
-          ()
-          /* TODO Store.act(store, Store.CreateAfter) */
+          Actions.createAfter(store, node);
         },
         /** TODO indents n stuff */
         onIndent: () => {

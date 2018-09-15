@@ -16,8 +16,13 @@ let subscribe = (store, id, fn) => {
   Subscription.subscribe(store.subs, evts, fn);
 };
 
+let makeNodeMap = (nodes: list(SharedTypes.Node.t('contents, 'prefix))) =>
+  List.reduce(nodes, Map.String.empty, (map, node) =>
+    Map.String.set(map, node.id, node)
+  );
+
 let create = (~root, ~nodes: list(SharedTypes.Node.t('contents, 'prefix))) => {
-  let nodeMap = List.reduce(nodes, Map.String.empty, (map, node) => Map.String.set(map, node.id, node));
+  let nodeMap = makeNodeMap(nodes);
   {
     world: World.make({...emptyData(~root), nodes: nodeMap}, Sync.History.empty),
     view: View.emptyView(~root, ~id=0),
@@ -59,9 +64,9 @@ type edit =
 | View(View.view, list(Event.t))
 | ViewData(View.sharedViewData, list(Event.t))
 
-open Lets;
+/* open Lets; */
 
-/**
+/*
  */
 let processAction = (store, action): list(edit) =>
   switch (action) {
@@ -142,7 +147,18 @@ viewNode(store, id)
     changes
 
   | Create(idx, node) =>
-    [Change(AddNode(idx, node))]
+    [
+      Change(AddNode(idx, node)),
+      View(
+        {
+          ...store.view,
+          active: node.id,
+          selection: Set.String.empty->Set.String.add(node.id),
+        },
+        /* TODO clear selection */
+        [Event.View(Node(store.view.active))],
+      ),
+    ];
 
   | SplitAt(_) => []
   | JoinUp(_, _, _) => []
@@ -150,7 +166,7 @@ viewNode(store, id)
 
 
 [@bs.scope "localStorage"] [@bs.val] external setItem: (string, string) => unit = "";
-[@bs.scope "localStorage"] [@bs.val] external getItem: (string) => string = "";
+[@bs.scope "localStorage"] [@bs.val] external getItem: (string) => Js.nullable(string) = "";
 
 let act = (store, action) => {
   let edits = processAction(store, action);
@@ -159,7 +175,7 @@ let act = (store, action) => {
     | ViewData(sharedViewData, events) => ({...store, sharedViewData}, allEvents @ events, changes)
     | Change(change) => (store, allEvents, changes @ [change])
   });
-  /* Js.log4("act", action, edits, events); */
+  Js.log4("act", action, edits, events);
   /* applyEdits(store, edits); */
   /* trigger(store, events); */
   Js.Global.setTimeout(() => {

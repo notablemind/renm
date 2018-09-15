@@ -53,6 +53,27 @@ let up = (store, node) => {
   Some(prevId);
 };
 
+let createAfter = (store, node) => {
+  let (pid, index) =
+    TreeTraversal.nextChildPosition(
+      store.world.current,
+      store.sharedViewData.expanded,
+      node,
+    );
+  let nid = Utils.newId();
+  /* TODO I think I want to abstract out the node contents stuff? */
+  let nnode =
+    SharedTypes.Node.create(
+      ~id=nid,
+      ~parent=pid,
+      ~contents=NodeType.Normal(Delta.fromString("")),
+      ~prefix=None,
+      ~children=[],
+    );
+  let%Lets.OptConsume parent = get(store, pid);
+  Store.act(store, Store.Create(index, nnode));
+};
+
 let backspace = (store, node, currentValue) => {
   let%Opt prevId =
     TreeTraversal.up(store.world.current, store.sharedViewData.expanded, node);

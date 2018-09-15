@@ -24,17 +24,29 @@ let rec fromFixture = (pid, id, item) => switch item {
 
 let nodes = fromFixture("root", "root", `Leaf("Hello folks"));
 
-let world: World.world(World.notSyncing) = switch (Store.getItem("renm:store")->Js.Json.parseExn) {
-  | exception _ => World.make(SharedTypes.emptyData(~root="root"), Sync.History.empty)
-  | json => json->Serialize.fromJson
+let getJson = key => switch (Store.getItem(key)->Js.Nullable.toOption->Lets.Opt.map(Js.Json.parseExn)) {
+  | exception _ => None
+  | None => None 
+  | Some(json) => Some(json->Serialize.fromJson)
 };
+
+let world: World.world(World.notSyncing) = switch (getJson("renm:store")) {
+  | None => World.make({
+    ...SharedTypes.emptyData(~root="root"),
+    nodes: Store.makeNodeMap(nodes),
+  }, Sync.History.empty)
+  | Some(data) => data
+};
+
 /* let data = {...data, nodes: TreeTraversal.cleanNodes(data.nodes)}; */
 
-let sharedViewData = switch (Store.getItem("renm:viewData")->Js.Json.parseExn) {
-  | exception _ => View.emptySharedViewData
-  | json => json->Serialize.fromJson
+let sharedViewData = switch (getJson("renm:viewData")) {
+  | None => View.emptySharedViewData
+  | Some(data) => data
 };
+
 Js.log(sharedViewData)
+Js.log(world)
 
 let store =
   {...Store.create(
