@@ -129,6 +129,23 @@ let setupQuill = (element, props: ref(NodeTypes.props(Delta.delta))) => {
       !(atRight(quill) && props^.onRight() != None)
     );
   keyboard(quill)
+  ->addBinding({"key": "k", "collapsed": true, "altKey": true}, () =>
+      !(props^.onUp() != None)
+    );
+  keyboard(quill)
+  ->addBinding(
+      {"key": 27, "collapsed": false},
+      () => {
+        let selection = quill->getSelection;
+        quill->setSelection(selection##index +. selection##length, 0., "user");
+        false;
+      },
+    );
+  keyboard(quill)
+  ->addBinding({"key": "j", "collapsed": true, "altKey": true}, () =>
+      !(props^.onDown() != None)
+    );
+  keyboard(quill)
   ->addBinding({"key": 38., "collapsed": true}, () =>
       !(atTop(quill) && props^.onUp() != None)
     );
