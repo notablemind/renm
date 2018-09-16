@@ -172,4 +172,55 @@ module F = (Config: {
       unsynced,
     };
   };
+
+  let rebaseMany = (one, changes) => {
+    changes->List.reduce(one.apply, (change, other) => {
+      Config.rebase(change, other.rebase)
+    })
+  };
+
+  /* let rec getAllInChangeset = (sessionId, id, items, rebases) => switch items {
+    | [] => []
+    | [one, ...rest] when one.sessionId == sessionId => {
+      if (one.changeset == id) {
+        [rebaseMany(one, rebases), ...getAllInChangeset(sessionId, id, rest)]
+      } else {
+        []
+      }
+    }
+    | [one, ...rest] => 
+  }; */
+
+  /** TODO test this */
+  let getUndoChangeset = (history, sessionId) => {
+    let rec loop = (history, rebases, undoneChanges, changeSet) => switch history {
+      | [] => []
+      | [one, ...rest] when undoneChanges->Set.String.has(one.changeId) => {
+        loop(rest, rebases, undoneChanges, changeSet)
+      }
+      | [one, ...rest] when one.sessionId != sessionId => {
+        loop(rest, [one, ...rebases], undoneChanges, changeSet)
+      }
+      | [one, ...rest] when one.undoIds != [] => {
+        loop(rest, rebases, undoneChanges->Set.String.union(
+          Set.String.fromArray(List.toArray(one.undoIds))
+        ), changeSet)
+      }
+      | [one, ...rest] => {
+        switch (changeSet) {
+          | None => loop(rest, rebases, undoneChanges, Some(one.changeset))
+          | Some(changeset) =>
+            if (changeset != one.changeset) {
+              []
+            } else {
+              [(rebaseMany(one, rebases), one.changeId), ...loop(rest, rebases, undoneChanges, Some(changeset))]
+            }
+        }
+      }
+    };
+    loop(history, [], Set.String.empty, None)
+  };
+
 };
+
+

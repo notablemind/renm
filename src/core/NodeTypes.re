@@ -2,6 +2,8 @@
 type props('value) = {
   value: 'value,
   editPos: option(View.editPos),
+  onUndo: unit => unit,
+  onRedo: unit => unit,
   onChange: ('value) => unit,
   onUp: unit => option(SharedTypes.Node.id),
   onDown: unit => option(SharedTypes.Node.id),

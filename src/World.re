@@ -1,11 +1,12 @@
 
 /* open SharedTypes; */
 
-include Sync.F({
+module MultiChange = {
   type data = Change.data;
   type change = list(Change.change);
   type rebaseItem = list(Change.rebaseItem);
   type error = Change.error;
+  let mergeChanges = (changes): change => changes->List.reduce([], List.concat);
   let rebase = (changes, items) => {
     changes->List.map(change => items->List.reduce(change, Change.rebase))
   };
@@ -23,4 +24,6 @@ include Sync.F({
     loop(data, changes, [])
     /* changes->Sync.tryReduce(data, Change.apply(~notify=?notify)) */
   };
-});
+};
+
+include Sync.F(MultiChange);

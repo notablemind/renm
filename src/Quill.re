@@ -7,6 +7,16 @@ type quill;
 [@bs.module] [@bs.new] external makeQuill: ('element, 'config) => quill = "quill";
 [@bs.module "quill"]  external register: 'a => unit = "register";
 
+let historyClass = [%bs.raw{|class MyHistory {
+  constructor(quill, options) { }
+  clear() { }
+  cutoff() { }
+}|}]
+
+register({
+  "modules/history": historyClass
+});
+
 [%bs.raw {|require("quill-mention")|}];
 
 [@bs.send] external setText: (quill, string) => unit = "";
@@ -88,6 +98,24 @@ let setupQuill = (element, props: ref(NodeTypes.props(Delta.delta))) => {
           },
       },
     );
+
+  keyboard(quill)
+  ->addBinding({"key": "z", "collapsed": true, "shortKey": true}, () => {
+    Js.log("hello");
+      props^.onUndo();
+      /* props^.onToggleCollapse() */
+      false
+  });
+
+  keyboard(quill)
+  ->addBinding({"key": "z", "collapsed": true, "shortKey": true, "shiftKey": true}, () =>{
+    Js.log("redo");
+      props^.onRedo();
+      /* props^.onToggleCollapse() */
+      false
+  });
+
+
   keyboard(quill)
   ->addBinding({"key": "Tab", "collapsed": true, "shiftKey": true}, () => {
       !props^.onDedent()

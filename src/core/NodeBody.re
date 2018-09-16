@@ -31,6 +31,12 @@ let renderContents =
       props={
         NodeTypes.value: text,
         editPos,
+        onRedo: () => {
+          ()
+        },
+        onUndo: () => {
+          Store.undo(store)
+        },
         onChange: contents =>
           Store.act(
             store,

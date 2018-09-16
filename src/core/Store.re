@@ -208,3 +208,95 @@ let act = (store, action) => {
     setItem("renm:viewData", Js.Json.stringify(Serialize.toJson(store.sharedViewData)));
   }, 0)->ignore;
 };
+
+/*
+
+Ok folks, here's how undo/redo works, in the presence of potentially
+collaborative stuffs.
+
+Sessions A and B
+
+A1->A2->A3->B1->A4->B2->A5->A6->A7
+
+Where A4-A7 are all part of the same changeset
+
+"Undo" in this case for session A, does the following:
+- what's the most recent change of the current session (A7)
+- get all the changes in that changeset
+- rebase up past any intermediate changes
+  - so A4 gets rebased past B2
+- squish them into one change (A8), with undoIds=[A4-A7]
+
+.... it would be really nice if the invariant that I want to maintain
+.... (that any undo changes correspond to changes of a session that are
+.... uninterrupted by other changes from this session)
+
+Now we have:
+
+A1->A2->A3->B1->A4->B2->A5->A6->A7->A8
+
+Now let's say B hits undo, making B3 as the reverse of B2
+
+A1->A2->A3->B1->A4->B2->A5->A6->A7->A8->B3
+
+A hits undo again, wanting to undo A3. it then has to rebase up past
+B1 ... but now all of the other things ahead of it *have been undone*.
+
+So the algorithm is:
+- go back through to find the most recent change(set) that hasn't
+  already been undone (because you're tracking back the ones that have
+  undos associated)
+  anddd you are tracking any things from other sessions that haven't been
+  undone already.
+
+ */
+
+
+let undo = store => {
+
+  let (changes, changeIds) = World.getUndoChangeset(
+    store.world.unsynced->Sync.Queue.toList,
+    store.sessionId,
+  )->List.unzip;
+
+  let change = changes->World.MultiChange.mergeChanges;
+  Js.log3("Changes", change, changeIds);
+
+  let%Lets.Guard () = (change != [], ());
+
+  store.changeSet = None;
+
+  let%Lets.TryLog changeEvents =
+    change->Sync.tryReduce([], (events, change) => {
+      let%Lets.TryWrap more = Change.events(store.world.current.nodes, change);
+      events->List.concat(more)
+    });
+
+  let changeId = store.sessionId ++ string_of_int(store.changeNum);
+  store.changeNum = store.changeNum + 1;
+
+  switch (World.applyChange(
+    ~changeId,
+    ~sessionId=store.sessionId,
+    ~changeset=store.changeSet->Lets.Opt.map(((cid, _, _)) => cid),
+    ~author="jared",
+    ~undoIds=changeIds,
+    store.world,
+    change
+  )) {
+    | Result.Error(error) => {
+      Js.log(error);
+    }
+    | Ok(world) => {
+      store.world = world;
+    }
+  };
+
+  Subscription.trigger(store.subs, changeEvents);
+  Js.Global.setTimeout(() => {
+    setItem("renm:store", Js.Json.stringify(Serialize.toJson(store.world)));
+    setItem("renm:viewData", Js.Json.stringify(Serialize.toJson(store.sharedViewData)));
+  }, 0)->ignore;
+
+};
+
