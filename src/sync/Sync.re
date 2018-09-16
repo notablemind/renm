@@ -174,22 +174,10 @@ module F = (Config: {
   };
 
   let rebaseMany = (one, changes) => {
-    changes->List.reduce(one.apply, (change, other) => {
+    changes->List.reduce(one.revert, (change, other) => {
       Config.rebase(change, other.rebase)
     })
   };
-
-  /* let rec getAllInChangeset = (sessionId, id, items, rebases) => switch items {
-    | [] => []
-    | [one, ...rest] when one.sessionId == sessionId => {
-      if (one.changeset == id) {
-        [rebaseMany(one, rebases), ...getAllInChangeset(sessionId, id, rest)]
-      } else {
-        []
-      }
-    }
-    | [one, ...rest] => 
-  }; */
 
   /** TODO test this */
   let getUndoChangeset = (history, sessionId) => {
@@ -208,11 +196,12 @@ module F = (Config: {
       }
       | [one, ...rest] => {
         switch (changeSet) {
-          | None => loop(rest, rebases, undoneChanges, Some(one.changeset))
+          | None => [(rebaseMany(one, rebases), one.changeId), ...loop(rest, rebases, undoneChanges, Some(one.changeset))]
           | Some(changeset) =>
             if (changeset != one.changeset) {
               []
             } else {
+              Js.log3("Rebaseing", one, rebases);
               [(rebaseMany(one, rebases), one.changeId), ...loop(rest, rebases, undoneChanges, Some(changeset))]
             }
         }

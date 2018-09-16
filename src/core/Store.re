@@ -182,7 +182,7 @@ let act = (store, action) => {
       events->List.concat(more)
     })
 
-  let changeId = store.sessionId ++ string_of_int(store.changeNum);
+  let changeId = store.sessionId ++ ":" ++ string_of_int(store.changeNum);
   store.changeNum = store.changeNum + 1;
 
   switch (World.applyChange(

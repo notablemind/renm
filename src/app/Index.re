@@ -1,4 +1,5 @@
-[%%debugger.chrome];
+/* [%%debugger.chrome]; */
+[%bs.raw "require('./SetupDebugger')"];
 
 let rec fromFixture = (pid, id, item) => switch item {
   | `Leaf(text) => [SharedTypes.Node.create(
@@ -22,7 +23,14 @@ let rec fromFixture = (pid, id, item) => switch item {
     )] @ (List.map(childNodes, snd) |. List.toArray |. List.concatMany)
 };
 
-let nodes = fromFixture("root", "root", `Leaf("Hello folks"));
+let nodes = fromFixture("root", "root", `Node("Hello folks", [
+  `Leaf("A one"),
+  `Node("B one", [
+    `Leaf("D two"),
+    `Leaf("E two"),
+  ]),
+  `Leaf("C one"),
+]));
 
 let getJson = key => switch (Store.getItem(key)->Js.Nullable.toOption->Lets.Opt.map(Js.Json.parseExn)) {
   | exception _ => None
@@ -31,6 +39,7 @@ let getJson = key => switch (Store.getItem(key)->Js.Nullable.toOption->Lets.Opt.
 };
 
 let world: World.world(World.notSyncing) = switch (getJson("renm:store")) {
+  | Some(_)
   | None => World.make({
     ...SharedTypes.emptyData(~root="root"),
     nodes: Store.makeNodeMap(nodes),
