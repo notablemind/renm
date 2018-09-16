@@ -22,7 +22,7 @@ register({
 [@bs.send] external setText: (quill, string) => unit = "";
 [@bs.send] external getText: (quill) => string = "";
 [@bs.send] external getContents: (quill) => Delta.delta = "";
-[@bs.send] external setContents: (quill, Delta.delta) => unit = "";
+[@bs.send] external setContents: (quill, Delta.delta, string) => unit = "";
 [@bs.send] external hasFocus: (quill) => bool = "";
 [@bs.send] external focus: (quill) => unit = "";
 [@bs.send] external blur: (quill) => unit = "";
@@ -202,12 +202,12 @@ let setupQuill = (element, props: ref(NodeTypes.props(Delta.delta))) => {
       ()
     }
   );
-  setContents(quill, props^.value);
+  setContents(quill, props^.value, "silent");
   if (props^.editPos != None) {
     focus(quill);
   };
-  on(quill, "text-change", (delta, oldDelta, _source) => {
-    props^.onChange(getContents(quill))
+  on(quill, "text-change", (delta, oldDelta, source) => {
+    props^.onChange(delta)
   });
   quill;
 };
@@ -230,6 +230,10 @@ let make = (~props: NodeTypes.props(Delta.delta), _children) => {
   didUpdate: ({newSelf}) => {
     let%Lets.OptConsume quill = newSelf.state.quill^;
     let props = newSelf.state.props^;
+    if (!Delta.deepEqual(props.value, getContents(quill))) {
+      Js.log3("New data!", props.value, getContents(quill));
+      quill->setContents(props.value, "silent")
+    };
     if (hasFocus(quill) != (props.editPos != None)) {
       switch (props.editPos) {
         | None => blur(quill)

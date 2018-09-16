@@ -66,7 +66,7 @@ let createAfter = (store, node) => {
     SharedTypes.Node.create(
       ~id=nid,
       ~parent=pid,
-      ~contents=NodeType.Normal(Delta.fromString("")),
+      ~contents=NodeType.Normal(Delta.fromString("\n")),
       ~prefix=None,
       ~children=[],
     );

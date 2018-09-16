@@ -150,7 +150,7 @@ let actView = (store, action) => {
 };
 
 /** TODO test this to see if it makes sense */
-let changeSetTimeout = 100.;
+let changeSetTimeout = 500.;
 
 let updateChangeSet = (changeSet, action) => {
   let now = Js.Date.now();
@@ -158,7 +158,9 @@ let updateChangeSet = (changeSet, action) => {
     | (Some((session, time, id)), ChangeContents(cid, _)) when id == cid && now -. time < changeSetTimeout => {
       Some((session, now, id))
     }
-    | (_, ChangeContents(id, _)) => Some((Utils.newId(), now, id))
+    | (_, ChangeContents(id, _)) =>
+    Js.log3("New changeset", changeSet, now);
+    Some((Utils.newId(), now, id))
     | (_, _) => None
   }
 };
@@ -255,7 +257,7 @@ So the algorithm is:
 let undo = store => {
 
   let (changes, changeIds) = World.getUndoChangeset(
-    store.world.unsynced->Sync.Queue.toList,
+    store.world.unsynced->Sync.Queue.toRevList,
     store.sessionId,
   )->List.unzip;
 
@@ -272,7 +274,7 @@ let undo = store => {
       events->List.concat(more)
     });
 
-  let changeId = store.sessionId ++ string_of_int(store.changeNum);
+  let changeId = store.sessionId ++ ":" ++ string_of_int(store.changeNum);
   store.changeNum = store.changeNum + 1;
 
   switch (World.applyChange(

@@ -4,6 +4,7 @@ module Queue: {
   let empty: t('t);
   let append: (t('t), 't) => t('t);
   let toList: t('t) => list('t);
+  let toRevList: t('t) => list('t);
   let ofList: list('t) => t('t);
   let tryReduce: (t('t), 'a, ('a, 't) => Result.t('a, 'e)) => Result.t('a, 'e);
 } = {
@@ -11,6 +12,7 @@ module Queue: {
   let empty = [];
   let append = (q, item) => [item, ...q];
   let toList = t => List.reverse(t);
+  let toRevList = t => t;
   let ofList = t => List.reverse(t);
 
   let rec tryReduce = (list, initial, fn) => switch list {
@@ -181,7 +183,8 @@ module F = (Config: {
 
   /** TODO test this */
   let getUndoChangeset = (history, sessionId) => {
-    let rec loop = (history, rebases, undoneChanges, changeSet) => switch history {
+    let rec loop = (history, rebases, undoneChanges, changeSet) => {
+      switch history {
       | [] => []
       | [one, ...rest] when undoneChanges->Set.String.has(one.changeId) => {
         loop(rest, rebases, undoneChanges, changeSet)
@@ -190,22 +193,23 @@ module F = (Config: {
         loop(rest, [one, ...rebases], undoneChanges, changeSet)
       }
       | [one, ...rest] when one.undoIds != [] => {
-        loop(rest, rebases, undoneChanges->Set.String.union(
-          Set.String.fromArray(List.toArray(one.undoIds))
-        ), changeSet)
+        let undones = Set.String.fromArray(List.toArray(one.undoIds));
+        let alls = undoneChanges->Set.String.union(undones);
+        loop(rest, rebases, alls, changeSet)
       }
       | [one, ...rest] => {
         switch (changeSet) {
-          | None => [(rebaseMany(one, rebases), one.changeId), ...loop(rest, rebases, undoneChanges, Some(one.changeset))]
+          | None =>
+            [(rebaseMany(one, rebases), one.changeId), ...loop(rest, rebases, undoneChanges, Some(one.changeset))]
           | Some(changeset) =>
-            if (changeset != one.changeset) {
+            if (changeset != one.changeset || changeset == None) {
               []
             } else {
-              Js.log3("Rebaseing", one, rebases);
               [(rebaseMany(one, rebases), one.changeId), ...loop(rest, rebases, undoneChanges, Some(changeset))]
             }
         }
       }
+    };
     };
     loop(history, [], Set.String.empty, None)
   };

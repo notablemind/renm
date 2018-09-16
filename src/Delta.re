@@ -7,8 +7,9 @@ external insert: {. "insert": string} => deltaItem = "%identity";
 
 type rawDelta = array(deltaItem);
 [@bs.module] [@bs.new] external make: rawDelta => delta = "quill-delta";
+let withNewline = text => Js.String.endsWith(text, "\n") ? text : text ++ "\n";
 let fromString = str => make([|
-  insert({"insert": str})
+  insert({"insert": withNewline(str)})
 |]);
 
 [@bs.send] external retain: (delta, int) => delta = "";

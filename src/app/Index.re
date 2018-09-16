@@ -39,6 +39,7 @@ let getJson = key => switch (Store.getItem(key)->Js.Nullable.toOption->Lets.Opt.
 };
 
 let world: World.world(World.notSyncing) = switch (getJson("renm:store")) {
+  /* Disabling "restore" for a minute */
   | Some(_)
   | None => World.make({
     ...SharedTypes.emptyData(~root="root"),

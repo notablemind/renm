@@ -37,10 +37,10 @@ let renderContents =
         onUndo: () => {
           Store.undo(store)
         },
-        onChange: contents =>
+        onChange: delta =>
           Store.act(
             store,
-            Store.SetContents(node.id, NodeType.Normal(contents)),
+            Store.ChangeContents(node.id, delta),
           ),
         onToggleCollapse: () => {
           Store.actView(store, View.SetCollapsed(node.id, !collapsed));
