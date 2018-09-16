@@ -24,6 +24,8 @@ module Queue: {
 
 };
 
+type link = Undo(list(string)) | Redo(string);
+
 type change('change, 'rebase) = {
   changeId: string,
   apply: 'change,
@@ -32,7 +34,7 @@ type change('change, 'rebase) = {
   sessionId: string,
   changeset: option(string),
   author: string,
-  undoIds: list(string),
+  link: option(link)
 };
 
 module History : {
@@ -103,7 +105,7 @@ module F = (Config: {
     ~sessionId,
     ~changeset,
     ~author,
-    ~undoIds,
+    ~link,
     world: world('a),
     change: Config.change
   ): Result.t(world('a), Config.error) => {
@@ -116,7 +118,7 @@ module F = (Config: {
       sessionId,
       changeset,
       author,
-      undoIds,
+      link,
     };
     {
       ...world,
@@ -192,8 +194,8 @@ module F = (Config: {
       | [one, ...rest] when one.sessionId != sessionId => {
         loop(rest, [one, ...rebases], undoneChanges, changeSet)
       }
-      | [one, ...rest] when one.undoIds != [] => {
-        let undones = Set.String.fromArray(List.toArray(one.undoIds));
+      | [{link: Some(Undo(ids))}, ...rest] => {
+        let undones = Set.String.fromArray(List.toArray(ids));
         let alls = undoneChanges->Set.String.union(undones);
         loop(rest, rebases, alls, changeSet)
       }

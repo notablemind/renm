@@ -192,7 +192,7 @@ let act = (store, action) => {
     ~sessionId=store.sessionId,
     ~changeset=store.changeSet->Lets.Opt.map(((cid, _, _)) => cid),
     ~author="jared",
-    ~undoIds=[],
+    ~link=None,
     store.world,
     changes
   )) {
@@ -253,6 +253,9 @@ So the algorithm is:
 
  */
 
+/* let redo = store => {
+  let ()
+}; */
 
 let undo = store => {
 
@@ -282,7 +285,7 @@ let undo = store => {
     ~sessionId=store.sessionId,
     ~changeset=store.changeSet->Lets.Opt.map(((cid, _, _)) => cid),
     ~author="jared",
-    ~undoIds=changeIds,
+    ~link=Some(Undo(changeIds)),
     store.world,
     change
   )) {
