@@ -183,6 +183,23 @@ module F = (Config: {
     })
   };
 
+  let getRedoChange = (history, sessionId) => {
+    let rec loop = (history, rebases, redoneChanges) => {
+      switch history {
+        | [] => None
+        | [one, ...rest] when redoneChanges->Set.String.has(one.changeId) =>
+          loop(rest, rebases, redoneChanges)
+        | [one, ...rest] when one.sessionId != sessionId =>
+          loop(rest, [one, ...rebases], redoneChanges)
+        | [{link: Some(Redo(id))}, ...rest] =>
+          loop(rest, rebases, redoneChanges->Set.String.add(id))
+        | [one, ...rest] =>
+          Some((rebaseMany(one, rebases), one.changeId))
+      }
+    };
+    loop(history, [], Set.String.empty)
+  };
+
   /** TODO test this */
   let getUndoChangeset = (history, sessionId) => {
     let rec loop = (history, rebases, undoneChanges, changeSet) => {

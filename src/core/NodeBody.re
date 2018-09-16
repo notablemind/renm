@@ -32,7 +32,7 @@ let renderContents =
         NodeTypes.value: text,
         editPos,
         onRedo: () => {
-          ()
+          Store.redo(store)
         },
         onUndo: () => {
           Store.undo(store)

@@ -253,10 +253,6 @@ So the algorithm is:
 
  */
 
-/* let redo = store => {
-  let ()
-}; */
-
 let undo = store => {
 
   let (changes, changeIds) = World.getUndoChangeset(
@@ -304,4 +300,50 @@ let undo = store => {
   }, 0)->ignore;
 
 };
+
+let redo = store => {
+
+  let%Lets.OptConsume (change, changeId) = World.getRedoChange(
+    store.world.unsynced->Sync.Queue.toRevList,
+    store.sessionId,
+  );
+
+  Js.log3("Redo Changes", change, changeId);
+
+  store.changeSet = None;
+
+  let%Lets.TryLog changeEvents =
+    change->Sync.tryReduce([], (events, change) => {
+      let%Lets.TryWrap more = Change.events(store.world.current.nodes, change);
+      events->List.concat(more)
+    });
+
+  let changeId = store.sessionId ++ ":" ++ string_of_int(store.changeNum);
+  store.changeNum = store.changeNum + 1;
+
+  switch (World.applyChange(
+    ~changeId,
+    ~sessionId=store.sessionId,
+    ~changeset=store.changeSet->Lets.Opt.map(((cid, _, _)) => cid),
+    ~author="jared",
+    ~link=Some(Redo(changeId)),
+    store.world,
+    change
+  )) {
+    | Result.Error(error) => {
+      Js.log(error);
+    }
+    | Ok(world) => {
+      store.world = world;
+    }
+  };
+
+  Subscription.trigger(store.subs, changeEvents);
+  Js.Global.setTimeout(() => {
+    setItem("renm:store", Js.Json.stringify(Serialize.toJson(store.world)));
+    setItem("renm:viewData", Js.Json.stringify(Serialize.toJson(store.sharedViewData)));
+  }, 0)->ignore;
+
+};
+
 
