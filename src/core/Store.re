@@ -308,12 +308,12 @@ let undo = store => {
 
 let redo = store => {
 
-  let%Lets.OptConsume (change, changeId) = World.getRedoChange(
+  let%Lets.OptConsume (change, redoId) = World.getRedoChange(
     store.world.unsynced->Sync.Queue.toRevList,
     store.sessionId,
   );
 
-  Js.log3("Redo Changes", change, changeId);
+  Js.log3("Redo Changes", change, redoId);
 
   store.changeSet = None;
 
@@ -331,7 +331,7 @@ let redo = store => {
     ~sessionId=store.sessionId,
     ~changeset=store.changeSet->Lets.Opt.map(((cid, _, _)) => cid),
     ~author="jared",
-    ~link=Some(Redo(changeId)),
+    ~link=Some(Redo(redoId)),
     store.world,
     change
   )) {
