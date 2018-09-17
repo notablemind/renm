@@ -124,7 +124,7 @@ let handleDrag = (~id, ~state, ~onStart, ~onDrop, ~testNode, ~updateMarker, ~cle
 };
 
 
-let make = (~onDrop, ~onStart, ~testNode, children) => {
+let make = (~onDrop, ~onStart, ~renderPlaceholder, ~testNode, children) => {
   ...component,
   initialState: () =>
     ref({domMap: HashMap.String.make(~hintSize=10), current: None}),
@@ -138,17 +138,7 @@ let make = (~onDrop, ~onStart, ~testNode, children) => {
         switch (self.state^.current) {
         | None => ReasonReact.null
         | Some((draggingId, dropPos, (top, left, right))) =>
-          <div
-            style={
-              placeholderStyle(
-                ~backgroundColor=("#aaf"),
-                ~left=string_of_float(left) ++ "px",
-                ~width=string_of_float(right -. left) ++ "px",
-                ~top=string_of_float(top) ++ "px",
-                (),
-              )
-            }
-          />
+          renderPlaceholder(top, left, right)
         }
       }
       {

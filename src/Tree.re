@@ -1,3 +1,11 @@
+let placeholderStyle =
+  ReactDOMRe.Style.(
+    make(
+      /* ~backgroundColor="#ccc", */
+    ~marginTop="-3px",
+    ~zIndex="1000",
+    ~height="6px", ~position="absolute")
+  );
 
 let component = ReasonReact.statelessComponent("Tree");
 
@@ -16,6 +24,35 @@ let make = (~store: Store.t('status), _children) => {
   ...component,
   render: _self =>
     <Draggable
+      renderPlaceholder={(top, left, right) => {
+          <div
+            style={
+              placeholderStyle(
+                ~backgroundColor=("#aaf"),
+                ~left=string_of_float(left) ++ "px",
+                ~width=string_of_float(right -. left) ++ "px",
+                ~top=string_of_float(top) ++ "px",
+                (),
+              )
+            }
+          >
+            <div className={Css.(style([
+              position(`absolute),
+              top(px(-2)),
+              left(px(-16))
+            ]))}>
+            <div className={
+              NodeBody.Styles.circle
+              /* Css.(style([
+                position(`absolute),
+                left(px(-20)),
+                top(px(0)),
+              ])) */
+            }/>
+            </div>
+          </div>
+
+      }}
       testNode={(id, x, y, rect) => {
         let%Lets.Opt node = store->Store.get(id);
         let%Lets.Opt parent = store->Store.get(node.parent);
