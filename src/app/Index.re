@@ -30,6 +30,12 @@ let nodes = fromFixture("root", "root", `Node("Hello folks", [
     `Leaf("E two"),
   ]),
   `Leaf("C one"),
+  `Leaf("F one"),
+  `Leaf("G one"),
+  `Leaf("H one"),
+  `Leaf("I one"),
+  `Leaf("J one"),
+  `Leaf("K one"),
 ]));
 
 let getJson = key => switch (Store.getItem(key)->Js.Nullable.toOption->Lets.Opt.map(Js.Json.parseExn)) {

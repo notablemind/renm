@@ -82,12 +82,12 @@ let blank = {ActionResults.changes: [], viewActions: []};
 
 /*
  */
-let processAction = (store, action): ActionResults.actionResults =>
+let processAction = (store, action): Result.t(ActionResults.actionResults, string) =>
   switch (action) {
   /* | ViewAction(viewAction) => {...blank, viewActions: [viewAction]} */
   /* OK, it's the ones that actually change. maybe I want a polymorphic type here? dunno */
   | Remove(id, focusNext) =>
-    {
+    Ok({
       changes: [RemoveNode(id)],
       viewActions: [View.SetActive(focusNext, Default)]
       /* view: Some({...store.view, selection: Set.String.empty->Set.String.add(id)},
@@ -97,39 +97,43 @@ let processAction = (store, action): ActionResults.actionResults =>
       ->List.concat(
         viewNode(store, focusNext)
       ) */
-    }
+    })
 
   | SetContents(id, contents) =>
-    {...blank, changes: [SetContents(id, contents)]}
+    Ok({...blank, changes: [SetContents(id, contents)]})
 
   /* TODO track selection here */
   | ChangeContents(id, delta) =>
-    {...blank, changes: [ChangeContents(id, delta)]}
+    Ok({...blank, changes: [ChangeContents(id, delta)]})
 
   | Move(ids, pid, index) =>
-    let changes =
-      ids->List.reverse->List.map(id => (Change.MoveNode(pid, index, id)));
+    let%Lets.Try (_, changes) = ids
+    ->List.reverse
+    ->Sync.tryReduce((0, []), ((off, changes), id) => {
+      let%Lets.Try node = store->get(id)->Lets.Opt.orError("Cannot find node " ++ id);
+      let%Lets.Try off = if (node.parent == pid) {
+        let%Lets.Try parent = store->get(pid)->Lets.Opt.orError("Cannot find node " ++ pid);
+        let%Lets.Try idx = TreeTraversal.childPos(parent.children, node.id)->Lets.Opt.orError("Not in children " ++ node.id);
+        Ok(idx < index ? off + 1 : 0)
+      } else {
+        Ok(off)
+      };
+      Ok((off, [Change.MoveNode(pid, index - off, id), ...changes]))
+    });
+    let changes = List.reverse(changes);
+    /* let index = index - indexCorrection; */
+    /* let changes = ids->List.reverse->List.map(id => (Change.MoveNode(pid, index, id))); */
 
-    {changes: changes, viewActions: [View.SetCollapsed(pid, false)]}
+    Ok({ActionResults.changes: changes, viewActions: [View.SetCollapsed(pid, false)]})
 
   | Create(idx, node) =>
-    {
-    changes: [AddNode(idx, node)],
-    viewActions: [View.SetActive(node.id, Default)]
-      /* view: Some(
-        {
-          ...store.view,
-          active: node.id,
-          selection: Set.String.empty->Set.String.add(node.id),
-        },
-        /* TODO clear selection */
-      ),
-      events:
-        [Event.View(Node(store.view.active))], */
-    }
+    Ok({
+      ActionResults.changes: [AddNode(idx, node)],
+      viewActions: [View.SetActive(node.id, Default)]
+    })
 
-  | SplitAt(_) => blank
-  | JoinUp(_, _, _) => blank
+  | SplitAt(_) => Ok(blank)
+  | JoinUp(_, _, _) => Ok(blank)
   };
 
 
@@ -166,7 +170,8 @@ let updateChangeSet = (changeSet, action) => {
 };
 
 let act = (store, action) => {
-  let {ActionResults.viewActions, changes} = processAction(store, action);
+  let%Lets.TryLog {ActionResults.viewActions, changes} = processAction(store, action);
+  Js.log3(action, changes, viewActions);
 
   let (view, sharedViewData, viewEvents) = viewActions->List.reduce((store.view, store.sharedViewData, []), ((v, svd, evts), action) => {
     let (v, svg, nevts) = View.processViewAction(v, svd, action);
