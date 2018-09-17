@@ -73,7 +73,7 @@ let onSelectionChange = (quill, fn: (Js.null(range), Js.null(range), string) => 
 };
 
 
-let setupQuill = (element, props: ref(NodeTypes.props(Delta.delta))) => {
+let setupQuill = (element, props: ref(NodeTypes.props(Delta.delta, (int, int)))) => {
   let quill =
     makeQuill(
       element,
@@ -207,20 +207,21 @@ let setupQuill = (element, props: ref(NodeTypes.props(Delta.delta))) => {
     focus(quill);
   };
   on(quill, "text-change", (delta, oldDelta, source) => {
-    props^.onChange(delta)
+    let range = getSelection(quill);
+    props^.onChange(delta, (range##index |> int_of_float, range##length |> int_of_float))
   });
   quill;
 };
 
 
 type state = {
-  props: ref(NodeTypes.props(Delta.delta)),
+  props: ref(NodeTypes.props(Delta.delta, (int, int))),
   quill: ref(option(quill)),
 };
 
 let component = ReasonReact.reducerComponent("Quill");
 
-let make = (~props: NodeTypes.props(Delta.delta), _children) => {
+let make = (~props: NodeTypes.props(Delta.delta, (int, int)), _children) => {
   ...component,
   initialState: () => {props: ref(props), quill: ref(None)},
   reducer: ((), state) => ReasonReact.NoUpdate,

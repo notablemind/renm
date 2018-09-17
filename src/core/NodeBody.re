@@ -37,7 +37,7 @@ let renderContents =
         onUndo: () => {
           Store.undo(store)
         },
-        onChange: delta =>
+        onChange: (delta, selection) =>
           Store.act(
             store,
             Store.ChangeContents(node.id, delta),

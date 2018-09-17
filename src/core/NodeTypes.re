@@ -1,10 +1,10 @@
 
-type props('value) = {
+type props('value, 'selection) = {
   value: 'value,
   editPos: option(View.editPos),
   onUndo: unit => unit,
   onRedo: unit => unit,
-  onChange: ('value) => unit,
+  onChange: ('value, 'selection) => unit,
   onUp: unit => option(SharedTypes.Node.id),
   onDown: unit => option(SharedTypes.Node.id),
   onLeft: unit => option(SharedTypes.Node.id),

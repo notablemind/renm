@@ -179,7 +179,7 @@ let apply = (store, changes, events, link) => {
   let changeId = store.sessionId ++ ":" ++ string_of_int(store.changeNum);
   store.changeNum = store.changeNum + 1;
 
-  let selection = (store.view.active, store.view.selection, 0, 0);
+  let selection = (store.view.active, store.view.selection, (0, 0));
 
   switch (World.applyChange(
     ~changeId,
@@ -287,7 +287,7 @@ let undo = store => {
 
   store.changeSet = None;
 
-  let (activeId, selectionSet, pos, length) = preSelections->List.head->Lets.Opt.force;
+  let (activeId, selectionSet, (pos, length)) = preSelections->List.head->Lets.Opt.force;
 
   let viewEvents = applyView(store, [
     View.SetActive(activeId, Start), /* TODO set selection */
@@ -308,7 +308,7 @@ let redo = store => {
 
   store.changeSet = None;
 
-  let (activeId, selectionSet, pos, length) = preSelection;
+  let (activeId, selectionSet, (pos, length)) = preSelection;
 
   let viewEvents = applyView(store, [
     View.SetActive(activeId, Start), /* TODO set selection */
