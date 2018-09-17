@@ -26,10 +26,12 @@ module Queue: {
 
 type link = Undo(list(string)) | Redo(string);
 
-type change('change, 'rebase) = {
+type change('change, 'rebase, 'selection) = {
   changeId: string,
   apply: 'change,
   revert: 'change,
+  preSelection: 'selection,
+  postSelection: 'selection,
   rebase: 'rebase,
   sessionId: string,
   changeset: option(string),
@@ -38,12 +40,12 @@ type change('change, 'rebase) = {
 };
 
 module History : {
-  type t('change, 'rebase);
-  let latestId: t('change, 'rebase) => option(string);
-  let append: (t('change, 'rebase), list(change('change, 'rebase))) => t('change, 'rebase);
-  let empty: t('change, 'rebase);
+  type t('change, 'rebase, 'selection);
+  let latestId: t('change, 'rebase, 'selection) => option(string);
+  let append: (t('change, 'rebase, 'selection), list(change('change, 'rebase, 'selection))) => t('change, 'rebase, 'selection);
+  let empty: t('change, 'rebase, 'selection);
 } = {
-  type t('change, 'rebase) = list(change('change, 'rebase));
+  type t('change, 'rebase, 'selection) = list(change('change, 'rebase, 'selection));
   let latestId = t => List.head(t)->Lets.Opt.map(c => c.changeId);
   let append = (t, items) => List.reverse(items) @ t
   let empty = [];
@@ -60,6 +62,7 @@ module F = (Config: {
   type data;
   type change;
   type rebaseItem;
+  type selection;
   type error;
   let rebase: (change, rebaseItem) => change;
   let apply: (data, change) =>
@@ -81,10 +84,10 @@ module F = (Config: {
         });
   };
 
-  type thisChange = change(Config.change, Config.rebaseItem);
+  type thisChange = change(Config.change, Config.rebaseItem, Config.selection);
   type world('status) = {
     snapshot: Config.data,
-    history: History.t(Config.change, Config.rebaseItem),
+    history: History.t(Config.change, Config.rebaseItem, Config.selection),
     syncing: Queue.t(thisChange),
     unsynced: Queue.t(thisChange),
     current: Config.data,
@@ -106,6 +109,8 @@ module F = (Config: {
     ~changeset,
     ~author,
     ~link,
+    ~preSelection,
+    ~postSelection,
     world: world('a),
     change: Config.change
   ): Result.t(world('a), Config.error) => {
@@ -114,6 +119,8 @@ module F = (Config: {
       changeId,
       apply: change,
       revert,
+      preSelection,
+      postSelection,
       rebase,
       sessionId,
       changeset,
@@ -195,7 +202,7 @@ module F = (Config: {
           loop(rest, rebases, redoneChanges->Set.String.add(id))
         | [{link: Some(Undo(_))} as one, ...rest] =>
           Js.log((one, rebases, redoneChanges))
-          Some((rebaseMany(one, rebases), one.changeId))
+          Some((rebaseMany(one, rebases), one.changeId, one.preSelection))
         | [one, ...rest] =>
           /* Nothing left is undone recently enough... */
           /* We could make it so you just rebase past the things you haven't done tho */
@@ -225,12 +232,12 @@ module F = (Config: {
       | [one, ...rest] => {
         switch (changeSet) {
           | None =>
-            [(rebaseMany(one, rebases), one.changeId), ...loop(rest, rebases, undoneChanges, Some(one.changeset))]
+            [(rebaseMany(one, rebases), (one.changeId, one.preSelection)), ...loop(rest, rebases, undoneChanges, Some(one.changeset))]
           | Some(changeset) =>
             if (changeset != one.changeset || changeset == None) {
               []
             } else {
-              [(rebaseMany(one, rebases), one.changeId), ...loop(rest, rebases, undoneChanges, Some(changeset))]
+              [(rebaseMany(one, rebases), (one.changeId, one.preSelection)), ...loop(rest, rebases, undoneChanges, Some(changeset))]
             }
         }
       }

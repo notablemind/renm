@@ -179,11 +179,15 @@ let apply = (store, changes, events, link) => {
   let changeId = store.sessionId ++ ":" ++ string_of_int(store.changeNum);
   store.changeNum = store.changeNum + 1;
 
+  let selection = (store.view.active, store.view.selection, 0, 0);
+
   switch (World.applyChange(
     ~changeId,
     ~sessionId=store.sessionId,
     ~changeset=store.changeSet->Lets.Opt.map(((cid, _, _)) => cid),
     ~author="jared",
+    ~preSelection=selection,
+    ~postSelection=selection,
     ~link,
     store.world,
     changes
@@ -245,10 +249,7 @@ So the algorithm is:
 
  */
 
-let act = (store, action) => {
-  let%Lets.TryLog {ActionResults.viewActions, changes} = processAction(store, action);
-  Js.log3(action, changes, viewActions);
-
+let applyView = (store, viewActions) => {
   let (view, sharedViewData, viewEvents) = viewActions->List.reduce((store.view, store.sharedViewData, []), ((v, svd, evts), action) => {
     let (v, svg, nevts) = View.processViewAction(v, svd, action);
     (v, svg, nevts @ evts)
@@ -257,7 +258,16 @@ let act = (store, action) => {
   store.view = view;
   store.sharedViewData = sharedViewData;
 
+  viewEvents
+};
+
+let act = (store, action) => {
+  let%Lets.TryLog {ActionResults.viewActions, changes} = processAction(store, action);
+  Js.log3(action, changes, viewActions);
+
   store.changeSet = updateChangeSet(store.changeSet, action);
+
+  let viewEvents = applyView(store, viewActions);
 
   apply(store, changes, viewEvents, None)
 };
@@ -268,6 +278,7 @@ let undo = store => {
     store.world.unsynced->Sync.Queue.toRevList,
     store.sessionId,
   )->List.unzip;
+  let (changeIds, preSelections) = List.unzip(changeIds);
 
   let change = changes->World.MultiChange.mergeChanges;
   Js.log3("Undo Changes", change, changeIds);
@@ -276,12 +287,19 @@ let undo = store => {
 
   store.changeSet = None;
 
-  apply(store, change, [], Some(Undo(changeIds)))
+  let (activeId, selectionSet, pos, length) = preSelections->List.head->Lets.Opt.force;
+
+  let viewEvents = applyView(store, [
+    View.SetActive(activeId, Start), /* TODO set selection */
+    View.SetSelection(selectionSet)
+  ]);
+
+  apply(store, change, viewEvents, Some(Undo(changeIds)))
 };
 
 let redo = store => {
 
-  let%Lets.OptConsume (change, redoId) = World.getRedoChange(
+  let%Lets.OptConsume (change, redoId, preSelection) = World.getRedoChange(
     store.world.unsynced->Sync.Queue.toRevList,
     store.sessionId,
   );
@@ -290,7 +308,14 @@ let redo = store => {
 
   store.changeSet = None;
 
-  apply(store, change, [], Some(Redo(redoId)))
+  let (activeId, selectionSet, pos, length) = preSelection;
+
+  let viewEvents = applyView(store, [
+    View.SetActive(activeId, Start), /* TODO set selection */
+    View.SetSelection(selectionSet)
+  ]);
+
+  apply(store, change, viewEvents, Some(Redo(redoId)))
 };
 
 
