@@ -169,25 +169,12 @@ let updateChangeSet = (changeSet, action) => {
   }
 };
 
-let act = (store, action) => {
-  let%Lets.TryLog {ActionResults.viewActions, changes} = processAction(store, action);
-  Js.log3(action, changes, viewActions);
-
-  let (view, sharedViewData, viewEvents) = viewActions->List.reduce((store.view, store.sharedViewData, []), ((v, svd, evts), action) => {
-    let (v, svg, nevts) = View.processViewAction(v, svd, action);
-    (v, svg, nevts @ evts)
-  });
-
-  store.view = view;
-  store.sharedViewData = sharedViewData;
-
-  store.changeSet = updateChangeSet(store.changeSet, action);
-
+let apply = (store, changes, events, link) => {
   let%Lets.TryLog changeEvents =
     changes->Sync.tryReduce([], (events, change) => {
       let%Lets.TryWrap more = Change.events(store.world.current.nodes, change);
       events->List.concat(more)
-    })
+    });
 
   let changeId = store.sessionId ++ ":" ++ string_of_int(store.changeNum);
   store.changeNum = store.changeNum + 1;
@@ -197,7 +184,7 @@ let act = (store, action) => {
     ~sessionId=store.sessionId,
     ~changeset=store.changeSet->Lets.Opt.map(((cid, _, _)) => cid),
     ~author="jared",
-    ~link=None,
+    ~link,
     store.world,
     changes
   )) {
@@ -209,7 +196,7 @@ let act = (store, action) => {
     }
   };
 
-  Subscription.trigger(store.subs, viewEvents @ changeEvents);
+  Subscription.trigger(store.subs, events @ changeEvents);
   Js.Global.setTimeout(() => {
     setItem("renm:store", Js.Json.stringify(Serialize.toJson(store.world)));
     setItem("renm:viewData", Js.Json.stringify(Serialize.toJson(store.sharedViewData)));
@@ -258,6 +245,23 @@ So the algorithm is:
 
  */
 
+let act = (store, action) => {
+  let%Lets.TryLog {ActionResults.viewActions, changes} = processAction(store, action);
+  Js.log3(action, changes, viewActions);
+
+  let (view, sharedViewData, viewEvents) = viewActions->List.reduce((store.view, store.sharedViewData, []), ((v, svd, evts), action) => {
+    let (v, svg, nevts) = View.processViewAction(v, svd, action);
+    (v, svg, nevts @ evts)
+  });
+
+  store.view = view;
+  store.sharedViewData = sharedViewData;
+
+  store.changeSet = updateChangeSet(store.changeSet, action);
+
+  apply(store, changes, viewEvents, None)
+};
+
 let undo = store => {
 
   let (changes, changeIds) = World.getUndoChangeset(
@@ -266,44 +270,13 @@ let undo = store => {
   )->List.unzip;
 
   let change = changes->World.MultiChange.mergeChanges;
-  Js.log3("Changes", change, changeIds);
+  Js.log3("Undo Changes", change, changeIds);
 
   let%Lets.Guard () = (change != [], ());
 
   store.changeSet = None;
 
-  let%Lets.TryLog changeEvents =
-    change->Sync.tryReduce([], (events, change) => {
-      let%Lets.TryWrap more = Change.events(store.world.current.nodes, change);
-      events->List.concat(more)
-    });
-
-  let changeId = store.sessionId ++ ":" ++ string_of_int(store.changeNum);
-  store.changeNum = store.changeNum + 1;
-
-  switch (World.applyChange(
-    ~changeId,
-    ~sessionId=store.sessionId,
-    ~changeset=store.changeSet->Lets.Opt.map(((cid, _, _)) => cid),
-    ~author="jared",
-    ~link=Some(Undo(changeIds)),
-    store.world,
-    change
-  )) {
-    | Result.Error(error) => {
-      Js.log(error);
-    }
-    | Ok(world) => {
-      store.world = world;
-    }
-  };
-
-  Subscription.trigger(store.subs, changeEvents);
-  Js.Global.setTimeout(() => {
-    setItem("renm:store", Js.Json.stringify(Serialize.toJson(store.world)));
-    setItem("renm:viewData", Js.Json.stringify(Serialize.toJson(store.sharedViewData)));
-  }, 0)->ignore;
-
+  apply(store, change, [], Some(Undo(changeIds)))
 };
 
 let redo = store => {
@@ -317,38 +290,7 @@ let redo = store => {
 
   store.changeSet = None;
 
-  let%Lets.TryLog changeEvents =
-    change->Sync.tryReduce([], (events, change) => {
-      let%Lets.TryWrap more = Change.events(store.world.current.nodes, change);
-      events->List.concat(more)
-    });
-
-  let changeId = store.sessionId ++ ":" ++ string_of_int(store.changeNum);
-  store.changeNum = store.changeNum + 1;
-
-  switch (World.applyChange(
-    ~changeId,
-    ~sessionId=store.sessionId,
-    ~changeset=store.changeSet->Lets.Opt.map(((cid, _, _)) => cid),
-    ~author="jared",
-    ~link=Some(Redo(redoId)),
-    store.world,
-    change
-  )) {
-    | Result.Error(error) => {
-      Js.log(error);
-    }
-    | Ok(world) => {
-      store.world = world;
-    }
-  };
-
-  Subscription.trigger(store.subs, changeEvents);
-  Js.Global.setTimeout(() => {
-    setItem("renm:store", Js.Json.stringify(Serialize.toJson(store.world)));
-    setItem("renm:viewData", Js.Json.stringify(Serialize.toJson(store.sharedViewData)));
-  }, 0)->ignore;
-
+  apply(store, change, [], Some(Redo(redoId)))
 };
 
 
