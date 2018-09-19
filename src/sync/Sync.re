@@ -44,6 +44,7 @@ module History : {
   let latestId: t('change, 'rebase, 'selection) => option(string);
   let append: (t('change, 'rebase, 'selection), list(change('change, 'rebase, 'selection))) => t('change, 'rebase, 'selection);
   let empty: t('change, 'rebase, 'selection);
+  /** Will return them in "oldest first" order */
   let itemsSince: (t('change, 'rebase, 'selection), option(string)) => list(change('change, 'rebase, 'selection))
 } = {
   type t('change, 'rebase, 'selection) = list(change('change, 'rebase, 'selection));

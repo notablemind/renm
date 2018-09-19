@@ -302,7 +302,7 @@ let act = (store, action) => {
 let undo = store => {
 
   let (changes, changeIds) = World.getUndoChangeset(
-    store.world.unsynced->Sync.Queue.toRevList,
+    store.world.unsynced->Sync.Queue.toRevList @ store.world.history->Sync.History.itemsSince(None)->List.reverse,
     store.sessionId,
   )->List.unzip;
   let (changeIds, preSelections) = List.unzip(changeIds);
