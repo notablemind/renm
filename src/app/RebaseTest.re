@@ -81,24 +81,24 @@ let make = (_children) => {
       display(`flex),
       flexDirection(`row)
     ]))>
-      <div>
+      <div className=Css.(style([flex(1)]))>
         <ShowServer server=root />
       </div>
-      <div>
+      <div className=Css.(style([flex(1)]))>
         <button onClick=(_ev => doSync(a)) >
           {ReasonReact.string("Sync")}
         </button>
         <Tree store=a />
         <DebugStoreView store=a />
       </div>
-      <div>
+      <div className=Css.(style([flex(1)]))>
         <button onClick=(_ev => doSync(b)) >
           {ReasonReact.string("Sync")}
         </button>
         <Tree store=b />
         <DebugStoreView store=b />
       </div>
-      <div>
+      <div className=Css.(style([flex(1)]))>
         <button onClick=(_ev => doSync(c)) >
           {ReasonReact.string("Sync")}
         </button>

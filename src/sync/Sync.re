@@ -172,7 +172,8 @@ module F = (Config: {
         let rebases = items->List.map(change => change.rebase);
         let%Lets.Try (current, rebasedChanges) = changes->processRebases(server.current, rebases);
         let server = {history: History.append(server.history, rebasedChanges), current};
-        Ok((server, `Rebase((rebasedChanges @ items))))
+        Js.log2("rebased", rebasedChanges);
+        Ok((server, `Rebase((rebasedChanges @ items)->List.reverse)))
     }
   };
 
@@ -208,6 +209,7 @@ module F = (Config: {
   let applyRebase =
       (world: world('anyStatus), changes) : Belt.Result.t(world(notSyncing), Config.error) => {
     open Lets;
+    /* let changes = changes->List.reverse; */
     Js.log3("applyRebase", changes, world.snapshot);
     let%Try (snapshot, changes) =
       changes->reduceChanges(world.snapshot);
@@ -217,7 +219,7 @@ module F = (Config: {
     Js.log4("applied the reduced ones", current, unsynced, world.unsynced);
     {
       /* ...world, */
-      history: History.append(world.history, changes),
+      history: History.append(world.history, changes->List.reverse),
       snapshot,
       current,
       syncing: Queue.empty,

@@ -2,10 +2,16 @@
 let str = ReasonReact.string;
 
 let showChange = (change: World.thisChange) => {
-  <div style=ReactDOMRe.Style.(make(~fontFamily="monospace", ()))>
-    {str(change.changeId)}
+  <div style=ReactDOMRe.Style.(make(~fontFamily="monospace", ~whiteSpace="pre", ()))>
+    {str(change.changeId ++ "\n")}
     {str(Js.Json.stringify(
       ChangeTransformer.transform_World__Notablemind__MultiChange__change(change.apply)
+    ) ++ "\n")}
+    {str(Js.Json.stringify(
+      ChangeTransformer.transform_World__Notablemind__MultiChange__change(change.revert)
+    ) ++ "\n")}
+    {str(Js.Json.stringify(
+      ChangeTransformer.transform_World__Notablemind__MultiChange__rebaseItem(change.rebase)
     ))}
   </div>
 };

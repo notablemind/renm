@@ -9,7 +9,10 @@ let rec fromFixture = (pid, id, item) => switch item {
     )]
   | `Node(text, children) =>
     let childNodes = children |. List.map(child => {
-      let cid = Utils.newId();
+      let cid = Utils.newId() ++ "_" ++ switch child {
+        | `Leaf(t) => t
+        | `Node(t, _) => t
+      };
       (cid, fromFixture(id, cid, child))
     });
     [SharedTypes.Node.create(
