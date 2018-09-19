@@ -83,7 +83,10 @@ module F = (Config: {
   let reduceChanges = (changes, initial) => {
     changes->tryReduce((initial, []), ((current, changes), change) => {
       let%Lets.Try (data, revert, rebase) = Config.apply(current, change.apply);
-      Ok((data, [{...change, revert, rebase}, ...changes]))
+      Ok((data, 
+      /* changes @ [] */
+      [{...change, revert, rebase}, ...changes]
+      ))
     });
   };
 
@@ -155,17 +158,21 @@ module F = (Config: {
     ->tryReduce((current, []), ((current, changes), change) => {
       let apply = rebases->List.reduce(change.apply, (current, base) => Config.rebase(current, base))
       let%Lets.Try (data, revert, rebase) = Config.apply(current, apply);
-      Ok((data, [{...change, apply, revert, rebase}, ...changes]))
+      Ok((data,
+      changes @ [{...change, apply, revert, rebase}]
+      /* [, ...changes] */
+      ))
     })
   };
 
 /* TODO does the server need to have a reified version of the state? Maybe, to give proper rebase things... */
   let processSyncRequest = (server: server, id: option(string), changes: list(thisChange)) => {
-    let items = History.itemsSince(server.history, id)->List.reverse;
+    let items = History.itemsSince(server.history, id)
+    /* ->List.reverse; */
     Js.log2("Items since", items);
     switch items {
       | [] =>
-        let%Lets.Try (current, appliedChanges) = changes->reduceChanges(server.current);
+        let%Lets.Try (current, _appliedChanges) = changes->reduceChanges(server.current);
         let server = {history: History.append(server.history, changes), current};
         Ok((server, `Commit))
       | _ =>
@@ -173,7 +180,12 @@ module F = (Config: {
         let%Lets.Try (current, rebasedChanges) = changes->processRebases(server.current, rebases);
         let server = {history: History.append(server.history, rebasedChanges), current};
         Js.log2("rebased", rebasedChanges);
-        Ok((server, `Rebase((rebasedChanges @ items)->List.reverse)))
+        Ok((server, `Rebase((
+          items @
+          rebasedChanges
+          )
+        /* ->List.reverse */
+        )))
     }
   };
 
@@ -218,8 +230,9 @@ module F = (Config: {
       world.unsynced->queueReduceChanges(snapshot);
     Js.log4("applied the reduced ones", current, unsynced, world.unsynced);
     {
-      /* ...world, */
-      history: History.append(world.history, changes->List.reverse),
+      history: History.append(world.history, changes
+      ->List.reverse
+      ),
       snapshot,
       current,
       syncing: Queue.empty,
