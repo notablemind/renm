@@ -102,13 +102,3 @@ let make = (_children) => {
     </div>
   }
 };
-
-let run = () => {
-
-  let store = Store.fromWorld(~sessionId=Utils.newId(), ~world);
-
-  ReactDOMRe.renderToElementWithId(<div>
-  <Tree store />
-  <DebugStoreView store />
-  </div>, "root");
-};

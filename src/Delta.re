@@ -24,6 +24,8 @@ let getText: delta => string = [%bs.raw {|function(delta) {
   return delta.ops.map(op => op.insert).filter(Boolean).join('')
 }|}];
 
+external toJson: delta => Js.Json.t = "%identity";
+
 let makeDelete = (idx, num) => {
   let delta = make([||]);
   let delta = if (idx > 0) {
