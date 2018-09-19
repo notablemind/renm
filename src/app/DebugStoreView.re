@@ -2,7 +2,8 @@
 let str = ReasonReact.string;
 
 let showChange = (change: World.thisChange) => {
-  <div>
+  <div style=ReactDOMRe.Style.(make(~fontFamily="monospace", ()))>
+    {str(change.changeId)}
     {str(Js.Json.stringify(
       ChangeTransformer.transform_World__Notablemind__MultiChange__change(change.apply)
     ))}
@@ -39,6 +40,15 @@ let make = (~store: Store.t(World.notSyncing), _children) => {
         {
           syncing->Sync.Queue.toList->List.map(showChange
           )->List.toArray->ReasonReact.array
+        }
+      </div>
+      <div>
+        <h4>
+          (ReasonReact.string("History"))
+        </h4>
+        {
+          history->Sync.History.itemsSince(None)->List.map(showChange)
+          ->List.toArray->ReasonReact.array
         }
       </div>
     </div>

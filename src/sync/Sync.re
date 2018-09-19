@@ -161,7 +161,7 @@ module F = (Config: {
 
 /* TODO does the server need to have a reified version of the state? Maybe, to give proper rebase things... */
   let processSyncRequest = (server: server, id: option(string), changes: list(thisChange)) => {
-    let items = History.itemsSince(server.history, id);
+    let items = History.itemsSince(server.history, id)->List.reverse;
     Js.log2("Items since", items);
     switch items {
       | [] =>
@@ -172,7 +172,7 @@ module F = (Config: {
         let rebases = items->List.map(change => change.rebase);
         let%Lets.Try (current, rebasedChanges) = changes->processRebases(server.current, rebases);
         let server = {history: History.append(server.history, rebasedChanges), current};
-        Ok((server, `Rebase(items @ rebasedChanges)))
+        Ok((server, `Rebase((rebasedChanges @ items))))
     }
   };
 

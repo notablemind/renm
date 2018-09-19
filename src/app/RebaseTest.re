@@ -20,6 +20,12 @@ module ShowServer = {
       <div>
         (renderNode(server, server.current.root))
       </div>
+      <div>
+        {
+          server.history->Sync.History.itemsSince(None)->List.map(DebugStoreView.showChange)
+          ->List.toArray->ReasonReact.array
+        }
+      </div>
     </div>
   }
 };
