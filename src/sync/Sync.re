@@ -44,10 +44,21 @@ module History : {
   let latestId: t('change, 'rebase, 'selection) => option(string);
   let append: (t('change, 'rebase, 'selection), list(change('change, 'rebase, 'selection))) => t('change, 'rebase, 'selection);
   let empty: t('change, 'rebase, 'selection);
+  let itemsSince: (t('change, 'rebase, 'selection), option(string)) => list(change('change, 'rebase, 'selection))
 } = {
   type t('change, 'rebase, 'selection) = list(change('change, 'rebase, 'selection));
   let latestId = t => List.head(t)->Lets.Opt.map(c => c.changeId);
   let append = (t, items) => List.reverse(items) @ t
+  let itemsSince = (t, id) => switch id {
+    | None => List.reverse(t)
+    | Some(id) =>
+      let rec loop = (items, collector) => switch items {
+        | [] => collector
+        | [one, ...rest] when one.changeId == id => collector
+        | [one, ...rest] => loop(rest, [one, ...collector])
+      };
+      loop(t, [])
+  };
   let empty = [];
 };
 
@@ -85,11 +96,16 @@ module F = (Config: {
   };
 
   type thisChange = change(Config.change, Config.rebaseItem, Config.selection);
+  type history = History.t(Config.change, Config.rebaseItem, Config.selection);
   type world('status) = {
     snapshot: Config.data,
-    history: History.t(Config.change, Config.rebaseItem, Config.selection),
+    history: history,
     syncing: Queue.t(thisChange),
     unsynced: Queue.t(thisChange),
+    current: Config.data,
+  };
+  type server = {
+    history,
     current: Config.data,
   };
   type notSyncing;
@@ -134,20 +150,42 @@ module F = (Config: {
     }
   };
 
-  let prepareSync = (world: world(notSyncing)): option((world(syncing), option(string), Queue.t(thisChange))) => {
-    if (world.unsynced == Queue.empty) {
-      None
-    } else {
-      Some((
-        {...world, syncing: world.unsynced, unsynced: Queue.empty},
-        History.latestId(world.history),
-        world.unsynced,
-      ));
+  let processRebases = (origChanges, current, rebases) => {
+    origChanges
+    ->tryReduce((current, []), ((current, changes), change) => {
+      let apply = rebases->List.reduce(change.apply, (current, base) => Config.rebase(current, base))
+      let%Lets.Try (data, revert, rebase) = Config.apply(current, apply);
+      Ok((data, [{...change, apply, revert, rebase}, ...changes]))
+    })
+  };
+
+/* TODO does the server need to have a reified version of the state? Maybe, to give proper rebase things... */
+  let processSyncRequest = (server: server, id: option(string), changes: list(thisChange)) => {
+    let items = History.itemsSince(server.history, id);
+    Js.log2("Items since", items);
+    switch items {
+      | [] =>
+        let%Lets.Try (current, appliedChanges) = changes->reduceChanges(server.current);
+        let server = {history: History.append(server.history, changes), current};
+        Ok((server, `Commit))
+      | _ =>
+        let rebases = items->List.map(change => change.rebase);
+        let%Lets.Try (current, rebasedChanges) = changes->processRebases(server.current, rebases);
+        let server = {history: History.append(server.history, rebasedChanges), current};
+        Ok((server, `Rebase(items @ rebasedChanges)))
     }
   };
 
+  let prepareSync = (world: world(notSyncing)): (world(notSyncing), option(string), Queue.t(thisChange)) => {
+      (
+        {...world, syncing: world.unsynced, unsynced: Queue.empty},
+        History.latestId(world.history),
+        world.unsynced,
+      );
+  };
+
   let commit =
-      (world: world(syncing)): Belt.Result.t(world(notSyncing), Config.error) => {
+      (world: world(notSyncing)): Belt.Result.t(world(notSyncing), Config.error) => {
     let%Lets.TryWrap (snapshot, unsynced) =
       if (world.unsynced == Queue.empty) {
         Result.Ok((world.current, world.unsynced));
@@ -170,10 +208,13 @@ module F = (Config: {
   let applyRebase =
       (world: world('anyStatus), changes) : Belt.Result.t(world(notSyncing), Config.error) => {
     open Lets;
+    Js.log3("applyRebase", changes, world.snapshot);
     let%Try (snapshot, changes) =
       changes->reduceChanges(world.snapshot);
+    Js.log3("reduced", snapshot, changes);
     let%TryWrap (current, unsynced) =
-      world.unsynced->queueReduceChanges(world.snapshot);
+      world.unsynced->queueReduceChanges(snapshot);
+    Js.log4("applied the reduced ones", current, unsynced, world.unsynced);
     {
       /* ...world, */
       history: History.append(world.history, changes),

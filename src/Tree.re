@@ -4,7 +4,7 @@ let placeholderStyle =
       /* ~backgroundColor="#ccc", */
     ~marginTop="-3px",
     ~zIndex="1000",
-    ~height="6px", ~position="absolute")
+    ~height="6px", ~position="fixed")
   );
 
 let component = ReasonReact.statelessComponent("Tree");

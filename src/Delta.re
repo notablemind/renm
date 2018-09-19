@@ -20,6 +20,10 @@ let fromString = str => make([|
 [@bs.send] external transform: (delta, delta) => delta = "";
 [@bs.send] external compose: (delta, delta) => delta = "";
 
+let getText: delta => string = [%bs.raw {|function(delta) {
+  return delta.ops.map(op => op.insert).filter(Boolean).join('')
+}|}];
+
 let makeDelete = (idx, num) => {
   let delta = make([||]);
   let delta = if (idx > 0) {

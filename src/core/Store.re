@@ -37,6 +37,19 @@ let create = (~sessionId, ~root, ~nodes: list(SharedTypes.Node.t('contents, 'pre
   }
 };
 
+let fromWorld = (~sessionId, ~world, ) => {
+  {
+    sessionId,
+    changeNum: 0,
+    changeSet: None,
+    world,
+    view: View.emptyView(~root=world.current.root, ~id=0),
+    sharedViewData: View.emptySharedViewData,
+    subs: Hashtbl.create(10),
+  }
+};
+
+
 let editNode = (store, id) => {
   [Event.Node(id), Event.View(Node(id))];
 };
@@ -137,9 +150,6 @@ let processAction = (store, action): Result.t(ActionResults.actionResults, strin
   };
 
 
-[@bs.scope "localStorage"] [@bs.val] external setItem: (string, string) => unit = "";
-[@bs.scope "localStorage"] [@bs.val] external getItem: (string) => Js.nullable(string) = "";
-
 let actView = (store, action) => {
   let (view, sharedViewData, events) = View.processViewAction(store.view, store.sharedViewData, action);
 
@@ -149,7 +159,7 @@ let actView = (store, action) => {
   Subscription.trigger(store.subs, events);
 
   Js.Global.setTimeout(() => {
-    setItem("renm:viewData", Js.Json.stringify(Serialize.toJson(store.sharedViewData)));
+    LocalStorage.setItem("renm:viewData", Js.Json.stringify(Serialize.toJson(store.sharedViewData)));
   }, 0)->ignore;
 };
 
@@ -169,12 +179,29 @@ let updateChangeSet = (changeSet, action) => {
   }
 };
 
-let apply = (store, changes, events, link) => {
+let notifyForChanges = (store, changes) => {
   let%Lets.TryLog changeEvents =
     changes->Sync.tryReduce([], (events, change) => {
       let%Lets.TryWrap more = Change.events(store.world.current.nodes, change);
       events->List.concat(more)
     });
+
+  Subscription.trigger(store.subs, [SharedTypes.Event.Update, ...changeEvents]);
+  Js.Global.setTimeout(() => {
+    LocalStorage.setItem("renm:store", Js.Json.stringify(Serialize.toJson(store.world)));
+    LocalStorage.setItem("renm:viewData", Js.Json.stringify(Serialize.toJson(store.sharedViewData)));
+  }, 0)->ignore;
+};
+
+let eventsForChanges = (nodes, changes) => {
+  changes->Sync.tryReduce([], (events, change) => {
+    let%Lets.TryWrap more = Change.events(nodes, change);
+    events->List.concat(more)
+  });
+};
+
+let apply = (store, changes, events, link) => {
+  let%Lets.TryLog changeEvents = eventsForChanges(store.world.current.nodes, changes);
 
   let changeId = store.sessionId ++ ":" ++ string_of_int(store.changeNum);
   store.changeNum = store.changeNum + 1;
@@ -200,10 +227,10 @@ let apply = (store, changes, events, link) => {
     }
   };
 
-  Subscription.trigger(store.subs, events @ changeEvents);
+  Subscription.trigger(store.subs, [SharedTypes.Event.Update, ...events @ changeEvents]);
   Js.Global.setTimeout(() => {
-    setItem("renm:store", Js.Json.stringify(Serialize.toJson(store.world)));
-    setItem("renm:viewData", Js.Json.stringify(Serialize.toJson(store.sharedViewData)));
+    LocalStorage.setItem("renm:store", Js.Json.stringify(Serialize.toJson(store.world)));
+    LocalStorage.setItem("renm:viewData", Js.Json.stringify(Serialize.toJson(store.sharedViewData)));
   }, 0)->ignore;
 };
 
