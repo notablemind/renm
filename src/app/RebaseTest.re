@@ -68,7 +68,7 @@ let make = (_children) => {
       }
       store.world = world;
 
-      Subscription.trigger(store.subs, events);
+      Subscription.trigger(store.subs, [SharedTypes.Event.Update, ...events]);
 
     };
     <div className=Css.(style([
