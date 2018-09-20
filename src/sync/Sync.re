@@ -222,14 +222,10 @@ module F = (Config: {
   let applyRebase =
       (world: world('anyStatus), changes) : Belt.Result.t(world(notSyncing), Config.error) => {
     open Lets;
-    /* let changes = changes->List.reverse; */
-    Js.log3("applyRebase", changes, world.snapshot);
     let%Try (snapshot, changes) =
       changes->reduceChanges(world.snapshot);
-    Js.log3("reduced", snapshot, changes);
     let%TryWrap (current, unsynced) =
       world.unsynced->queueReduceChanges(snapshot);
-    Js.log4("applied the reduced ones", current, unsynced, world.unsynced);
     {
       history: History.append(world.history, changes
       ->List.reverse
@@ -289,12 +285,12 @@ module F = (Config: {
       | [one, ...rest] => {
         switch (changeSet) {
           | None =>
-            [(rebaseMany(one, rebases), (one.changeId, one.preSelection)), ...loop(rest, rebases, undoneChanges, Some(one.changeset))]
+            [(rebaseMany(one, rebases), (one.changeId, (one.preSelection, one.postSelection))), ...loop(rest, rebases, undoneChanges, Some(one.changeset))]
           | Some(changeset) =>
             if (changeset != one.changeset || changeset == None) {
               []
             } else {
-              [(rebaseMany(one, rebases), (one.changeId, one.preSelection)), ...loop(rest, rebases, undoneChanges, Some(changeset))]
+              [(rebaseMany(one, rebases), (one.changeId, (one.preSelection, one.postSelection))), ...loop(rest, rebases, undoneChanges, Some(changeset))]
             }
         }
       }

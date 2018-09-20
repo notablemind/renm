@@ -173,7 +173,7 @@ let updateChangeSet = (changeSet, action) => {
       Some((session, now, id))
     }
     | (_, ChangeContents(id, _)) =>
-    Js.log3("New changeset", changeSet, now);
+    /* Js.log3("New changeset", changeSet, now); */
     Some((Utils.newId(), now, id))
     | (_, _) => None
   }
@@ -200,21 +200,29 @@ let eventsForChanges = (nodes, changes) => {
   });
 };
 
-let apply = (store, changes, events, link) => {
+let apply = (~preSelection=?, ~postSelection=?, store, changes, events, link) => {
   let%Lets.TryLog changeEvents = eventsForChanges(store.world.current.nodes, changes);
 
   let changeId = store.sessionId ++ ":" ++ string_of_int(store.changeNum);
   store.changeNum = store.changeNum + 1;
 
-  let selection = (store.view.active, store.view.selection, (0, 0));
+  let preSelection = (store.view.active, store.view.selection, switch preSelection {
+    | None => (0, 0)
+    | Some(sel) => sel
+  });
+
+  let postSelection = (store.view.active, store.view.selection, switch postSelection {
+    | None => (0, 0)
+    | Some(sel) => sel
+  });
 
   switch (World.applyChange(
     ~changeId,
     ~sessionId=store.sessionId,
     ~changeset=store.changeSet->Lets.Opt.map(((cid, _, _)) => cid),
     ~author="jared",
-    ~preSelection=selection,
-    ~postSelection=selection,
+    ~preSelection,
+    ~postSelection,
     ~link,
     store.world,
     changes
@@ -288,24 +296,29 @@ let applyView = (store, viewActions) => {
   viewEvents
 };
 
-let act = (store, action) => {
+let act = (~preSelection=?, ~postSelection=?, store, action) => {
   let%Lets.TryLog {ActionResults.viewActions, changes} = processAction(store, action);
-  Js.log3(action, changes, viewActions);
+  /* Js.log3(action, changes, viewActions); */
 
   store.changeSet = updateChangeSet(store.changeSet, action);
 
   let viewEvents = applyView(store, viewActions);
 
-  apply(store, changes, viewEvents, None)
+  apply(~preSelection?, ~postSelection?, store, changes, viewEvents, None)
 };
+
+let selectionEvents = ((id, set, (pos, length))) => [
+    View.SetActive(id, Exactly(pos, length)),
+    View.SetSelection(set),
+  ];
 
 let undo = store => {
 
-  let (changes, changeIds) = World.getUndoChangeset(
+  let (changes, idsAndSelections) = World.getUndoChangeset(
     store.world.unsynced->Sync.Queue.toRevList @ store.world.history->Sync.History.itemsSince(None)->List.reverse,
     store.sessionId,
   )->List.unzip;
-  let (changeIds, preSelections) = List.unzip(changeIds);
+  let (changeIds, selections) = List.unzip(idsAndSelections);
 
   let change = changes->World.MultiChange.mergeChanges;
   Js.log3("Undo Changes", change, changeIds);
@@ -314,12 +327,9 @@ let undo = store => {
 
   store.changeSet = None;
 
-  let (activeId, selectionSet, (pos, length)) = preSelections->List.head->Lets.Opt.force;
+  let (preSelection, posSelection) = selections->List.head->Lets.Opt.force;
 
-  let viewEvents = applyView(store, [
-    View.SetActive(activeId, Start), /* TODO set selection */
-    View.SetSelection(selectionSet)
-  ]);
+  let viewEvents = applyView(store, selectionEvents(preSelection));
 
   apply(store, change, viewEvents, Some(Undo(changeIds)))
 };
@@ -339,7 +349,8 @@ let redo = store => {
 
   let viewEvents = applyView(store, [
     View.SetActive(activeId, Start), /* TODO set selection */
-    View.SetSelection(selectionSet)
+    View.SetSelection(selectionSet),
+    View.Edit(Exactly(pos, length))
   ]);
 
   apply(store, change, viewEvents, Some(Redo(redoId)))

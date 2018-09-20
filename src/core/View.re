@@ -11,7 +11,7 @@ let expand = (viewData, id) => {
   expanded: Set.String.add(viewData.expanded, id)
 };
 
-type editPos = Start | End | Default | Replace;
+type editPos = Start | End | Default | Replace | Exactly(int, int);
 type mode = Normal | Insert | Visual | Dragging | Dropping;
 
 type viewId = int;

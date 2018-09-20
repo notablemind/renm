@@ -131,7 +131,6 @@ let rebase = (change, rebaseItem) => switch (change, rebaseItem) {
       pid1 == nextPid && idx1 <= nidx
       ? nidx - 1
       : nidx;
-      nidx;
     let nidx =
       pid2 == nextPid && idx2 < nidx
       ? nidx + 1

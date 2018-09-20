@@ -2,7 +2,7 @@
 let str = ReasonReact.string;
 
 let showChange = (change: World.thisChange) => {
-  <div style=ReactDOMRe.Style.(make(~fontFamily="monospace", ~whiteSpace="pre", ()))>
+  <div style=ReactDOMRe.Style.(make(~fontFamily="monospace", ~whiteSpace="pre-wrap", ()))>
     {str(change.changeId ++ "\n")}
     {str(Js.Json.stringify(
       ChangeTransformer.transform_World__Notablemind__MultiChange__change(change.apply)

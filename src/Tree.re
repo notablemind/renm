@@ -95,7 +95,7 @@ let make = (~store: Store.t('status), _children) => {
       }
       onDrop={
         (sourceId, (parentId, idx)) => {
-          Js.log3("Dropping", parentId, idx);
+          /* Js.log3("Dropping", parentId, idx); */
           store
           ->Store.act(
               Store.Move(
