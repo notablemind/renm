@@ -59,16 +59,6 @@ let viewNode = (store, id) => {
 };
 
 type action =
-  /* | ViewAction(View.action) */
-  /* | SetActive(Node.id, View.editPos)
-  | SetMode(View.mode)
-  | SetCollapsed(Node.id, bool)
-  | AddToSelection(Node.id)
-  | ClearSelection
-  | Edit(View.editPos) */
-
-  /* actions that change the data */
-
   /** second arg is the thing to focus after */
   | Remove(Node.id, Node.id)
   | SetContents(Node.id, NodeType.contents)

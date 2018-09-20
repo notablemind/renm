@@ -14,6 +14,8 @@ S test
 B lib/bs/test
 S src
 B lib/bs/src
+S src/serde
+B lib/bs/src/serde
 S src/sync
 B lib/bs/src/sync
 S src/utils
@@ -22,4 +24,6 @@ S src/app
 B lib/bs/src/app
 S src/core
 B lib/bs/src/core
+S src/ui
+B lib/bs/src/ui
 ####BSB GENERATED: NO EDIT}
