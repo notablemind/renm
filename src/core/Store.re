@@ -1,8 +1,8 @@
 
 open SharedTypes;
 
-type t('status) = {
-  mutable world: World.world('status),
+type t = {
+  mutable world: World.world(World.notSyncing),
   mutable session: Session.session,
 };
 
@@ -47,9 +47,6 @@ module ActionResults = {
   type actionResults = {
     changes: list(Change.change),
     viewActions: list(View.action),
-    /* view: option(View.view), */
-    /* viewData: option(View.sharedViewData), */
-    /* events: list(Event.t) */
   };
 };
 
@@ -59,19 +56,10 @@ open Actions;
 
 let processAction = (data, action): Result.t(ActionResults.actionResults, string) =>
   switch (action) {
-  /* | ViewAction(viewAction) => {...blank, viewActions: [viewAction]} */
-  /* OK, it's the ones that actually change. maybe I want a polymorphic type here? dunno */
   | Remove(id, focusNext) =>
     Ok({
       changes: [RemoveNode(id)],
       viewActions: [View.SetActive(focusNext, Default)]
-      /* view: Some({...store.view, selection: Set.String.empty->Set.String.add(id)},
-      ),
-      events:
-      store.view.selection->Set.String.reduce([], (evts, id) => evts->List.concat(viewNode(store, id)))
-      ->List.concat(
-        viewNode(store, focusNext)
-      ) */
     })
 
   | SetContents(id, contents) =>
@@ -111,24 +99,6 @@ let processAction = (data, action): Result.t(ActionResults.actionResults, string
   | JoinUp(_, _, _) => Ok(blank)
   };
 
-let onChange = (store, session, events) => {
-  Subscription.trigger(session.Session.subs, [SharedTypes.Event.Update, ...events]);
-  Js.Global.setTimeout(() => {
-    LocalStorage.setItem("renm:store", Js.Json.stringify(Serialize.toJson(store.world)));
-    LocalStorage.setItem("renm:viewData", Js.Json.stringify(Serialize.toJson(session.sharedViewData)));
-  }, 0)->ignore;
-};
-
-let notifyForChanges = (store, session, changes) => {
-  let%Lets.TryLog changeEvents =
-    changes->Sync.tryReduce([], (events, change) => {
-      let%Lets.TryWrap more = Change.events(store.world.current.nodes, change);
-      events->List.concat(more)
-    });
-
-  onChange(store, session, changeEvents);
-};
-
 let eventsForChanges = (nodes, changes) => {
   changes->Sync.tryReduce([], (events, change) => {
     let%Lets.TryWrap more = Change.events(nodes, change);
@@ -136,13 +106,10 @@ let eventsForChanges = (nodes, changes) => {
   });
 };
 
-let apply = (~preSelection=?, ~postSelection=?, world: World.world('a), changeId, sessionInfo, changes, link) => {
-  let%Lets.Try changeEvents = eventsForChanges(world.current.nodes, changes);
+let apply = (world: World.world('a), changes) => {
+  let%Lets.Try changeEvents = eventsForChanges(world.current.nodes, changes.Sync.apply);
 
   let%Lets.Try world = try%Lets.Try (World.applyChange(
-    ~changeId,
-    ~sessionInfo,
-    ~link,
     world,
     changes
   )) {
@@ -194,18 +161,31 @@ So the algorithm is:
 
  */
 
-let act = (~preSelection=?, ~postSelection=?, store: t('a), action) => {
-  let session = store.session;
-  let%Lets.TryLog {ActionResults.viewActions, changes} = processAction(store.world.current, action);
+let onChange = (store, session, events) => {
+  Subscription.trigger(session.Session.subs, [SharedTypes.Event.Update, ...events]);
+  Js.Global.setTimeout(() => {
+    LocalStorage.setItem("renm:store", Js.Json.stringify(Serialize.toJson(store.world)));
+    LocalStorage.setItem("renm:viewData", Js.Json.stringify(Serialize.toJson(session.sharedViewData)));
+  }, 0)->ignore;
+};
+
+let prepareChange = (~preSelection=?, ~postSelection=?, data, session, action) => {
+  let%Lets.Try {ActionResults.viewActions, changes} = processAction(data, action);
   let (session, viewEvents) =
     session
     ->Session.updateChangeSet(action)
     ->Session.applyView(viewActions);
-  let (changeId, session, sessionInfo) = Session.makeSessionInfo(~preSelection?, ~postSelection?, session);
+  let (change, session) = Session.makeChange(~preSelection?, ~postSelection?, session, changes, None);
+  Ok((change, session, viewEvents))
+};
+
+let act = (~preSelection=?, ~postSelection=?, store: t, action) => {
+  let%Lets.TryLog (change, session, viewEvents) = prepareChange(~preSelection?, ~postSelection?, store.world.current, store.session, action);
   store.session = session;
 
-  let%Lets.TryLog (world, events) = apply(store.world, changeId, sessionInfo, changes, None);
+  let%Lets.TryLog (world, events) = apply(store.world, change);
   store.world = world;
+
   onChange(store, session, events @ viewEvents);
 };
 
@@ -235,9 +215,9 @@ let undo = store => {
   let session = {...session, changeSet: None};
   let (session, viewEvents) = Session.applyView(session, selectionEvents(preSelection));
 
-  let (changeId, session, sessionInfo) = Session.makeSessionInfo(~preSelection=selPos(postSelection), ~postSelection=selPos(preSelection), session);
+  let (change, session) = Session.makeChange(~preSelection=selPos(postSelection), ~postSelection=selPos(preSelection), session, change, Some(Undo(changeIds)));
   store.session = session;
-  let%Lets.TryLog (world, events) = apply(store.world, changeId, sessionInfo, change, Some(Undo(changeIds)))
+  let%Lets.TryLog (world, events) = apply(store.world, change);
   store.world = world;
   onChange(store, session, events @ viewEvents);
 };
@@ -253,9 +233,9 @@ let redo = store => {
   let session = {...session, changeSet: None};
   let (session, viewEvents) = Session.applyView(session, selectionEvents(preSelection));
 
-  let (changeId, session, sessionInfo) = Session.makeSessionInfo(~preSelection=selPos(postSelection), ~postSelection=selPos(preSelection), session);
+  let (change, session) = Session.makeChange(~preSelection=selPos(postSelection), ~postSelection=selPos(preSelection), session, change, Some(Redo(redoId)));
   store.session = session;
-  let%Lets.TryLog (world, events) = apply(store.world, changeId, sessionInfo, change, Some(Redo(redoId)))
+  let%Lets.TryLog (world, events) = apply(store.world, change);
   store.world = world;
   onChange(store, session, events @ viewEvents);
 };

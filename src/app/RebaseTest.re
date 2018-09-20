@@ -32,9 +32,9 @@ module ShowServer = {
 
 type state = {
   root: World.server,
-  a: Store.t(World.notSyncing),
-  b: Store.t(World.notSyncing),
-  c: Store.t(World.notSyncing),
+  a: Store.t,
+  b: Store.t,
+  c: Store.t,
 }
 
 let component = ReasonReact.reducerComponent("RebaseTest");
@@ -55,11 +55,11 @@ let make = (_children) => {
   },
   reducer: (state, _) => ReasonReact.Update(state),
   render: ({state: {root, a, b, c}} as self) => {
-    let startSync = (store: Store.t(World.notSyncing)) => {
+    let startSync = (store: Store.t) => {
       let world = World.prepareSync(store.world);
       store.world = world;
     };
-    let finishSync = (store: Store.t(World.notSyncing)) => {
+    let finishSync = (store: Store.t) => {
       let id = Sync.History.latestId(store.world.history);
       let unsynced = store.world.syncing;
 
@@ -94,7 +94,7 @@ let make = (_children) => {
       Subscription.trigger(store.session.subs, [SharedTypes.Event.Update, ...events]);
 
     };
-    let doSync = (store: Store.t(World.notSyncing)) => {
+    let doSync = (store: Store.t) => {
       startSync(store);
       finishSync(store);
     };

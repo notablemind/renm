@@ -80,7 +80,7 @@ let makeSelection = (session, sel) => {
   })
 };
 
-let makeSessionInfo = (~preSelection=?, ~postSelection=?, session) => {
+let makeSessionInfo = (~preSelection, ~postSelection, session) => {
   let (changeId, session) = getChangeId(session);
   let preSelection = makeSelection(session, preSelection);
   let postSelection = makeSelection(session, postSelection);
@@ -96,4 +96,14 @@ let makeSessionInfo = (~preSelection=?, ~postSelection=?, session) => {
       postSelection,
     },
   );
+};
+
+let makeChange = (~preSelection=?, ~postSelection=?, session, change, link) => {
+  let (changeId, session, sessionInfo) = makeSessionInfo(~preSelection, ~postSelection, session);
+  ({
+    Sync.apply: change,
+    changeId,
+    sessionInfo,
+    link,
+  }, session)
 };

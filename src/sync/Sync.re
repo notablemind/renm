@@ -165,20 +165,20 @@ module F = (Config: {
   };
 
   let applyChange = (
-    ~changeId,
+    /* ~changeId,
     ~sessionInfo,
-    ~link,
+    ~link, */
     world: world('a),
-    change: Config.change
+    change: changeInner(Config.change, Config.selection)
   ): Result.t(world('a), Config.error) => {
-    let%Lets.TryWrap (current, revert, rebase) = Config.apply(world.current, change);
+    let%Lets.TryWrap (current, revert, rebase) = Config.apply(world.current, change.apply);
     let change = {
-      inner: {
+      inner: change/*: {
         changeId,
         apply: change,
         sessionInfo,
         link,
-      },
+      }*/,
       revert,
       rebase,
     };

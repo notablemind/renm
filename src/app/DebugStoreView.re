@@ -19,7 +19,7 @@ let showChange = (change: World.thisChange) => {
 let component = ReasonReact.reducerComponent("DebugStoreView");
 
 
-let make = (~store: Store.t(World.notSyncing), _children) => {
+let make = (~store: Store.t, _children) => {
   ...component,
   initialState: () => (store.world.unsynced, store.world.syncing, store.world.history),
   reducer: (store, _) => ReasonReact.Update(store),
