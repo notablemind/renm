@@ -46,7 +46,7 @@ module Try = {
   let flatMap = let_;
   let try_ = (a, b) => switch a {
     | Result.Error(e) => b(e)
-    | Ok(_) => a
+    | Ok(v) => Result.Ok(v)
   };
   let force = t => switch t {
     | Result.Error(e) => {

@@ -38,16 +38,17 @@ module Queue: {
 type link = Undo(list(string)) | Redo(string);
 
 type change('change, 'rebase, 'selection) = {
-  changeId: string,
   apply: 'change,
   revert: 'change,
+  rebase: 'rebase,
+  link: option(link),
+
+  changeId: string,
   preSelection: 'selection,
   postSelection: 'selection,
-  rebase: 'rebase,
   sessionId: string,
   changeset: option(string),
   author: string,
-  link: option(link)
 };
 
 module History : {

@@ -111,17 +111,17 @@ let processAction = (data, action): Result.t(ActionResults.actionResults, string
   | JoinUp(_, _, _) => Ok(blank)
   };
 
-let notifyForChanges = (store, changes) => {
+let notifyForChanges = (store, session, changes) => {
   let%Lets.TryLog changeEvents =
     changes->Sync.tryReduce([], (events, change) => {
       let%Lets.TryWrap more = Change.events(store.world.current.nodes, change);
       events->List.concat(more)
     });
 
-  Subscription.trigger(store.session.subs, [SharedTypes.Event.Update, ...changeEvents]);
+  Subscription.trigger(session.Session.subs, [SharedTypes.Event.Update, ...changeEvents]);
   Js.Global.setTimeout(() => {
     LocalStorage.setItem("renm:store", Js.Json.stringify(Serialize.toJson(store.world)));
-    LocalStorage.setItem("renm:viewData", Js.Json.stringify(Serialize.toJson(store.session.sharedViewData)));
+    LocalStorage.setItem("renm:viewData", Js.Json.stringify(Serialize.toJson(session.sharedViewData)));
   }, 0)->ignore;
 };
 
@@ -132,38 +132,28 @@ let eventsForChanges = (nodes, changes) => {
   });
 };
 
-let apply = (~preSelection=?, ~postSelection=?, store, changes, events, link) => {
-  let%Lets.TryLog changeEvents = eventsForChanges(store.world.current.nodes, changes);
+let apply = (~preSelection=?, ~postSelection=?, world: World.world('a), session, changes, link) => {
+  let%Lets.Try changeEvents = eventsForChanges(world.current.nodes, changes);
 
-  let (changeId, session) = Session.getChangeId(store.session);
-  store.session = session
-  let preSelection = Session.makeSelection(store.session, preSelection);
-  let postSelection = Session.makeSelection(store.session, postSelection);
+  let (changeId, session) = Session.getChangeId(session);
+  let preSelection = Session.makeSelection(session, preSelection);
+  let postSelection = Session.makeSelection(session, postSelection);
 
-  switch (World.applyChange(
+  let%Lets.Try world = try%Lets.Try (World.applyChange(
     ~changeId,
-    ~sessionId=store.session.sessionId,
-    ~changeset=store.session.changeSet->Lets.Opt.map(((cid, _, _)) => cid),
+    ~sessionId=session.sessionId,
+    ~changeset=session.changeSet->Lets.Opt.map(((cid, _, _)) => cid),
     ~author="jared",
     ~preSelection,
     ~postSelection,
     ~link,
-    store.world,
+    world,
     changes
   )) {
-    | Result.Error(error) => {
-      Js.log(error);
-    }
-    | Ok(world) => {
-      store.world = world;
-    }
+    | _ => Error("Failed to apply change")
   };
 
-  Subscription.trigger(store.session.subs, [SharedTypes.Event.Update, ...events @ changeEvents]);
-  Js.Global.setTimeout(() => {
-    LocalStorage.setItem("renm:store", Js.Json.stringify(Serialize.toJson(store.world)));
-    LocalStorage.setItem("renm:viewData", Js.Json.stringify(Serialize.toJson(store.session.sharedViewData)));
-  }, 0)->ignore;
+  Ok((world, session, changeEvents))
 };
 
 /*
@@ -208,16 +198,29 @@ So the algorithm is:
 
  */
 
+let onChange = (store, session, events) => {
+  Subscription.trigger(session.Session.subs, [SharedTypes.Event.Update, ...events]);
+  Js.Global.setTimeout(() => {
+    LocalStorage.setItem("renm:store", Js.Json.stringify(Serialize.toJson(store.world)));
+    LocalStorage.setItem("renm:viewData", Js.Json.stringify(Serialize.toJson(session.sharedViewData)));
+  }, 0)->ignore;
+};
+
 let act = (~preSelection=?, ~postSelection=?, store: t('a), action) => {
+  let session = store.session;
   let%Lets.TryLog {ActionResults.viewActions, changes} = processAction(store.world.current, action);
   /* Js.log3(action, changes, viewActions); */
 
-  store.session = Session.updateChangeSet(store.session, action);
 
-  let (session, viewEvents) = Session.applyView(store.session, viewActions);
-  store.session = session
+  let (session, viewEvents) =
+    session
+    ->Session.updateChangeSet(action)
+    ->Session.applyView(viewActions);
 
-  apply(~preSelection?, ~postSelection?, store, changes, viewEvents, None)
+  let%Lets.TryLog (world, session, events) = apply(~preSelection?, ~postSelection?, store.world, session, changes, None);
+  store.world = world;
+  store.session = session;
+  onChange(store, session, events @ viewEvents);
 };
 
 let selectionEvents = ((id, set, (pos, length))) => [
@@ -228,47 +231,45 @@ let selectionEvents = ((id, set, (pos, length))) => [
 let selPos = ((_, _, pos)) => pos;
 
 let undo = store => {
+  let session = store.session;
 
   let (changes, idsAndSelections) = World.getUndoChangeset(
     store.world.unsynced->Sync.Queue.toRevList @ store.world.history->Sync.History.itemsSince(None)->List.reverse,
-    store.session.sessionId,
+    session.sessionId,
   )->List.unzip;
   let (changeIds, selections) = List.unzip(idsAndSelections);
 
   let change = changes->World.MultiChange.mergeChanges;
-  /* Js.log3("Undo Changes", change, changeIds); */
 
   let%Lets.Guard () = (change != [], ());
-
-  store.session = {...store.session, changeSet: None};
 
   let (_, postSelection) = selections->List.head->Lets.Opt.force;
   let (preSelection, _) = selections->List.get(List.length(selections) - 1)->Lets.Opt.force;
 
-  /* Js.log3("Undo sels", preSelection, postSelection); */
-  let (session, viewEvents) = Session.applyView(store.session, selectionEvents(preSelection));
-  store.session = session
+  let session = {...session, changeSet: None};
+  let (session, viewEvents) = Session.applyView(session, selectionEvents(preSelection));
 
-  apply(~preSelection=selPos(postSelection), ~postSelection=selPos(preSelection), store, change, viewEvents, Some(Undo(changeIds)))
+  let%Lets.TryLog (world, session, events) = apply(~preSelection=selPos(postSelection), ~postSelection=selPos(preSelection), store.world, session, change, Some(Undo(changeIds)))
+  store.world = world;
+  store.session = session;
+  onChange(store, session, events @ viewEvents);
 };
 
 let redo = store => {
+  let session = store.session;
 
   let%Lets.OptConsume (change, redoId, preSelection, postSelection) = World.getRedoChange(
     store.world.unsynced->Sync.Queue.toRevList,
-    store.session.sessionId,
+    session.sessionId,
   );
 
-  /* Js.log3("Redo Changes", change, redoId); */
+  let session = {...session, changeSet: None};
+  let (session, viewEvents) = Session.applyView(session, selectionEvents(preSelection));
 
-  store.session = {...store.session, changeSet: None};
-
-  /* let (activeId, selectionSet, (pos, length)) = preSelection; */
-  /* Js.log3("Redo sels", preSelection, postSelection); */
-
-  let (session, viewEvents) = Session.applyView(store.session, selectionEvents(preSelection));
-
-  apply(~preSelection=selPos(postSelection), ~postSelection=selPos(preSelection), store, change, viewEvents, Some(Redo(redoId)))
+  let%Lets.TryLog (world, session, events) = apply(~preSelection=selPos(postSelection), ~postSelection=selPos(preSelection), store.world, session, change, Some(Redo(redoId)))
+  store.world = world;
+  store.session = session;
+  onChange(store, session, events @ viewEvents);
 };
 
 
