@@ -206,7 +206,7 @@ and transform_NodeType__Notablemind____contents: NodeType.contents => Js.Json.t 
         transform_NodeType__Notablemind__Svg__t(arg0),
       |])
     }
-and transform_SharedTypes__Notablemind____date: SharedTypes.date => Js.Json.t =
+and transform_SharedTypes__Notablemind____date: Data.date => Js.Json.t =
   value => Js.Json.number(value)
 and transform_Change__Notablemind____delta: Change.delta => Js.Json.t =
   value => transform_Delta__Notablemind____delta(value)
@@ -358,7 +358,7 @@ and transform_NodeType__Notablemind__Svg__kind: NodeType.Svg.kind => Js.Json.t =
     | [@implicit_arity] Line(arg0, arg1) =>
       Js.Json.array([|Js.Json.string("Line"), Js.Json.number(arg0), Js.Json.number(arg1)|])
     }
-and transform_SharedTypes__Notablemind__Node__id: SharedTypes.Node.id => Js.Json.t =
+and transform_SharedTypes__Notablemind__Node__id: Data.Node.id => Js.Json.t =
   value => Js.Json.string(value)
 and transform_NodeType__Notablemind__Svg__t: NodeType.Svg.t => Js.Json.t =
   record =>
@@ -393,7 +393,7 @@ and transform_NodeType__Notablemind__Svg__t: NodeType.Svg.t => Js.Json.t =
     )
 and transform_SharedTypes__Notablemind__Node__t:
   'arg0 'arg1.
-  ('arg0 => Js.Json.t, 'arg1 => Js.Json.t, SharedTypes.Node.t('arg0, 'arg1)) =>
+  ('arg0 => Js.Json.t, 'arg1 => Js.Json.t, Data.Node.t('arg0, 'arg1)) =>
   Js.Json.t
  =
   (contentsTransformer, prefixTransformer, record) =>

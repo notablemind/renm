@@ -12,7 +12,7 @@ let component = ReasonReact.statelessComponent("Tree");
 let rec visibleChildren = (store: Store.t('status), id) => {
   let one = Set.String.empty
   ->Set.String.add(id);
-  let%Lets.OptDefault node = (store->Store.get(id), one);
+  let%Lets.OptDefault node = (store.world.current->Data.get(id), one);
   if (node.children != [] && (id == store.session.view.root || store.session.sharedViewData.expanded->Set.String.has(id))) {
     node.children->List.reduce(one, (ids, id) => ids->Set.String.union(store->visibleChildren(id)))
   } else {
@@ -54,8 +54,8 @@ let make = (~store: Store.t('status), _children) => {
 
       }}
       testNode={(id, x, y, rect) => {
-        let%Lets.Opt node = store->Store.get(id);
-        let%Lets.Opt parent = store->Store.get(node.parent);
+        let%Lets.Opt node = store.world.current->Data.get(id);
+        let%Lets.Opt parent = store.world.current->Data.get(node.parent);
         let%Lets.Opt idx = TreeTraversal.childPos(parent.children, id);
         let hasChildren = node.children != [];
         let isExpanded = store.session.sharedViewData.expanded->Set.String.has(id);
@@ -88,7 +88,7 @@ let make = (~store: Store.t('status), _children) => {
               (set, id) => set->Set.String.union(visibleChildren(store, id))
             )
           } else {
-            Store.actView(store.session, SetActive(id, store.session.view.editPos));
+            Session.actView(store.session, SetActive(id, store.session.view.editPos));
             visibleChildren(store, id)
           }
         }

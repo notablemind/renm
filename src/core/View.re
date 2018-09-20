@@ -18,23 +18,23 @@ type viewId = int;
 
 type view = {
   id: viewId,
-  root: SharedTypes.Node.id,
+  root: Data.Node.id,
   hideCompleted: bool,
 
   mode,
   selection: Set.String.t,
   editPos,
-  active: SharedTypes.Node.id,
+  active: Data.Node.id,
 
-  prevActive: option(SharedTypes.Node.id),
-  lastEdited: option(SharedTypes.Node.id),
+  prevActive: option(Data.Node.id),
+  lastEdited: option(Data.Node.id),
 };
 
 let emptySharedViewData = {
   expanded: Set.String.empty
 };
 
-module Node = SharedTypes.Node;
+module Node = Data.Node;
 
 type action =
 | Rebase(Node.id)

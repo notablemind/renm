@@ -2,7 +2,7 @@
 let rec fromFixture = (pid, item) =>
   switch (item) {
   | `Leaf(id, text) => (id, [
-      SharedTypes.Node.create(
+      Data.Node.create(
         ~id,
         ~parent=pid,
         ~contents=NodeType.Normal(Delta.fromString(text)),
@@ -15,7 +15,7 @@ let rec fromFixture = (pid, item) =>
       children
       ->List.map(child => fromFixture(id, child));
     (id, [
-      SharedTypes.Node.create(
+      Data.Node.create(
         ~id,
         ~parent=pid,
         ~contents=NodeType.Normal(Delta.fromString(text)),
@@ -44,14 +44,13 @@ let (root, nodes) = fromFixture("root", `Node("root", "Root", [
 
 let nodeMap = List.reduce(nodes, Map.String.empty, (map, node) => Map.String.set(map, node.id, node));
 
-let data = {...SharedTypes.emptyData(~root), nodes: nodeMap};
+let data = {...Data.emptyData(~root), nodes: nodeMap};
 
 open Change;
 open Lets;
-open SharedTypes;
 
 let leaf = (id, parent, text) =>
-  SharedTypes.Node.create(
+  Data.Node.create(
     ~id,
     ~parent,
     ~contents=NodeType.Normal(Delta.fromString(text)),
@@ -73,7 +72,7 @@ let expectBoth = (one, two, data) => one(data) && two(data);
 let expectAll = (fns, data) => !List.some(fns, fn => !fn(data));
 
 let expectChildren = (id, children, data) => {
-  let node = data.nodes->Map.String.get(id)->Opt.force;
+  let node = data.Data.nodes->Map.String.get(id)->Opt.force;
   if (node.children != children) {
     Js.log2(node.children, children);
     false
@@ -83,7 +82,7 @@ let expectChildren = (id, children, data) => {
 };
 
 let expectContents = (id, string, data) => {
-  contentsEq((data.nodes->Map.String.get(id)->Opt.force).contents, string)
+  contentsEq((data->Data.get(id)->Opt.force).contents, string)
 };
 
 let changeTests = [
@@ -163,7 +162,7 @@ let rebaseTests = [
     [AddNode(2, leaf("b1", "root", "b1 leaf"))],
     [AddNode(1, leaf("a1", "root", "a1 leaf"))],
     data => {
-      let root = data.nodes->Map.String.get("root")->Opt.force;
+      let root = data->Data.get("root")->Opt.force;
       root.children == ["a", "a1", "b", "b1", "c", "i"];
     },
   ),

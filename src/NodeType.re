@@ -59,4 +59,4 @@ type widgets =
 
 /* TODO how to have combined changes? */
 
-type t = SharedTypes.Node.t(contents, option(prefix));
+type t = Data.Node.t(contents, option(prefix));

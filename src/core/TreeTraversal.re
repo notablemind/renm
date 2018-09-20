@@ -1,6 +1,5 @@
 
 open Lets;
-open SharedTypes;
 
 let childPos = (children, id) => {
   let rec loop = (i, children) => switch children {
@@ -33,7 +32,7 @@ let rec prevChild = (children, id) => switch children {
   | [_, ...rest] => prevChild(rest, id)
 };
 
-let rec down = (data: data('a, 'b), expanded, node: SharedTypes.Node.t('a, 'b)) => {
+let rec down = (data: Data.data('a, 'b), expanded, node: Data.Node.t('a, 'b)) => {
   if (node.children != [] && (node.id == data.root || Set.String.has(expanded, node.id))) {
     List.head(node.children)
   } else if (node.id == data.root) {
@@ -49,7 +48,7 @@ let rec down = (data: data('a, 'b), expanded, node: SharedTypes.Node.t('a, 'b)) 
   }
 };
 
-let nextChildPosition = (data: data('a, 'b), expanded, node: SharedTypes.Node.t('a, 'b)) => {
+let nextChildPosition = (data: Data.data('a, 'b), expanded, node: Data.Node.t('a, 'b)) => {
   if (node.id == data.root || (node.children != [] && Set.String.has(expanded, node.id))) {
     (node.id, 0)
   } else {
@@ -62,7 +61,7 @@ let nextChildPosition = (data: data('a, 'b), expanded, node: SharedTypes.Node.t(
 };
 
 let rec lastOpenChild =
-        (data: data('a, 'b), expanded, node: SharedTypes.Node.t('a, 'b)) =>
+        (data: Data.data('a, 'b), expanded, node: Data.Node.t('a, 'b)) =>
   if (Set.String.has(expanded, node.id) && node.children != []) {
     {
       let%Lets.Opt lastChild =
@@ -75,7 +74,7 @@ let rec lastOpenChild =
     node.id;
   };
 
-let up = (data: data('a, 'b), expanded, node: SharedTypes.Node.t('a, 'b)) => {
+let up = (data: Data.data('a, 'b), expanded, node: Data.Node.t('a, 'b)) => {
   if (node.id == data.root) {
     None
   } else {
@@ -93,13 +92,13 @@ let orderIds = (nodes, root, ids) => {
   let rec loop = (id, collected) => {
     let collected = Set.String.has(ids, id) ? [id, ...collected] : collected;
     let%OptForce node = Map.String.get(nodes, id);
-    node.Node.children->List.reduce(collected, (collected, child) => loop(child, collected))
+    node.Data.Node.children->List.reduce(collected, (collected, child) => loop(child, collected))
   };
   loop(root, []) |. List.reverse;
 };
 
 let cleanNodes = (nodes) => {
   Map.String.map(nodes, (node) => {
-    {...node, Node.children: node.Node.children->List.keep(Map.String.has(nodes))}
+    {...node, Data.Node.children: node.Data.Node.children->List.keep(Map.String.has(nodes))}
   })
 };

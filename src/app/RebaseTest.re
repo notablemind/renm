@@ -40,7 +40,7 @@ type state = {
 let component = ReasonReact.reducerComponent("RebaseTest");
 
 let baseWorld = World.make({
-  ...SharedTypes.emptyData(~root="root"),
+  ...Data.emptyData(~root="root"),
   nodes: Store.makeNodeMap(Fixture.large)
 }, Sync.History.empty);
 

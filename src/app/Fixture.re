@@ -1,6 +1,6 @@
 
 let rec fromFixture = (pid, id, item) => switch item {
-  | `Leaf(text) => [SharedTypes.Node.create(
+  | `Leaf(text) => [Data.Node.create(
       ~id,
       ~parent=pid,
       ~contents=NodeType.Normal(Delta.fromString(text)),
@@ -15,7 +15,7 @@ let rec fromFixture = (pid, id, item) => switch item {
       } ++ " : " ++ Utils.newId();
       (cid, fromFixture(id, cid, child))
     });
-    [SharedTypes.Node.create(
+    [Data.Node.create(
       ~id,
       ~parent=pid,
       ~contents=NodeType.Normal(Delta.fromString(text)),

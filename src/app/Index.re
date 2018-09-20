@@ -6,7 +6,7 @@ let world: World.world(World.notSyncing) = switch (LocalStorage.getJson("renm:st
   | Some(_)
   /* | Some(data) => data */
   | None => World.make({
-    ...SharedTypes.emptyData(~root="root"),
+    ...Data.emptyData(~root="root"),
     nodes: Store.makeNodeMap(Fixture.large),
   }, Sync.History.empty)
 };
@@ -23,7 +23,7 @@ Js.log(world)
 
 let store = {
   Store.session: {
-    ...Store.createSession(~sessionId=Utils.newId(), ~root=world.current.root),
+    ...Session.createSession(~sessionId=Utils.newId(), ~root=world.current.root),
     sharedViewData,
   },
   world,

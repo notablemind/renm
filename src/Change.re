@@ -1,9 +1,10 @@
 
 open SharedTypes;
+open Data;
 
 type delta = Delta.delta;
 
-type data = SharedTypes.data(NodeType.contents, option(NodeType.prefix));
+type data = Data.data(NodeType.contents, option(NodeType.prefix));
 
 /*
 
@@ -95,7 +96,7 @@ type error =
 | Cycle(Node.id, Node.id)
 ;
 
-let changeContents = (node, change) => SharedTypes.Node.(
+let changeContents = (node, change) => Data.Node.(
   switch (node.contents) {
   | NodeType.Normal(contents) =>
     let newContents = Delta.compose(contents, change);

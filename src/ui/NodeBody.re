@@ -1,14 +1,14 @@
 open Opens;
 
 type data('contents, 'prefix) = {
-  node: SharedTypes.Node.t('contents, 'prefix),
+  node: Data.Node.t('contents, 'prefix),
   selected: bool,
   editPos: option(View.editPos),
   collapsed: bool,
 };
 
-let getData = (store, id) =>
-  switch (Store.get(store, id)) {
+let getData = (store: Store.t('a), id) =>
+  switch (Data.get(store.world.current, id)) {
   | None => None
   | Some(node) =>
     Some({
@@ -24,7 +24,7 @@ let getData = (store, id) =>
 let evtValue = evt => ReactEvent.Form.target(evt)##value;
 
 let renderContents =
-    (store, node: SharedTypes.Node.t(NodeType.contents, option(NodeType.prefix)), editPos, collapsed) =>
+    (store, node: Data.Node.t(NodeType.contents, option(NodeType.prefix)), editPos, collapsed) =>
   switch (node.contents) {
   | Normal(text) =>
     <Quill
@@ -45,7 +45,7 @@ let renderContents =
             Store.ChangeContents(node.id, delta),
           ),
         onToggleCollapse: () => {
-          Store.actView(store.session, View.SetCollapsed(node.id, !collapsed));
+          Session.actView(store.session, View.SetCollapsed(node.id, !collapsed));
           false;
         },
         onEnter: () => {
@@ -161,15 +161,15 @@ let make =
             onMouseDown={evt =>
               if (ReactEvent.Mouse.metaKey(evt)) {
                 ReactEvent.Mouse.preventDefault(evt);
-                Store.actView(store.session, AddToSelection(node.id))
+                Session.actView(store.session, AddToSelection(node.id))
               } else {
-                Store.actView(store.session, SetActive(node.id, Default))
+                Session.actView(store.session, SetActive(node.id, Default))
               }
             }>
             {
               node.id != store.session.view.root ?
                 renderHandle(~onMouseDown, ~hasChildren=node.children != [], ~collapsed, ~toggleCollapsed={() => {
-                  Store.actView(
+                  Session.actView(
                     store.session,
                     SetCollapsed(node.id, !collapsed),
                   )

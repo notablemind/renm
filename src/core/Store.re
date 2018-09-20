@@ -1,49 +1,24 @@
 
 open SharedTypes;
 
-type session = {
-  sessionId: string,
-  mutable changeNum: int,
-  mutable changeSet: option((string, float, string)),
-  mutable view: View.view,
-  mutable sharedViewData: View.sharedViewData,
-  subs: Hashtbl.t(Event.t, list((int, unit => unit))),
-};
-
 type t('status) = {
   mutable world: World.world('status),
-  mutable session,
+  mutable session: Session.session,
 };
 
-let get = (store, id) => Map.String.get(store.world.current.nodes, id);
-let getResult = (store, id) => Map.String.get(store.world.current.nodes, id)->Lets.Opt.orError("No node " ++ id);
+/* let get = (store, id) => Map.String.get(store.world.current.nodes, id);
+let getResult = (store, id) => Map.String.get(store.world.current.nodes, id)->Lets.Opt.orError("No node " ++ id); */
 
-let subscribe = (store, id, fn) => {
-  let evts = [Event.Node(id), Event.View(Node(id))];
-  Subscription.subscribe(store.subs, evts, fn);
-};
-
-let makeNodeMap = (nodes: list(SharedTypes.Node.t('contents, 'prefix))) =>
+let makeNodeMap = (nodes: list(Data.Node.t('contents, 'prefix))) =>
   List.reduce(nodes, Map.String.empty, (map, node) =>
     Map.String.set(map, node.id, node)
   );
 
-let createSession = (~sessionId, ~root) => {
-{
-      sessionId,
-      changeNum: 0,
-      changeSet: None,
-      view: View.emptyView(~root, ~id=0),
-      sharedViewData: View.emptySharedViewData,
-      subs: Hashtbl.create(10),
-    }
-};
-
-let create = (~sessionId, ~root, ~nodes: list(SharedTypes.Node.t('contents, 'prefix))) => {
+let create = (~sessionId, ~root, ~nodes: list(Data.Node.t('contents, 'prefix))) => {
   let nodeMap = makeNodeMap(nodes);
   {
-    session: createSession(~sessionId, ~root),
-    world: World.make({...emptyData(~root), nodes: nodeMap}, Sync.History.empty),
+    session: Session.createSession(~sessionId, ~root),
+    world: World.make({...Data.emptyData(~root), nodes: nodeMap}, Sync.History.empty),
   }
 };
 
@@ -69,6 +44,7 @@ let viewNode = (store, id) => {
   [Event.View(Node(id))];
 };
 
+open Data;
 type action =
   /** second arg is the thing to focus after */
   | Remove(Node.id, Node.id)
@@ -96,7 +72,7 @@ let blank = {ActionResults.changes: [], viewActions: []};
 
 /*
  */
-let processAction = (store, action): Result.t(ActionResults.actionResults, string) =>
+let processAction = (data, action): Result.t(ActionResults.actionResults, string) =>
   switch (action) {
   /* | ViewAction(viewAction) => {...blank, viewActions: [viewAction]} */
   /* OK, it's the ones that actually change. maybe I want a polymorphic type here? dunno */
@@ -124,9 +100,9 @@ let processAction = (store, action): Result.t(ActionResults.actionResults, strin
     let%Lets.Try (_, changes) = ids
     ->List.reverse
     ->Sync.tryReduce((0, []), ((off, changes), id) => {
-      let%Lets.Try node = store->get(id)->Lets.Opt.orError("Cannot find node " ++ id);
+      let%Lets.Try node = data->get(id)->Lets.Opt.orError("Cannot find node " ++ id);
       let%Lets.Try off = if (node.parent == pid) {
-        let%Lets.Try parent = store->get(pid)->Lets.Opt.orError("Cannot find node " ++ pid);
+        let%Lets.Try parent = data->get(pid)->Lets.Opt.orError("Cannot find node " ++ pid);
         let%Lets.Try idx = TreeTraversal.childPos(parent.children, node.id)->Lets.Opt.orError("Not in children " ++ node.id);
         Ok(idx < index ? off + 1 : 0)
       } else {
@@ -150,19 +126,6 @@ let processAction = (store, action): Result.t(ActionResults.actionResults, strin
   | JoinUp(_, _, _) => Ok(blank)
   };
 
-
-let actView = (store, action) => {
-  let (view, sharedViewData, events) = View.processViewAction(store.view, store.sharedViewData, action);
-
-  store.view = view;
-  store.sharedViewData = sharedViewData;
-
-  Subscription.trigger(store.subs, events);
-
-  Js.Global.setTimeout(() => {
-    LocalStorage.setItem("renm:viewData", Js.Json.stringify(Serialize.toJson(store.sharedViewData)));
-  }, 0)->ignore;
-};
 
 /** TODO test this to see if it makes sense */
 let changeSetTimeout = 500.;
@@ -285,25 +248,13 @@ So the algorithm is:
 
  */
 
-let applyView = (store, viewActions) => {
-  let (view, sharedViewData, viewEvents) = viewActions->List.reduce((store.view, store.sharedViewData, []), ((v, svd, evts), action) => {
-    let (v, svg, nevts) = View.processViewAction(v, svd, action);
-    (v, svg, nevts @ evts)
-  });
-
-  store.view = view;
-  store.sharedViewData = sharedViewData;
-
-  viewEvents
-};
-
-let act = (~preSelection=?, ~postSelection=?, store, action) => {
-  let%Lets.TryLog {ActionResults.viewActions, changes} = processAction(store, action);
+let act = (~preSelection=?, ~postSelection=?, store: t('a), action) => {
+  let%Lets.TryLog {ActionResults.viewActions, changes} = processAction(store.world.current, action);
   /* Js.log3(action, changes, viewActions); */
 
   store.session.changeSet = updateChangeSet(store.session.changeSet, action);
 
-  let viewEvents = applyView(store.session, viewActions);
+  let viewEvents = Session.applyView(store.session, viewActions);
 
   apply(~preSelection?, ~postSelection?, store, changes, viewEvents, None)
 };
@@ -334,7 +285,7 @@ let undo = store => {
   let (preSelection, _) = selections->List.get(List.length(selections) - 1)->Lets.Opt.force;
 
   /* Js.log3("Undo sels", preSelection, postSelection); */
-  let viewEvents = applyView(store.session, selectionEvents(preSelection));
+  let viewEvents = Session.applyView(store.session, selectionEvents(preSelection));
 
   apply(~preSelection=selPos(postSelection), ~postSelection=selPos(preSelection), store, change, viewEvents, Some(Undo(changeIds)))
 };
@@ -353,7 +304,7 @@ let redo = store => {
   /* let (activeId, selectionSet, (pos, length)) = preSelection; */
   /* Js.log3("Redo sels", preSelection, postSelection); */
 
-  let viewEvents = applyView(store.session, selectionEvents(preSelection));
+  let viewEvents = Session.applyView(store.session, selectionEvents(preSelection));
 
   apply(~preSelection=selPos(postSelection), ~postSelection=selPos(preSelection), store, change, viewEvents, Some(Redo(redoId)))
 };
