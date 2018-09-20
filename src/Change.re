@@ -98,7 +98,6 @@ let changeContents = (node, change) => SharedTypes.Node.(
   switch (node.contents) {
   | NodeType.Normal(contents) =>
     let newContents = Delta.compose(contents, change);
-    Js.log4("Contents change", contents, change, newContents);
     let undo = Delta.diff(newContents, contents);
     Result.Ok(({
       ...node,
@@ -129,7 +128,7 @@ let rebase = (change, rebaseItem) => switch (change, rebaseItem) {
 
   | (MoveNode(nextPid, nidx, id), MoveChild(pid1, idx1, pid2, idx2)) =>
     let nidx =
-      pid1 == nextPid && idx1 < nidx
+      pid1 == nextPid && idx1 <= nidx
       ? nidx - 1
       : nidx;
     let nidx =
@@ -223,6 +222,7 @@ let apply = (data: data, change) => {
       let%Try node = data.nodes->Map.String.get(id)->Opt.orError(MissingNode(id));
       let%Try parent = data.nodes->Map.String.get(node.parent)->Opt.orError(MissingParent(node.parent, id));
       let%Try idx = parent.children->TreeTraversal.childPos(id)->Lets.Opt.orError(NotInChildren(node.parent, node.id));
+      Js.log4("::: Move node", node, parent, (nidx, idx));
       let%Try nodes = if (node.parent == nextPid) {
         let rest = parent.children->List.keep((!=)(id));
         let children = Utils.insertIntoList(rest, nidx, id);

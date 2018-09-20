@@ -11,7 +11,7 @@ let expand = (viewData, id) => {
   expanded: Set.String.add(viewData.expanded, id)
 };
 
-type editPos = Start | End | Default | Replace;
+type editPos = Start | End | Default | Replace | Exactly(int, int);
 type mode = Normal | Insert | Visual | Dragging | Dropping;
 
 type viewId = int;
@@ -42,6 +42,7 @@ type action =
 | SetMode(mode)
 | Edit(editPos)
 | AddToSelection(Node.id)
+| SetSelection(Set.String.t)
 | SetCollapsed(Node.id, bool)
 | SetActive(Node.id, editPos)
 | ClearSelection
@@ -102,6 +103,11 @@ let processViewAction = (view, sharedViewData, action) => switch action {
     sharedViewData,
       [ Event.View(Node(id))]
       )
+  | SetSelection(selection) => (
+    {...view, selection: selection->Set.String.add(view.active)},
+    sharedViewData,
+    selection->Set.String.reduce([], (evts, id) => [Event.View(Node(id)), ...evts])
+  )
 
   | ClearSelection =>
     ({...view, selection: view.selection->Set.String.add(view.active)},

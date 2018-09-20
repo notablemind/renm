@@ -71,6 +71,7 @@ module Event = {
   type t =
   | View(View.event)
   | Node(Node.id)
+  | Update
   | Root
 };
 
