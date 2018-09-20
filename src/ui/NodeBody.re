@@ -13,11 +13,11 @@ let getData = (store, id) =>
   | Some(node) =>
     Some({
       node,
-      editPos: id == store.view.active ? Some(store.view.editPos) : None,
-      selected: Set.String.has(store.view.selection, id),
+      editPos: id == store.session.view.active ? Some(store.session.view.editPos) : None,
+      selected: Set.String.has(store.session.view.selection, id),
       collapsed:
-        id == store.view.root ?
-          false : !Set.String.has(store.sharedViewData.expanded, id),
+        id == store.session.view.root ?
+          false : !Set.String.has(store.session.sharedViewData.expanded, id),
     })
   };
 
@@ -45,7 +45,7 @@ let renderContents =
             Store.ChangeContents(node.id, delta),
           ),
         onToggleCollapse: () => {
-          Store.actView(store, View.SetCollapsed(node.id, !collapsed));
+          Store.actView(store.session, View.SetCollapsed(node.id, !collapsed));
           false;
         },
         onEnter: () => {
@@ -67,7 +67,7 @@ let renderContents =
         onBackspace: currentValue => {
           Actions.backspace(store, node, currentValue);
         },
-        onFocus: _evt => Actions.focus(store, node)
+        onFocus: _evt => Actions.focus(store.session, node)
       }
     />
   | _ => str("Other contents")
@@ -161,16 +161,16 @@ let make =
             onMouseDown={evt =>
               if (ReactEvent.Mouse.metaKey(evt)) {
                 ReactEvent.Mouse.preventDefault(evt);
-                Store.actView(store, AddToSelection(node.id))
+                Store.actView(store.session, AddToSelection(node.id))
               } else {
-                Store.actView(store, SetActive(node.id, Default))
+                Store.actView(store.session, SetActive(node.id, Default))
               }
             }>
             {
-              node.id != store.view.root ?
+              node.id != store.session.view.root ?
                 renderHandle(~onMouseDown, ~hasChildren=node.children != [], ~collapsed, ~toggleCollapsed={() => {
                   Store.actView(
-                    store,
+                    store.session,
                     SetCollapsed(node.id, !collapsed),
                   )
                 }}) :

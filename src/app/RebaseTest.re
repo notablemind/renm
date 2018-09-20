@@ -74,7 +74,7 @@ let make = (_children) => {
           World.applyRebase(store.world, changes, rebases);
       };
       let rec loop = (id, expanded) => {
-        if (id == store.view.root || id == world.current.root) {
+        if (id == store.session.view.root || id == world.current.root) {
           expanded
         } else {
           {let%Lets.OptWrap node = world.current.nodes->Map.String.get(id);
@@ -83,7 +83,7 @@ let make = (_children) => {
         }
       };
 
-      store.sharedViewData = {expanded: loop(store.view.active, store.sharedViewData.expanded)};
+      store.session.sharedViewData = {expanded: loop(store.session.view.active, store.session.sharedViewData.expanded)};
 
       let%Lets.TryForce events = switch result {
         | `Commit => Ok([])
@@ -91,7 +91,7 @@ let make = (_children) => {
       }
       store.world = world;
 
-      Subscription.trigger(store.subs, [SharedTypes.Event.Update, ...events]);
+      Subscription.trigger(store.session.subs, [SharedTypes.Event.Update, ...events]);
 
     };
     let doSync = (store: Store.t(World.notSyncing)) => {
@@ -108,7 +108,7 @@ let make = (_children) => {
       <div className=Css.(style([flex(1)]))>
         <button onClick=(_ev => {
           startSync(a);
-          Subscription.trigger(a.subs, [SharedTypes.Event.Update]);
+          Subscription.trigger(a.session.subs, [SharedTypes.Event.Update]);
         }) >
           {ReasonReact.string("Start Sync")}
         </button>

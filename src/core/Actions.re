@@ -5,7 +5,7 @@ open SharedTypes;
 open Store;
 
 let indent = (store, node: Node.t('t, 'p)) => {
-  let%UnitIf () = node.id != store.view.root;
+  let%UnitIf () = node.id != store.session.view.root;
   let module Opt = OptConsume;
   let%Opt parent = store->get(node.parent);
   let%Opt prev = TreeTraversal.prevChild(parent.children, node.id);
@@ -15,7 +15,7 @@ let indent = (store, node: Node.t('t, 'p)) => {
 };
 
 let dedent = (store, node: Node.t('t, 'p)) => {
-  let%UnitIf () = node.id != store.view.root && node.parent != store.view.root;
+  let%UnitIf () = node.id != store.session.view.root && node.parent != store.session.view.root;
   let module Opt = OptConsume;
   let%Opt parent = store->get(node.parent);
   let%Opt grandParent = store->get(parent.parent);
@@ -27,29 +27,29 @@ let dedent = (store, node: Node.t('t, 'p)) => {
 
 let right = (store, node) => {
   let%Opt nextId =
-    TreeTraversal.down(store.world.current, store.sharedViewData.expanded, node);
-  Store.actView(store, View.SetActive(nextId, Start));
+    TreeTraversal.down(store.world.current, store.session.sharedViewData.expanded, node);
+  Store.actView(store.session, View.SetActive(nextId, Start));
   Some(nextId);
 };
 
 let left = (store, node) => {
   let%Opt prevId =
-    TreeTraversal.up(store.world.current, store.sharedViewData.expanded, node);
-  Store.actView(store, SetActive(prevId, End));
+    TreeTraversal.up(store.world.current, store.session.sharedViewData.expanded, node);
+  Store.actView(store.session, SetActive(prevId, End));
   Some(prevId);
 };
 
 let down = (store, node) => {
   let%Opt nextId =
-    TreeTraversal.down(store.world.current, store.sharedViewData.expanded, node);
-  Store.actView(store, SetActive(nextId, End));
+    TreeTraversal.down(store.world.current, store.session.sharedViewData.expanded, node);
+  Store.actView(store.session, SetActive(nextId, End));
   Some(nextId);
 };
 
 let up = (store, node) => {
   let%Opt prevId =
-    TreeTraversal.up(store.world.current, store.sharedViewData.expanded, node);
-  Store.actView(store, SetActive(prevId, End));
+    TreeTraversal.up(store.world.current, store.session.sharedViewData.expanded, node);
+  Store.actView(store.session, SetActive(prevId, End));
   Some(prevId);
 };
 
@@ -57,7 +57,7 @@ let createAfter = (store, node) => {
   let (pid, index) =
     TreeTraversal.nextChildPosition(
       store.world.current,
-      store.sharedViewData.expanded,
+      store.session.sharedViewData.expanded,
       node,
     );
   let nid = Utils.newId();
@@ -76,7 +76,7 @@ let createAfter = (store, node) => {
 
 let backspace = (store, node, currentValue) => {
   let%Opt prevId =
-    TreeTraversal.up(store.world.current, store.sharedViewData.expanded, node);
+    TreeTraversal.up(store.world.current, store.session.sharedViewData.expanded, node);
   switch (currentValue) {
   | None => Store.act(store, Store.Remove(node.id, prevId))
   | Some(contents) =>

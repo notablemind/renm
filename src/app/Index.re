@@ -22,16 +22,11 @@ Js.log(sharedViewData)
 Js.log(world)
 
 let store = {
-  ...
-    Store.create(
-      ~sessionId=Utils.newId(),
-      ~root=world.current.root,
-      /* ~root="root", */
-      ~nodes=[],
-      /* ~nodes */
-    ),
+  Store.session: {
+    ...Store.createSession(~sessionId=Utils.newId(), ~root=world.current.root),
+    sharedViewData,
+  },
   world,
-  sharedViewData,
 };
 
 [%bs.raw "window.store = store"];

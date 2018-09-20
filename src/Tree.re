@@ -13,7 +13,7 @@ let rec visibleChildren = (store: Store.t('status), id) => {
   let one = Set.String.empty
   ->Set.String.add(id);
   let%Lets.OptDefault node = (store->Store.get(id), one);
-  if (node.children != [] && (id == store.view.root || store.sharedViewData.expanded->Set.String.has(id))) {
+  if (node.children != [] && (id == store.session.view.root || store.session.sharedViewData.expanded->Set.String.has(id))) {
     node.children->List.reduce(one, (ids, id) => ids->Set.String.union(store->visibleChildren(id)))
   } else {
     one
@@ -58,12 +58,12 @@ let make = (~store: Store.t('status), _children) => {
         let%Lets.Opt parent = store->Store.get(node.parent);
         let%Lets.Opt idx = TreeTraversal.childPos(parent.children, id);
         let hasChildren = node.children != [];
-        let isExpanded = store.sharedViewData.expanded->Set.String.has(id);
+        let isExpanded = store.session.sharedViewData.expanded->Set.String.has(id);
         let dist = y -. (rect##top +. rect##bottom) /. 2.;
         let asChild = abs_float(dist) <= rect##height /. 4.;
-        let canChild = !store.view.selection->Set.String.add(store.view.active)->Set.String.has(id);
+        let canChild = !store.session.view.selection->Set.String.add(store.session.view.active)->Set.String.has(id);
 
-        let%Lets.OptIf () = id != store.view.root || dist > 0.;
+        let%Lets.OptIf () = id != store.session.view.root || dist > 0.;
 
         let (destId, idx) = if (dist < 0.) {
           (parent.id, idx)
@@ -81,14 +81,14 @@ let make = (~store: Store.t('status), _children) => {
       }}
       onStart={
         id => {
-          if (store.view.selection->Set.String.has(id)) {
+          if (store.session.view.selection->Set.String.has(id)) {
             /* A set of all the selected IDs and their (visible) children */
-            store.view.selection->Set.String.reduce(
+            store.session.view.selection->Set.String.reduce(
               Set.String.empty,
               (set, id) => set->Set.String.union(visibleChildren(store, id))
             )
           } else {
-            Store.actView(store, SetActive(id, store.view.editPos));
+            Store.actView(store.session, SetActive(id, store.session.view.editPos));
             visibleChildren(store, id)
           }
         }
@@ -99,7 +99,7 @@ let make = (~store: Store.t('status), _children) => {
           store
           ->Store.act(
               Store.Move(
-                TreeTraversal.orderIds(store.world.current.nodes, store.view.root, store.view.selection->Set.String.add(sourceId)),
+                TreeTraversal.orderIds(store.world.current.nodes, store.session.view.root, store.session.view.selection->Set.String.add(sourceId)),
                 parentId,
                 idx,
               ),
@@ -109,7 +109,7 @@ let make = (~store: Store.t('status), _children) => {
       }>
       ...{
            renderDraggable =>
-             <RenderNode store depth=0 renderDraggable id={store.view.root} />
+             <RenderNode store depth=0 renderDraggable id={store.session.view.root} />
          }
     </Draggable>,
 };

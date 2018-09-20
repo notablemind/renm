@@ -25,7 +25,7 @@ let make = (~store: Store.t(World.notSyncing), _children) => {
   reducer: (store, _) => ReasonReact.Update(store),
   didMount: self =>
     self.onUnmount(
-      Subscription.subscribe(store.subs, [SharedTypes.Event.Update], (0, () =>
+      Subscription.subscribe(store.session.subs, [SharedTypes.Event.Update], (0, () =>
         self.send((store.world.unsynced, store.world.syncing, store.world.history))
       )),
     ),

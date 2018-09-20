@@ -1,14 +1,18 @@
 
 open SharedTypes;
 
-type t('status) = {
+type session = {
   sessionId: string,
   mutable changeNum: int,
   mutable changeSet: option((string, float, string)),
-  mutable world: World.world('status),
   mutable view: View.view,
   mutable sharedViewData: View.sharedViewData,
   subs: Hashtbl.t(Event.t, list((int, unit => unit))),
+};
+
+type t('status) = {
+  mutable world: World.world('status),
+  mutable session,
 };
 
 let get = (store, id) => Map.String.get(store.world.current.nodes, id);
@@ -24,31 +28,38 @@ let makeNodeMap = (nodes: list(SharedTypes.Node.t('contents, 'prefix))) =>
     Map.String.set(map, node.id, node)
   );
 
+let createSession = (~sessionId, ~root) => {
+{
+      sessionId,
+      changeNum: 0,
+      changeSet: None,
+      view: View.emptyView(~root, ~id=0),
+      sharedViewData: View.emptySharedViewData,
+      subs: Hashtbl.create(10),
+    }
+};
+
 let create = (~sessionId, ~root, ~nodes: list(SharedTypes.Node.t('contents, 'prefix))) => {
   let nodeMap = makeNodeMap(nodes);
   {
-    sessionId,
-    changeNum: 0,
-    changeSet: None,
+    session: createSession(~sessionId, ~root),
     world: World.make({...emptyData(~root), nodes: nodeMap}, Sync.History.empty),
-    view: View.emptyView(~root, ~id=0),
-    sharedViewData: View.emptySharedViewData,
-    subs: Hashtbl.create(10),
   }
 };
 
 let fromWorld = (~sessionId, ~world, ) => {
   {
-    sessionId,
-    changeNum: 0,
-    changeSet: None,
+    session: {
+      sessionId,
+      changeNum: 0,
+      changeSet: None,
+      view: View.emptyView(~root=world.current.root, ~id=0),
+      sharedViewData: View.emptySharedViewData,
+      subs: Hashtbl.create(10),
+    },
     world,
-    view: View.emptyView(~root=world.current.root, ~id=0),
-    sharedViewData: View.emptySharedViewData,
-    subs: Hashtbl.create(10),
   }
 };
-
 
 let editNode = (store, id) => {
   [Event.Node(id), Event.View(Node(id))];
@@ -176,10 +187,10 @@ let notifyForChanges = (store, changes) => {
       events->List.concat(more)
     });
 
-  Subscription.trigger(store.subs, [SharedTypes.Event.Update, ...changeEvents]);
+  Subscription.trigger(store.session.subs, [SharedTypes.Event.Update, ...changeEvents]);
   Js.Global.setTimeout(() => {
     LocalStorage.setItem("renm:store", Js.Json.stringify(Serialize.toJson(store.world)));
-    LocalStorage.setItem("renm:viewData", Js.Json.stringify(Serialize.toJson(store.sharedViewData)));
+    LocalStorage.setItem("renm:viewData", Js.Json.stringify(Serialize.toJson(store.session.sharedViewData)));
   }, 0)->ignore;
 };
 
@@ -193,23 +204,23 @@ let eventsForChanges = (nodes, changes) => {
 let apply = (~preSelection=?, ~postSelection=?, store, changes, events, link) => {
   let%Lets.TryLog changeEvents = eventsForChanges(store.world.current.nodes, changes);
 
-  let changeId = store.sessionId ++ ":" ++ string_of_int(store.changeNum);
-  store.changeNum = store.changeNum + 1;
+  let changeId = store.session.sessionId ++ ":" ++ string_of_int(store.session.changeNum);
+  store.session.changeNum = store.session.changeNum + 1;
 
-  let preSelection = (store.view.active, store.view.selection, switch preSelection {
+  let preSelection = (store.session.view.active, store.session.view.selection, switch preSelection {
     | None => (0, 0)
     | Some(sel) => sel
   });
 
-  let postSelection = (store.view.active, store.view.selection, switch postSelection {
+  let postSelection = (store.session.view.active, store.session.view.selection, switch postSelection {
     | None => (0, 0)
     | Some(sel) => sel
   });
 
   switch (World.applyChange(
     ~changeId,
-    ~sessionId=store.sessionId,
-    ~changeset=store.changeSet->Lets.Opt.map(((cid, _, _)) => cid),
+    ~sessionId=store.session.sessionId,
+    ~changeset=store.session.changeSet->Lets.Opt.map(((cid, _, _)) => cid),
     ~author="jared",
     ~preSelection,
     ~postSelection,
@@ -225,10 +236,10 @@ let apply = (~preSelection=?, ~postSelection=?, store, changes, events, link) =>
     }
   };
 
-  Subscription.trigger(store.subs, [SharedTypes.Event.Update, ...events @ changeEvents]);
+  Subscription.trigger(store.session.subs, [SharedTypes.Event.Update, ...events @ changeEvents]);
   Js.Global.setTimeout(() => {
     LocalStorage.setItem("renm:store", Js.Json.stringify(Serialize.toJson(store.world)));
-    LocalStorage.setItem("renm:viewData", Js.Json.stringify(Serialize.toJson(store.sharedViewData)));
+    LocalStorage.setItem("renm:viewData", Js.Json.stringify(Serialize.toJson(store.session.sharedViewData)));
   }, 0)->ignore;
 };
 
@@ -290,9 +301,9 @@ let act = (~preSelection=?, ~postSelection=?, store, action) => {
   let%Lets.TryLog {ActionResults.viewActions, changes} = processAction(store, action);
   /* Js.log3(action, changes, viewActions); */
 
-  store.changeSet = updateChangeSet(store.changeSet, action);
+  store.session.changeSet = updateChangeSet(store.session.changeSet, action);
 
-  let viewEvents = applyView(store, viewActions);
+  let viewEvents = applyView(store.session, viewActions);
 
   apply(~preSelection?, ~postSelection?, store, changes, viewEvents, None)
 };
@@ -308,7 +319,7 @@ let undo = store => {
 
   let (changes, idsAndSelections) = World.getUndoChangeset(
     store.world.unsynced->Sync.Queue.toRevList @ store.world.history->Sync.History.itemsSince(None)->List.reverse,
-    store.sessionId,
+    store.session.sessionId,
   )->List.unzip;
   let (changeIds, selections) = List.unzip(idsAndSelections);
 
@@ -317,13 +328,13 @@ let undo = store => {
 
   let%Lets.Guard () = (change != [], ());
 
-  store.changeSet = None;
+  store.session.changeSet = None;
 
   let (_, postSelection) = selections->List.head->Lets.Opt.force;
   let (preSelection, _) = selections->List.get(List.length(selections) - 1)->Lets.Opt.force;
 
   /* Js.log3("Undo sels", preSelection, postSelection); */
-  let viewEvents = applyView(store, selectionEvents(preSelection));
+  let viewEvents = applyView(store.session, selectionEvents(preSelection));
 
   apply(~preSelection=selPos(postSelection), ~postSelection=selPos(preSelection), store, change, viewEvents, Some(Undo(changeIds)))
 };
@@ -332,17 +343,17 @@ let redo = store => {
 
   let%Lets.OptConsume (change, redoId, preSelection, postSelection) = World.getRedoChange(
     store.world.unsynced->Sync.Queue.toRevList,
-    store.sessionId,
+    store.session.sessionId,
   );
 
   /* Js.log3("Redo Changes", change, redoId); */
 
-  store.changeSet = None;
+  store.session.changeSet = None;
 
   /* let (activeId, selectionSet, (pos, length)) = preSelection; */
   /* Js.log3("Redo sels", preSelection, postSelection); */
 
-  let viewEvents = applyView(store, selectionEvents(preSelection));
+  let viewEvents = applyView(store.session, selectionEvents(preSelection));
 
   apply(~preSelection=selPos(postSelection), ~postSelection=selPos(preSelection), store, change, viewEvents, Some(Redo(redoId)))
 };
