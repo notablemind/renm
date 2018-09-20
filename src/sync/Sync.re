@@ -7,6 +7,7 @@ module Queue: {
   let toRevList: t('t) => list('t);
   let ofList: list('t) => t('t);
   let tryReduce: (t('t), 'a, ('a, 't) => Result.t('a, 'e)) => Result.t('a, 'e);
+  let skipReduce: (t('t), 'a, ('a, 't) => Result.t('a, 'e)) => 'a;
 } = {
   type t('t) = list('t);
   let empty = [];
@@ -20,6 +21,16 @@ module Queue: {
     | [one, ...rest] =>
       let%Lets.Try result = tryReduce(rest, initial, fn);
       fn(result, one);
+  };
+
+  let rec skipReduce = (list, initial, fn) => switch list {
+    | [] => initial
+    | [one, ...rest] =>
+      let result = skipReduce(rest, initial, fn);
+      switch (fn(result, one)) {
+       | Result.Error(_) => result
+       | Ok(result) => result
+      }
   };
 
 };
@@ -67,7 +78,16 @@ let rec tryReduce = (list, initial, fn) => switch list {
   | [] => Result.Ok(initial)
   | [one, ...rest] =>
     let%Lets.Try result = fn(initial, one);
-    tryReduce(rest, result, fn);
+    tryReduce(rest, result, fn)
+};
+
+let rec skipReduce = (list, initial, fn) => switch list {
+  | [] => initial
+  | [one, ...rest] =>
+    switch (fn(initial, one)) {
+      | Result.Ok(result) => skipReduce(rest, result, fn)
+      | Error(_) => skipReduce(rest, initial, fn)
+    }
 };
 
 module F = (Config: {
@@ -82,7 +102,7 @@ module F = (Config: {
 }) => {
   /* TODO do I want to ignore & collect & report errors? or just abort... */
   let reduceChanges = (changes, initial) => {
-    changes->tryReduce((initial, []), ((current, changes), change) => {
+    changes->skipReduce((initial, []), ((current, changes), change) => {
       let%Lets.Try (data, revert, rebase) = Config.apply(current, change.apply);
       Ok((data, 
       /* changes @ [] */
@@ -93,7 +113,7 @@ module F = (Config: {
 
   let queueReduceChanges = (changes, initial) => {
     changes
-        ->Queue.tryReduce((initial, Queue.empty), ((data, changes), change) => {
+        ->Queue.skipReduce((initial, Queue.empty), ((data, changes), change) => {
           let%Lets.Try (data, revert, rebase) = Config.apply(data, change.apply);
           Ok((data, Queue.append(changes, {...change, revert, rebase})))
         });
@@ -101,7 +121,7 @@ module F = (Config: {
 
   let processRebases = (origChanges, current, rebases) => {
     origChanges
-    ->tryReduce((current, []), ((current, changes), change) => {
+    ->skipReduce((current, []), ((current, changes), change) => {
       let apply = rebases->List.reduce(change.apply, (current, base) => Config.rebase(current, base))
       let%Lets.Try (data, revert, rebase) = Config.apply(current, apply);
       Ok((data,
@@ -173,21 +193,21 @@ module F = (Config: {
     Js.log2("Items since", items);
     switch items {
       | [] =>
-        let%Lets.Try (current, _appliedChanges) = changes->reduceChanges(server.current);
+        let (current, _appliedChanges) = changes->reduceChanges(server.current);
         let server = {history: History.append(server.history, changes), current};
-        Ok((server, `Commit))
+        (server, `Commit)
       | _ =>
         let rebases = items->List.map(change => change.rebase);
-        let%Lets.Try (current, rebasedChanges) = changes->processRebases(server.current, rebases);
+        let (current, rebasedChanges) = changes->processRebases(server.current, rebases);
         let server = {history: History.append(server.history, rebasedChanges), current};
         Js.log2("rebased", rebasedChanges);
-        Ok((server, `Rebase((
+        (server, `Rebase((
           items @
           rebasedChanges,
           rebases
           )
         /* ->List.reverse */
-        )))
+        ))
     }
   };
 
@@ -196,10 +216,10 @@ module F = (Config: {
   };
 
   let commit =
-      (world: world(notSyncing)): Belt.Result.t(world(notSyncing), Config.error) => {
-    let%Lets.TryWrap (snapshot, unsynced) =
+      (world: world(notSyncing)): world(notSyncing) => {
+    let (snapshot, unsynced) =
       if (world.unsynced == Queue.empty) {
-        Result.Ok((world.current, world.unsynced));
+        (world.current, world.unsynced);
       } else {
         world.syncing->queueReduceChanges(world.snapshot)
       };
@@ -218,10 +238,10 @@ module F = (Config: {
 
   let applyRebase =
       (world: world('anyStatus), changes, rebases)
-      : Belt.Result.t(world(notSyncing), Config.error) => {
-    open Lets;
-    let%Try (snapshot, changes) = changes->reduceChanges(world.snapshot);
-    let%TryWrap (current, unsynced) = world.unsynced->Queue.toList->processRebases(snapshot, rebases);
+      : world(notSyncing) => {
+    /* open Lets; */
+    let (snapshot, changes) = changes->reduceChanges(world.snapshot);
+    let (current, unsynced) = world.unsynced->Queue.toList->processRebases(snapshot, rebases);
     /* let%TryWrap (current, unsynced) =
       world.unsynced->queueReduceChanges(snapshot); */
     {

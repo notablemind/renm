@@ -63,12 +63,12 @@ let make = (_children) => {
       let id = Sync.History.latestId(store.world.history);
       let unsynced = store.world.syncing;
 
-      let%Lets.TryForce (server, result) = World.processSyncRequest(root, id, unsynced->Sync.Queue.toList);
+      let (server, result) = World.processSyncRequest(root, id, unsynced->Sync.Queue.toList);
       Js.log2(server, result);
 
       self.send({...self.state, root: server});
       Js.log(server);
-      let%Lets.TryForce world = switch result {
+      let world = switch result {
         | `Commit => World.commit(store.world);
         | `Rebase(changes, rebases) =>
           World.applyRebase(store.world, changes, rebases);

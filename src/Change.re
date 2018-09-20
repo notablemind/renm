@@ -92,6 +92,7 @@ type error =
 /* id, node.parent, pid */
 | ParentMismatch(Node.id, Node.id, Node.id)
 | WrongNodeType(Node.id, string)
+| Cycle(Node.id, Node.id)
 ;
 
 let changeContents = (node, change) => SharedTypes.Node.(
@@ -157,6 +158,19 @@ let rebase = (change, rebaseItem) => switch (change, rebaseItem) {
     AddNode(pidx < idx ? idx - 1 : idx, node)
 
   | _ => change
+};
+
+let rec checkCycle = (id, data, parent: Node.t('a, 'b)) => {
+  if (id == parent.id) {
+    true
+  } else if (parent.id == data.root) {
+    false
+  } else {
+    switch (data.nodes->Map.String.get(parent.parent)) {
+      | None => true
+      | Some(nextParent) => checkCycle(id, data, nextParent)
+    }
+  }
 };
 
 let apply = (data: data, change) => {
@@ -233,6 +247,7 @@ let apply = (data: data, change) => {
         })->Ok
       } else {
         let%Try nextParent = data.nodes->Map.String.get(nextPid)->Opt.orError(MissingParent(nextPid, id));
+        let%Try () = checkCycle(id, data, nextParent) ? Error(Cycle(nextPid, id)) : Ok(());
         let pchildren = parent.children->List.keep((!=)(id));
         let nchildren = Utils.insertIntoList(nextParent.children, nidx, id);
         data.nodes
