@@ -1,6 +1,6 @@
 let rec transform_Belt_SetString____t: Belt_SetString.t => Js.Json.t = TransformHelpers.transform_Belt_SetString____t
 and transform_World__Notablemind__MultiChange__change:
-  Notablemind.World.MultiChange.change => Js.Json.t =
+  World.MultiChange.change => Js.Json.t =
   value =>
     (
       list =>
@@ -11,7 +11,7 @@ and transform_World__Notablemind__MultiChange__change:
       value,
     )
 and transform_Js_date____t: Js_date.t => Js.Json.t = TransformHelpers.transform_Js_date____t
-and transform_NodeType__Notablemind__Svg__point: Notablemind.NodeType.Svg.point => Js.Json.t =
+and transform_NodeType__Notablemind__Svg__point: NodeType.Svg.point => Js.Json.t =
   record =>
     Js.Json.object_(
       Js.Dict.fromArray([|
@@ -55,7 +55,7 @@ and transform_NodeType__Notablemind__Svg__point: Notablemind.NodeType.Svg.point 
         ),
       |]),
     )
-and transform_NodeType__Notablemind__Svg__layer: Notablemind.NodeType.Svg.layer => Js.Json.t =
+and transform_NodeType__Notablemind__Svg__layer: NodeType.Svg.layer => Js.Json.t =
   record =>
     Js.Json.object_(
       Js.Dict.fromArray([|
@@ -76,7 +76,7 @@ and transform_NodeType__Notablemind__Svg__layer: Notablemind.NodeType.Svg.layer 
         ),
       |]),
     )
-and transform_NodeType__Notablemind____prefix: Notablemind.NodeType.prefix => Js.Json.t =
+and transform_NodeType__Notablemind____prefix: NodeType.prefix => Js.Json.t =
   constructor =>
     switch (constructor) {
     | Todo(arg0) => Js.Json.array([|Js.Json.string("Todo"), Js.Json.boolean(arg0)|])
@@ -92,7 +92,7 @@ and transform_NodeType__Notablemind____prefix: Notablemind.NodeType.prefix => Js
       |])
     | Attribution => Js.Json.array([|Js.Json.string("Attribution")|])
     }
-and transform_Change__Notablemind____change: Notablemind.Change.change => Js.Json.t =
+and transform_Change__Notablemind____change: Change.change => Js.Json.t =
   constructor =>
     switch (constructor) {
     | [@implicit_arity] Trash(arg0, arg1) =>
@@ -137,7 +137,7 @@ and transform_Change__Notablemind____change: Notablemind.Change.change => Js.Jso
         transform_NodeType__Notablemind____contents(arg1),
       |])
     }
-and transform_World__Notablemind____thisChange: Notablemind.World.thisChange => Js.Json.t =
+and transform_World__Notablemind____thisChange: World.thisChange => Js.Json.t =
   value =>
     (
       transform_Sync__Notablemind____change(
@@ -149,7 +149,7 @@ and transform_World__Notablemind____thisChange: Notablemind.World.thisChange => 
       value,
     )
 and transform_World__Notablemind__MultiChange__rebaseItem:
-  Notablemind.World.MultiChange.rebaseItem => Js.Json.t =
+  World.MultiChange.rebaseItem => Js.Json.t =
   value =>
     (
       list =>
@@ -159,8 +159,8 @@ and transform_World__Notablemind__MultiChange__rebaseItem:
     )(
       value,
     )
-and transform_Delta__Notablemind____delta: Notablemind.Delta.delta => Js.Json.t = TransformHelpers.transform_Delta__Notablemind____delta
-and transform_Change__Notablemind____rebaseItem: Notablemind.Change.rebaseItem => Js.Json.t =
+and transform_Delta__Notablemind____delta: Delta.delta => Js.Json.t = TransformHelpers.transform_Delta__Notablemind____delta
+and transform_Change__Notablemind____rebaseItem: Change.rebaseItem => Js.Json.t =
   constructor =>
     switch (constructor) {
     | Nothing => Js.Json.array([|Js.Json.string("Nothing")|])
@@ -191,7 +191,7 @@ and transform_Change__Notablemind____rebaseItem: Notablemind.Change.rebaseItem =
         transform_Change__Notablemind____delta(arg1),
       |])
     }
-and transform_NodeType__Notablemind____contents: Notablemind.NodeType.contents => Js.Json.t =
+and transform_NodeType__Notablemind____contents: NodeType.contents => Js.Json.t =
   constructor =>
     switch (constructor) {
     | Normal(arg0) =>
@@ -206,9 +206,9 @@ and transform_NodeType__Notablemind____contents: Notablemind.NodeType.contents =
         transform_NodeType__Notablemind__Svg__t(arg0),
       |])
     }
-and transform_SharedTypes__Notablemind____date: Notablemind.SharedTypes.date => Js.Json.t =
+and transform_SharedTypes__Notablemind____date: SharedTypes.date => Js.Json.t =
   value => Js.Json.number(value)
-and transform_Change__Notablemind____delta: Notablemind.Change.delta => Js.Json.t =
+and transform_Change__Notablemind____delta: Change.delta => Js.Json.t =
   value => transform_Delta__Notablemind____delta(value)
 and transform_Sync__Notablemind____change:
   'arg0 'arg1 'arg2.
@@ -216,7 +216,7 @@ and transform_Sync__Notablemind____change:
     'arg0 => Js.Json.t,
     'arg1 => Js.Json.t,
     'arg2 => Js.Json.t,
-    Notablemind.Sync.change('arg0, 'arg1, 'arg2)
+    Sync.change('arg0, 'arg1, 'arg2)
   ) =>
   Js.Json.t
  =
@@ -265,7 +265,7 @@ and transform_Sync__Notablemind____change:
         ),
       |]),
     )
-and transform_NodeType__Notablemind__Svg__shape: Notablemind.NodeType.Svg.shape => Js.Json.t =
+and transform_NodeType__Notablemind__Svg__shape: NodeType.Svg.shape => Js.Json.t =
   record =>
     Js.Json.object_(
       Js.Dict.fromArray([|
@@ -312,7 +312,7 @@ and transform_NodeType__Notablemind__Svg__shape: Notablemind.NodeType.Svg.shape 
         ("kind", transform_NodeType__Notablemind__Svg__kind(record.kind)),
       |]),
     )
-and transform_NodeType__Notablemind____t: Notablemind.NodeType.t => Js.Json.t =
+and transform_NodeType__Notablemind____t: NodeType.t => Js.Json.t =
   value =>
     (
       transform_SharedTypes__Notablemind__Node__t(
@@ -329,7 +329,7 @@ and transform_NodeType__Notablemind____t: Notablemind.NodeType.t => Js.Json.t =
     )(
       value,
     )
-and transform_NodeType__Notablemind__Svg__kind: Notablemind.NodeType.Svg.kind => Js.Json.t =
+and transform_NodeType__Notablemind__Svg__kind: NodeType.Svg.kind => Js.Json.t =
   constructor =>
     switch (constructor) {
     | Path(arg0) =>
@@ -358,9 +358,9 @@ and transform_NodeType__Notablemind__Svg__kind: Notablemind.NodeType.Svg.kind =>
     | [@implicit_arity] Line(arg0, arg1) =>
       Js.Json.array([|Js.Json.string("Line"), Js.Json.number(arg0), Js.Json.number(arg1)|])
     }
-and transform_SharedTypes__Notablemind__Node__id: Notablemind.SharedTypes.Node.id => Js.Json.t =
+and transform_SharedTypes__Notablemind__Node__id: SharedTypes.Node.id => Js.Json.t =
   value => Js.Json.string(value)
-and transform_NodeType__Notablemind__Svg__t: Notablemind.NodeType.Svg.t => Js.Json.t =
+and transform_NodeType__Notablemind__Svg__t: NodeType.Svg.t => Js.Json.t =
   record =>
     Js.Json.object_(
       Js.Dict.fromArray([|
@@ -393,7 +393,7 @@ and transform_NodeType__Notablemind__Svg__t: Notablemind.NodeType.Svg.t => Js.Js
     )
 and transform_SharedTypes__Notablemind__Node__t:
   'arg0 'arg1.
-  ('arg0 => Js.Json.t, 'arg1 => Js.Json.t, Notablemind.SharedTypes.Node.t('arg0, 'arg1)) =>
+  ('arg0 => Js.Json.t, 'arg1 => Js.Json.t, SharedTypes.Node.t('arg0, 'arg1)) =>
   Js.Json.t
  =
   (contentsTransformer, prefixTransformer, record) =>
@@ -437,7 +437,7 @@ and transform_SharedTypes__Notablemind__Node__t:
       |]),
     )
 and transform_World__Notablemind__MultiChange__selection:
-  Notablemind.World.MultiChange.selection => Js.Json.t =
+  World.MultiChange.selection => Js.Json.t =
   value =>
     (
       ((arg0, arg1, arg2)) =>
@@ -457,7 +457,7 @@ and transform_World__Notablemind__MultiChange__selection:
     )(
       value,
     )
-and transform_Sync__Notablemind____link: Notablemind.Sync.link => Js.Json.t =
+and transform_Sync__Notablemind____link: Sync.link => Js.Json.t =
   constructor =>
     switch (constructor) {
     | Undo(arg0) =>

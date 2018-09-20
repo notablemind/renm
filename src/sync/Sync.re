@@ -99,6 +99,18 @@ module F = (Config: {
         });
   };
 
+  let processRebases = (origChanges, current, rebases) => {
+    origChanges
+    ->tryReduce((current, []), ((current, changes), change) => {
+      let apply = rebases->List.reduce(change.apply, (current, base) => Config.rebase(current, base))
+      let%Lets.Try (data, revert, rebase) = Config.apply(current, apply);
+      Ok((data,
+      changes @ [{...change, apply, revert, rebase}]
+      /* [, ...changes] */
+      ))
+    })
+  };
+
   type thisChange = change(Config.change, Config.rebaseItem, Config.selection);
   type history = History.t(Config.change, Config.rebaseItem, Config.selection);
   type world('status) = {
@@ -154,18 +166,6 @@ module F = (Config: {
     }
   };
 
-  let processRebases = (origChanges, current, rebases) => {
-    origChanges
-    ->tryReduce((current, []), ((current, changes), change) => {
-      let apply = rebases->List.reduce(change.apply, (current, base) => Config.rebase(current, base))
-      let%Lets.Try (data, revert, rebase) = Config.apply(current, apply);
-      Ok((data,
-      changes @ [{...change, apply, revert, rebase}]
-      /* [, ...changes] */
-      ))
-    })
-  };
-
 /* TODO does the server need to have a reified version of the state? Maybe, to give proper rebase things... */
   let processSyncRequest = (server: server, id: option(string), changes: list(thisChange)) => {
     let items = History.itemsSince(server.history, id)
@@ -183,19 +183,16 @@ module F = (Config: {
         Js.log2("rebased", rebasedChanges);
         Ok((server, `Rebase((
           items @
-          rebasedChanges
+          rebasedChanges,
+          rebases
           )
         /* ->List.reverse */
         )))
     }
   };
 
-  let prepareSync = (world: world(notSyncing)): (world(notSyncing), option(string), Queue.t(thisChange)) => {
-      (
-        {...world, syncing: world.unsynced, unsynced: Queue.empty},
-        History.latestId(world.history),
-        world.unsynced,
-      );
+  let prepareSync = (world: world(notSyncing)): world(notSyncing) => {
+      {...world, syncing: world.unsynced, unsynced: Queue.empty}
   };
 
   let commit =
@@ -220,20 +217,19 @@ module F = (Config: {
   };
 
   let applyRebase =
-      (world: world('anyStatus), changes) : Belt.Result.t(world(notSyncing), Config.error) => {
+      (world: world('anyStatus), changes, rebases)
+      : Belt.Result.t(world(notSyncing), Config.error) => {
     open Lets;
-    let%Try (snapshot, changes) =
-      changes->reduceChanges(world.snapshot);
-    let%TryWrap (current, unsynced) =
-      world.unsynced->queueReduceChanges(snapshot);
+    let%Try (snapshot, changes) = changes->reduceChanges(world.snapshot);
+    let%TryWrap (current, unsynced) = world.unsynced->Queue.toList->processRebases(snapshot, rebases);
+    /* let%TryWrap (current, unsynced) =
+      world.unsynced->queueReduceChanges(snapshot); */
     {
-      history: History.append(world.history, changes
-      ->List.reverse
-      ),
+      history: History.append(world.history, changes->List.reverse),
       snapshot,
       current,
       syncing: Queue.empty,
-      unsynced,
+      unsynced: Queue.ofList(unsynced),
     };
   };
 

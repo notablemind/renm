@@ -31,3 +31,7 @@ let dedup = items => {
       }
     );
 };
+
+type error;
+[@bs.new] external error: string => error = "Error";
+[@bs.get] external stack: error => string = "";

@@ -9,14 +9,6 @@ external removeEventListener: (Dom.window, string, mouseEvt => unit) => unit =
 [@bs.get] external clientX: mouseEvt => float = "";
 [@bs.get] external clientY: mouseEvt => float = "";
 
-let placeholderStyle =
-  ReactDOMRe.Style.(
-    make(
-      /* ~backgroundColor="#ccc", */
-    ~marginTop="-3px",
-    ~zIndex="1000",
-    ~height="6px", ~position="absolute")
-  );
 
 [@bs.send]
 external getBoundingClientRect:

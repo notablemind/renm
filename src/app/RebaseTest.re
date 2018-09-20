@@ -39,7 +39,7 @@ type state = {
 
 let component = ReasonReact.reducerComponent("RebaseTest");
 
-let world = World.make({
+let baseWorld = World.make({
   ...SharedTypes.emptyData(~root="root"),
   nodes: Store.makeNodeMap(Fixture.large)
 }, Sync.History.empty);
@@ -48,34 +48,43 @@ let world = World.make({
 let make = (_children) => {
   ...component,
   initialState: () => {
-    root: ({history: world.history, current: world.current}: World.server),
-    a: Store.fromWorld(~sessionId="a", ~world),
-    b: Store.fromWorld(~sessionId="b", ~world),
-    c: Store.fromWorld(~sessionId="c", ~world),
+    root: ({history: baseWorld.history, current: baseWorld.current}: World.server),
+    a: Store.fromWorld(~sessionId="a", ~world=baseWorld),
+    b: Store.fromWorld(~sessionId="b", ~world=baseWorld),
+    c: Store.fromWorld(~sessionId="c", ~world=baseWorld),
   },
   reducer: (state, _) => ReasonReact.Update(state),
   render: ({state: {root, a, b, c}} as self) => {
-    let doSync = (store: Store.t(World.notSyncing)) => {
-      let (world, id, unsynced) = World.prepareSync(store.world);
+    let startSync = (store: Store.t(World.notSyncing)) => {
+      let world = World.prepareSync(store.world);
       store.world = world;
+    };
+    let finishSync = (store: Store.t(World.notSyncing)) => {
+      let id = Sync.History.latestId(store.world.history);
+      let unsynced = store.world.syncing;
+
       let%Lets.TryForce (server, result) = World.processSyncRequest(root, id, unsynced->Sync.Queue.toList);
       Js.log2(server, result);
 
       self.send({...self.state, root: server});
       Js.log(server);
       let%Lets.TryForce world = switch result {
-        | `Commit => World.commit(world);
-        | `Rebase(changes) =>
-          World.applyRebase(world, changes);
+        | `Commit => World.commit(store.world);
+        | `Rebase(changes, rebases) =>
+          World.applyRebase(store.world, changes, rebases);
       };
       let%Lets.TryForce events = switch result {
         | `Commit => Ok([])
-        | `Rebase(changes) => Store.eventsForChanges(store.world.current.nodes, changes->List.map(c => c.apply)->List.reduce([], List.concat));
+        | `Rebase(changes, _rebases) => Store.eventsForChanges(store.world.current.nodes, changes->List.map(c => c.apply)->List.reduce([], List.concat));
       }
       store.world = world;
 
       Subscription.trigger(store.subs, [SharedTypes.Event.Update, ...events]);
 
+    };
+    let doSync = (store: Store.t(World.notSyncing)) => {
+      startSync(store);
+      finishSync(store);
     };
     <div className=Css.(style([
       display(`flex),
@@ -85,6 +94,12 @@ let make = (_children) => {
         <ShowServer server=root />
       </div>
       <div className=Css.(style([flex(1)]))>
+        <button onClick=(_ev => startSync(a)) >
+          {ReasonReact.string("Start Sync")}
+        </button>
+        <button onClick=(_ev => finishSync(a)) >
+          {ReasonReact.string("Finish Sync")}
+        </button>
         <button onClick=(_ev => doSync(a)) >
           {ReasonReact.string("Sync")}
         </button>
@@ -98,6 +113,7 @@ let make = (_children) => {
         <Tree store=b />
         <DebugStoreView store=b />
       </div>
+
       <div className=Css.(style([flex(1)]))>
         <button onClick=(_ev => doSync(c)) >
           {ReasonReact.string("Sync")}
