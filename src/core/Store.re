@@ -214,7 +214,8 @@ let act = (~preSelection=?, ~postSelection=?, store: t('a), action) => {
 
   store.session = Session.updateChangeSet(store.session, action);
 
-  let viewEvents = Session.applyView(store.session, viewActions);
+  let (session, viewEvents) = Session.applyView(store.session, viewActions);
+  store.session = session
 
   apply(~preSelection?, ~postSelection?, store, changes, viewEvents, None)
 };
@@ -245,7 +246,8 @@ let undo = store => {
   let (preSelection, _) = selections->List.get(List.length(selections) - 1)->Lets.Opt.force;
 
   /* Js.log3("Undo sels", preSelection, postSelection); */
-  let viewEvents = Session.applyView(store.session, selectionEvents(preSelection));
+  let (session, viewEvents) = Session.applyView(store.session, selectionEvents(preSelection));
+  store.session = session
 
   apply(~preSelection=selPos(postSelection), ~postSelection=selPos(preSelection), store, change, viewEvents, Some(Undo(changeIds)))
 };
@@ -264,7 +266,7 @@ let redo = store => {
   /* let (activeId, selectionSet, (pos, length)) = preSelection; */
   /* Js.log3("Redo sels", preSelection, postSelection); */
 
-  let viewEvents = Session.applyView(store.session, selectionEvents(preSelection));
+  let (session, viewEvents) = Session.applyView(store.session, selectionEvents(preSelection));
 
   apply(~preSelection=selPos(postSelection), ~postSelection=selPos(preSelection), store, change, viewEvents, Some(Redo(redoId)))
 };
@@ -275,6 +277,16 @@ let clientStore = store => {
   data: () => store.world.current,
   act: (~preSelection=?, ~postSelection=?, actions) => {
     actions->List.forEach(act(~preSelection?, ~postSelection?, store ))
+  },
+  actView: action => {
+    let (session, events) = Session.actView_(store.session, action);
+    store.session = session;
+
+    Subscription.trigger(session.subs, events); 
+    Js.Global.setTimeout(() => {
+      LocalStorage.setItem("renm:viewData", Js.Json.stringify(Serialize.toJson(session.sharedViewData)));
+    }, 0)->ignore;
+
   },
   undo: () => store->undo,
   redo: () => store->redo

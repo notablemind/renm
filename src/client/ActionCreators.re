@@ -8,33 +8,33 @@ open Actions;
 let right = (store, node) => {
   let%Opt nextId =
     TreeTraversal.down(store.data(), store.session().sharedViewData.expanded, node);
-  Session.actView(store.session(), View.SetActive(nextId, Start));
+  store.actView(View.SetActive(nextId, Start));
   Some(nextId)
 };
 
 let left = (store, node) => {
   let%Opt prevId =
     TreeTraversal.up(store.data(), store.session().sharedViewData.expanded, node);
-  Session.actView(store.session(), SetActive(prevId, End));
+  store.actView(SetActive(prevId, End));
   Some(prevId);
 };
 
 let down = (store, node) => {
   let%Opt nextId =
     TreeTraversal.down(store.data(), store.session().sharedViewData.expanded, node);
-  Session.actView(store.session(), SetActive(nextId, End));
+  store.actView(SetActive(nextId, End));
   Some(nextId);
 };
 
 let up = (store, node) => {
   let%Opt prevId =
     TreeTraversal.up(store.data(), store.session().sharedViewData.expanded, node);
-  Session.actView(store.session(), SetActive(prevId, End));
+  store.actView(SetActive(prevId, End));
   Some(prevId);
 };
 
 let focus = (store, node: Data.Node.t('a, 'p)) => {
-  Session.actView(store, SetActive(node.id, Default));
+  store.actView(SetActive(node.id, Default));
 };
 
 let indent = (store, node: Data.Node.t('t, 'p)) => {

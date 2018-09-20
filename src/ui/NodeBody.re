@@ -44,7 +44,7 @@ let renderContents =
             [Actions.ChangeContents(node.id, delta)],
           ),
         onToggleCollapse: () => {
-          Session.actView(store.session(), View.SetCollapsed(node.id, !collapsed));
+          store.actView(View.SetCollapsed(node.id, !collapsed));
           false;
         },
         onEnter: () => {
@@ -66,7 +66,7 @@ let renderContents =
         onBackspace: currentValue => {
           ActionCreators.backspace(store, node, currentValue);
         },
-        onFocus: _evt => ActionCreators.focus(store.session(), node)
+        onFocus: _evt => ActionCreators.focus(store, node)
       }
     />
   | _ => str("Other contents")
@@ -160,16 +160,15 @@ let make =
             onMouseDown={evt =>
               if (ReactEvent.Mouse.metaKey(evt)) {
                 ReactEvent.Mouse.preventDefault(evt);
-                Session.actView(store.session(), AddToSelection(node.id))
+                store.actView(AddToSelection(node.id))
               } else {
-                Session.actView(store.session(), SetActive(node.id, Default))
+                store.actView(SetActive(node.id, Default))
               }
             }>
             {
               node.id != store.session().view.root ?
                 renderHandle(~onMouseDown, ~hasChildren=node.children != [], ~collapsed, ~toggleCollapsed={() => {
-                  Session.actView(
-                    store.session(),
+                  store.actView(
                     SetCollapsed(node.id, !collapsed),
                   )
                 }}) :

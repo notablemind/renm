@@ -88,7 +88,7 @@ let make = (~store: ClientStore.t('a, 'b, 'c), _children) => {
               (set, id) => set->Set.String.union(visibleChildren(store, id))
             )
           } else {
-            Session.actView(store.session(), SetActive(id, store.session().view.editPos));
+            store.actView(SetActive(id, store.session().view.editPos));
             visibleChildren(store, id)
           }
         }

@@ -83,7 +83,7 @@ let make = (_children) => {
         }
       };
 
-      store.session.sharedViewData = {expanded: loop(store.session.view.active, store.session.sharedViewData.expanded)};
+      store.session = {...store.session, sharedViewData: {expanded: loop(store.session.view.active, store.session.sharedViewData.expanded)}};
 
       let%Lets.TryForce events = switch result {
         | `Commit => Ok([])

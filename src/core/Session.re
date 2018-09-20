@@ -5,8 +5,8 @@ type session = {
   sessionId: string,
   changeNum: int,
   changeSet: option((string, float, string)),
-  mutable view: View.view,
-  mutable sharedViewData: View.sharedViewData,
+  view: View.view,
+  sharedViewData: View.sharedViewData,
   subs: Hashtbl.t(Event.t, list((int, unit => unit))),
 };
 
@@ -24,17 +24,18 @@ let createSession = (~sessionId, ~root) => {
   subs: Hashtbl.create(10),
 };
 
-let actView = (store, action) => {
+let actView_ = (store, action) => {
   let (view, sharedViewData, events) = View.processViewAction(store.view, store.sharedViewData, action);
 
-  store.view = view;
+  ({...store, view, sharedViewData}, events)
+
+  /* store.view = view;
   store.sharedViewData = sharedViewData;
 
-  Subscription.trigger(store.subs, events);
-
+  Subscription.trigger(store.subs, events); 
   Js.Global.setTimeout(() => {
     LocalStorage.setItem("renm:viewData", Js.Json.stringify(Serialize.toJson(store.sharedViewData)));
-  }, 0)->ignore;
+  }, 0)->ignore; */
 };
 
 let applyView = (session, viewActions) => {
@@ -43,10 +44,7 @@ let applyView = (session, viewActions) => {
     (v, svg, nevts @ evts)
   });
 
-  session.view = view;
-  session.sharedViewData = sharedViewData;
-
-  viewEvents
+  ({...session, view, sharedViewData}, viewEvents)
 };
 
 /** TODO test this to see if it makes sense */
