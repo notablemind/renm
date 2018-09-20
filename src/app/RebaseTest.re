@@ -94,7 +94,10 @@ let make = (_children) => {
         <ShowServer server=root />
       </div>
       <div className=Css.(style([flex(1)]))>
-        <button onClick=(_ev => startSync(a)) >
+        <button onClick=(_ev => {
+          startSync(a);
+          Subscription.trigger(a.subs, [SharedTypes.Event.Update]);
+        }) >
           {ReasonReact.string("Start Sync")}
         </button>
         <button onClick=(_ev => finishSync(a)) >
