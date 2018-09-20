@@ -6,7 +6,7 @@ module ShowServer = {
     };
   let rec renderNode = (server: World.server, id) => {
     let%Lets.OptForce node = server.current.nodes->Map.String.get(id);
-    <div>
+    <div key=node.id>
       (renderContents(node.contents))
       <div style=ReactDOMRe.Style.(make(~paddingLeft="10px", ()))>
       (node.children->List.map(renderNode(server))->List.toArray->ReasonReact.array)

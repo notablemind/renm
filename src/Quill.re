@@ -117,7 +117,7 @@ let setupQuill = (element, props: ref(NodeTypes.props(Delta.delta, (int, int))))
     );
 
   keyboard(quill)
-  ->addBinding({"key": "z", "collapsed": true, "shortKey": true}, () => {
+  ->addBinding({"key": "z", "shortKey": true}, () => {
     /* Js.log("hello"); */
       props^.onUndo();
       /* props^.onToggleCollapse() */
@@ -125,7 +125,7 @@ let setupQuill = (element, props: ref(NodeTypes.props(Delta.delta, (int, int))))
   });
 
   keyboard(quill)
-  ->addBinding({"key": "z", "collapsed": true, "shortKey": true, "shiftKey": true}, () =>{
+  ->addBinding({"key": "z", "shortKey": true, "shiftKey": true}, () =>{
     /* Js.log("redo"); */
       props^.onRedo();
       /* props^.onToggleCollapse() */

@@ -2,7 +2,7 @@
 let str = ReasonReact.string;
 
 let showChange = (change: World.thisChange) => {
-  <div style=ReactDOMRe.Style.(make(~fontFamily="monospace", ~whiteSpace="pre-wrap", ()))>
+  <div key=change.changeId style=ReactDOMRe.Style.(make(~fontFamily="monospace", ~whiteSpace="pre-wrap", ()))>
     {str(change.changeId ++ "\n")}
     {str(Js.Json.stringify(
       ChangeTransformer.transform_World__Notablemind__MultiChange__change(change.apply)
@@ -17,6 +17,7 @@ let showChange = (change: World.thisChange) => {
 };
 
 let component = ReasonReact.reducerComponent("DebugStoreView");
+
 
 let make = (~store: Store.t(World.notSyncing), _children) => {
   ...component,
@@ -35,8 +36,7 @@ let make = (~store: Store.t(World.notSyncing), _children) => {
           (ReasonReact.string("Unsynced"))
         </h4>
         {
-          unsynced->Sync.Queue.toList->List.map(showChange
-          )->List.toArray->ReasonReact.array
+          unsynced->Sync.Queue.toList->List.map(showChange)->List.toArray->ReasonReact.array
         }
       </div>
       <div>
@@ -44,8 +44,7 @@ let make = (~store: Store.t(World.notSyncing), _children) => {
           (ReasonReact.string("Syncing"))
         </h4>
         {
-          syncing->Sync.Queue.toList->List.map(showChange
-          )->List.toArray->ReasonReact.array
+          syncing->Sync.Queue.toList->List.map(showChange)->List.toArray->ReasonReact.array
         }
       </div>
       <div>
