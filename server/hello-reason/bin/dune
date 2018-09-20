@@ -1,18 +1,6 @@
 (executable
-  (name Hello)
-  (modules Hello)
-  (public_name Hello.exe)
-  (libraries lib))
-
-(executable
   (name Server)
   (modules Server)
   (public_name Server.exe)
+  ; (flags (-ccopt -static))
   (libraries cohttp lwt cohttp-lwt-unix lib))
-
-
-(executable
-  (name Client)
-  (modules Client)
-  (public_name Client.exe)
-  (libraries cohttp lwt cohttp-lwt-unix))

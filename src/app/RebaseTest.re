@@ -73,6 +73,18 @@ let make = (_children) => {
         | `Rebase(changes, rebases) =>
           World.applyRebase(store.world, changes, rebases);
       };
+      let rec loop = (id, expanded) => {
+        if (id == store.view.root || id == world.current.root) {
+          expanded
+        } else {
+          {let%Lets.OptWrap node = world.current.nodes->Map.String.get(id);
+          let expanded = expanded->Set.String.add(node.parent);
+          loop(node.parent, expanded)}->Lets.OptDefault.or_(expanded)
+        }
+      };
+
+      store.sharedViewData = {expanded: loop(store.view.active, store.sharedViewData.expanded)};
+
       let%Lets.TryForce events = switch result {
         | `Commit => Ok([])
         | `Rebase(changes, _rebases) => Store.eventsForChanges(store.world.current.nodes, changes->List.map(c => c.apply)->List.reduce([], List.concat));
