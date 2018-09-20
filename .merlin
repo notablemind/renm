@@ -16,6 +16,8 @@ S src
 B lib/bs/src
 S src/serde
 B lib/bs/src/serde
+S src/client
+B lib/bs/src/client
 S src/sync
 B lib/bs/src/sync
 S src/utils

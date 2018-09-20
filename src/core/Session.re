@@ -48,3 +48,33 @@ let applyView = (store, viewActions) => {
 
   viewEvents
 };
+
+/** TODO test this to see if it makes sense */
+let changeSetTimeout = 500.;
+
+let updateChangeSet = (changeSet, action) => {
+  let now = Js.Date.now();
+  switch (changeSet, action) {
+    | (Some((session, time, id)), Actions.ChangeContents(cid, _)) when id == cid && now -. time < changeSetTimeout => {
+      Some((session, now, id))
+    }
+    | (_, ChangeContents(id, _)) =>
+    /* Js.log3("New changeset", changeSet, now); */
+    Some((Utils.newId(), now, id))
+    | (_, _) => None
+  }
+};
+
+let getChangeId = (session) => {
+  let changeId = session.sessionId ++ ":" ++ string_of_int(session.changeNum);
+  session.changeNum = session.changeNum + 1;
+
+  changeId
+};
+
+let makeSelection = (session, sel) => {
+(session.view.active, session.view.selection, switch sel {
+    | None => (0, 0)
+    | Some(sel) => sel
+  })
+};

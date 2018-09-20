@@ -4,6 +4,8 @@
   "description": "Reason workflow with Esy",
   "license": "MIT",
   "scripts": {
+    "docker-base": "docker build -t jaredly/opam -f Dockerfile.base .",
+    "docker-cohttp": "docker build -t jaredly/opam:cohttp -f Dockerfile.cohttp .",
     "docker": "docker build -t hello-reason . && docker run -d -p :8000 hello-reason"
   },
   "esy": {

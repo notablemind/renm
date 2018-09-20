@@ -2,5 +2,5 @@
   (name Server)
   (modules Server)
   (public_name Server.exe)
-  ; (flags (-ccopt -static))
+  (flags (-ccopt -static))
   (libraries cohttp lwt cohttp-lwt-unix lib))

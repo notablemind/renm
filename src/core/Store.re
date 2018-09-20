@@ -111,23 +111,6 @@ let processAction = (data, action): Result.t(ActionResults.actionResults, string
   | JoinUp(_, _, _) => Ok(blank)
   };
 
-
-/** TODO test this to see if it makes sense */
-let changeSetTimeout = 500.;
-
-let updateChangeSet = (changeSet, action) => {
-  let now = Js.Date.now();
-  switch (changeSet, action) {
-    | (Some((session, time, id)), ChangeContents(cid, _)) when id == cid && now -. time < changeSetTimeout => {
-      Some((session, now, id))
-    }
-    | (_, ChangeContents(id, _)) =>
-    /* Js.log3("New changeset", changeSet, now); */
-    Some((Utils.newId(), now, id))
-    | (_, _) => None
-  }
-};
-
 let notifyForChanges = (store, changes) => {
   let%Lets.TryLog changeEvents =
     changes->Sync.tryReduce([], (events, change) => {
@@ -152,18 +135,9 @@ let eventsForChanges = (nodes, changes) => {
 let apply = (~preSelection=?, ~postSelection=?, store, changes, events, link) => {
   let%Lets.TryLog changeEvents = eventsForChanges(store.world.current.nodes, changes);
 
-  let changeId = store.session.sessionId ++ ":" ++ string_of_int(store.session.changeNum);
-  store.session.changeNum = store.session.changeNum + 1;
-
-  let preSelection = (store.session.view.active, store.session.view.selection, switch preSelection {
-    | None => (0, 0)
-    | Some(sel) => sel
-  });
-
-  let postSelection = (store.session.view.active, store.session.view.selection, switch postSelection {
-    | None => (0, 0)
-    | Some(sel) => sel
-  });
+  let changeId = Session.getChangeId(store.session);
+  let preSelection = Session.makeSelection(store.session, preSelection);
+  let postSelection = Session.makeSelection(store.session, postSelection);
 
   switch (World.applyChange(
     ~changeId,
@@ -237,7 +211,7 @@ let act = (~preSelection=?, ~postSelection=?, store: t('a), action) => {
   let%Lets.TryLog {ActionResults.viewActions, changes} = processAction(store.world.current, action);
   /* Js.log3(action, changes, viewActions); */
 
-  store.session.changeSet = updateChangeSet(store.session.changeSet, action);
+  store.session.changeSet = Session.updateChangeSet(store.session.changeSet, action);
 
   let viewEvents = Session.applyView(store.session, viewActions);
 
