@@ -79,3 +79,21 @@ let makeSelection = (session, sel) => {
     | Some(sel) => sel
   })
 };
+
+let makeSessionInfo = (~preSelection=?, ~postSelection=?, session) => {
+  let (changeId, session) = getChangeId(session);
+  let preSelection = makeSelection(session, preSelection);
+  let postSelection = makeSelection(session, postSelection);
+
+  (
+    changeId,
+    session,
+    {
+      Sync.sessionId: session.sessionId,
+      changeset: session.changeSet->Lets.Opt.map(((cid, _, _)) => cid),
+      author: "jared",
+      preSelection,
+      postSelection,
+    },
+  );
+};

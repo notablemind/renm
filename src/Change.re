@@ -237,7 +237,7 @@ let apply = (data: data, change) => {
       let%Try node = data.nodes->Map.String.get(id)->Opt.orError(MissingNode(id));
       let%Try parent = data.nodes->Map.String.get(node.parent)->Opt.orError(MissingParent(node.parent, id));
       let%Try idx = parent.children->TreeTraversal.childPos(id)->Lets.Opt.orError(NotInChildren(node.parent, node.id));
-      Js.log4("::: Move node", node, parent, (nidx, idx));
+      /* Js.log4("::: Move node", node, parent, (nidx, idx)); */
       let%Try nodes = if (node.parent == nextPid) {
         let rest = parent.children->List.keep((!=)(id));
         let children = Utils.insertIntoList(rest, nidx, id);

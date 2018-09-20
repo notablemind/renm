@@ -45,14 +45,18 @@ type sessionInfo('selection) = {
   author: string,
 };
 
-type change('change, 'rebase, 'selection) = {
+type changeInner('change, 'selection) = {
   changeId: string,
-  apply: 'change,
-  revert: 'change,
-  rebase: 'rebase,
   link: option(link),
+  apply: 'change,
 
   sessionInfo: sessionInfo('selection),
+};
+
+type change('change, 'rebase, 'selection) = {
+  change: changeInner('change, 'selection),
+  revert: 'change,
+  rebase: 'rebase,
 };
 
 module History : {
@@ -64,14 +68,14 @@ module History : {
   let itemsSince: (t('change, 'rebase, 'selection), option(string)) => list(change('change, 'rebase, 'selection))
 } = {
   type t('change, 'rebase, 'selection) = list(change('change, 'rebase, 'selection));
-  let latestId = t => List.head(t)->Lets.Opt.map(c => c.changeId);
+  let latestId = t => List.head(t)->Lets.Opt.map(c => c.change.changeId);
   let append = (t, items) => List.reverse(items) @ t
   let itemsSince = (t, id) => switch id {
     | None => List.reverse(t)
     | Some(id) =>
       let rec loop = (items, collector) => switch items {
         | [] => collector
-        | [one, ...rest] when one.changeId == id => collector
+        | [one, ...rest] when one.change.changeId == id => collector
         | [one, ...rest] => loop(rest, [one, ...collector])
       };
       loop(t, [])
@@ -108,7 +112,7 @@ module F = (Config: {
   /* TODO do I want to ignore & collect & report errors? or just abort... */
   let reduceChanges = (changes, initial) => {
     changes->skipReduce((initial, []), ((current, changes), change) => {
-      let%Lets.Try (data, revert, rebase) = Config.apply(current, change.apply);
+      let%Lets.Try (data, revert, rebase) = Config.apply(current, change.change.apply);
       Ok((data, 
       /* changes @ [] */
       [{...change, revert, rebase}, ...changes]
@@ -119,7 +123,7 @@ module F = (Config: {
   let queueReduceChanges = (changes, initial) => {
     changes
         ->Queue.skipReduce((initial, Queue.empty), ((data, changes), change) => {
-          let%Lets.Try (data, revert, rebase) = Config.apply(data, change.apply);
+          let%Lets.Try (data, revert, rebase) = Config.apply(data, change.change.apply);
           Ok((data, Queue.append(changes, {...change, revert, rebase})))
         });
   };
@@ -127,10 +131,10 @@ module F = (Config: {
   let processRebases = (origChanges, current, rebases) => {
     origChanges
     ->skipReduce((current, []), ((current, changes), change) => {
-      let apply = rebases->List.reduce(change.apply, (current, base) => Config.rebase(current, base))
+      let apply = rebases->List.reduce(change.change.apply, (current, base) => Config.rebase(current, base))
       let%Lets.Try (data, revert, rebase) = Config.apply(current, apply);
       Ok((data,
-      changes @ [{...change, apply, revert, rebase}]
+      changes @ [{change: {...change.change, apply}, revert, rebase}]
       /* [, ...changes] */
       ))
     })
@@ -162,29 +166,21 @@ module F = (Config: {
 
   let applyChange = (
     ~changeId,
-    ~sessionId,
-    ~changeset,
-    ~author,
+    ~sessionInfo,
     ~link,
-    ~preSelection,
-    ~postSelection,
     world: world('a),
     change: Config.change
   ): Result.t(world('a), Config.error) => {
     let%Lets.TryWrap (current, revert, rebase) = Config.apply(world.current, change);
     let change = {
-      changeId,
-      apply: change,
+      change: {
+        changeId,
+        apply: change,
+        sessionInfo,
+        link,
+      },
       revert,
       rebase,
-      sessionInfo: {
-        preSelection,
-        postSelection,
-        sessionId,
-        changeset,
-        author,
-      },
-      link,
     };
     {
       ...world,
@@ -270,15 +266,15 @@ module F = (Config: {
     let rec loop = (history, rebases, redoneChanges) => {
       switch history {
         | [] => None
-        | [one, ...rest] when redoneChanges->Set.String.has(one.changeId) =>
+        | [one, ...rest] when redoneChanges->Set.String.has(one.change.changeId) =>
           loop(rest, rebases, redoneChanges)
-        | [one, ...rest] when one.sessionInfo.sessionId != sessionId =>
+        | [one, ...rest] when one.change.sessionInfo.sessionId != sessionId =>
           loop(rest, [one, ...rebases], redoneChanges)
-        | [{link: Some(Redo(id))}, ...rest] =>
+        | [{change: {link: Some(Redo(id))}}, ...rest] =>
           loop(rest, rebases, redoneChanges->Set.String.add(id))
-        | [{link: Some(Undo(_))} as one, ...rest] =>
+        | [{change: {link: Some(Undo(_))}} as one, ...rest] =>
           /* Js.log((one, rebases, redoneChanges)) */
-          Some((rebaseMany(one, rebases), one.changeId, one.sessionInfo.preSelection, one.sessionInfo.postSelection))
+          Some((rebaseMany(one, rebases), one.change.changeId, one.change.sessionInfo.preSelection, one.change.sessionInfo.postSelection))
         | [one, ...rest] =>
           /* Nothing left is undone recently enough... */
           /* We could make it so you just rebase past the things you haven't done tho */
@@ -294,13 +290,13 @@ module F = (Config: {
     let rec loop = (history, rebases, undoneChanges, changeSet) => {
       switch history {
       | [] => []
-      | [one, ...rest] when undoneChanges->Set.String.has(one.changeId) => {
+      | [one, ...rest] when undoneChanges->Set.String.has(one.change.changeId) => {
         loop(rest, rebases, undoneChanges, changeSet)
       }
-      | [one, ...rest] when one.sessionInfo.sessionId != sessionId => {
+      | [one, ...rest] when one.change.sessionInfo.sessionId != sessionId => {
         loop(rest, [one, ...rebases], undoneChanges, changeSet)
       }
-      | [{link: Some(Undo(ids))}, ...rest] => {
+      | [{change: {link: Some(Undo(ids))}}, ...rest] => {
         let undones = Set.String.fromArray(List.toArray(ids));
         let alls = undoneChanges->Set.String.union(undones);
         loop(rest, rebases, alls, changeSet)
@@ -308,12 +304,12 @@ module F = (Config: {
       | [one, ...rest] => {
         switch (changeSet) {
           | None =>
-            [(rebaseMany(one, rebases), (one.changeId, (one.sessionInfo.preSelection, one.sessionInfo.postSelection))), ...loop(rest, rebases, undoneChanges, Some(one.sessionInfo.changeset))]
+            [(rebaseMany(one, rebases), (one.change.changeId, (one.change.sessionInfo.preSelection, one.change.sessionInfo.postSelection))), ...loop(rest, rebases, undoneChanges, Some(one.change.sessionInfo.changeset))]
           | Some(changeset) =>
-            if (changeset != one.sessionInfo.changeset || changeset == None) {
+            if (changeset != one.change.sessionInfo.changeset || changeset == None) {
               []
             } else {
-              [(rebaseMany(one, rebases), (one.changeId, (one.sessionInfo.preSelection, one.sessionInfo.postSelection))), ...loop(rest, rebases, undoneChanges, Some(changeset))]
+              [(rebaseMany(one, rebases), (one.change.changeId, (one.change.sessionInfo.preSelection, one.change.sessionInfo.postSelection))), ...loop(rest, rebases, undoneChanges, Some(changeset))]
             }
         }
       }

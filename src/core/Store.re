@@ -111,6 +111,14 @@ let processAction = (data, action): Result.t(ActionResults.actionResults, string
   | JoinUp(_, _, _) => Ok(blank)
   };
 
+let onChange = (store, session, events) => {
+  Subscription.trigger(session.Session.subs, [SharedTypes.Event.Update, ...events]);
+  Js.Global.setTimeout(() => {
+    LocalStorage.setItem("renm:store", Js.Json.stringify(Serialize.toJson(store.world)));
+    LocalStorage.setItem("renm:viewData", Js.Json.stringify(Serialize.toJson(session.sharedViewData)));
+  }, 0)->ignore;
+};
+
 let notifyForChanges = (store, session, changes) => {
   let%Lets.TryLog changeEvents =
     changes->Sync.tryReduce([], (events, change) => {
@@ -118,11 +126,7 @@ let notifyForChanges = (store, session, changes) => {
       events->List.concat(more)
     });
 
-  Subscription.trigger(session.Session.subs, [SharedTypes.Event.Update, ...changeEvents]);
-  Js.Global.setTimeout(() => {
-    LocalStorage.setItem("renm:store", Js.Json.stringify(Serialize.toJson(store.world)));
-    LocalStorage.setItem("renm:viewData", Js.Json.stringify(Serialize.toJson(session.sharedViewData)));
-  }, 0)->ignore;
+  onChange(store, session, changeEvents);
 };
 
 let eventsForChanges = (nodes, changes) => {
@@ -132,20 +136,12 @@ let eventsForChanges = (nodes, changes) => {
   });
 };
 
-let apply = (~preSelection=?, ~postSelection=?, world: World.world('a), session, changes, link) => {
+let apply = (~preSelection=?, ~postSelection=?, world: World.world('a), changeId, sessionInfo, changes, link) => {
   let%Lets.Try changeEvents = eventsForChanges(world.current.nodes, changes);
-
-  let (changeId, session) = Session.getChangeId(session);
-  let preSelection = Session.makeSelection(session, preSelection);
-  let postSelection = Session.makeSelection(session, postSelection);
 
   let%Lets.Try world = try%Lets.Try (World.applyChange(
     ~changeId,
-    ~sessionId=session.sessionId,
-    ~changeset=session.changeSet->Lets.Opt.map(((cid, _, _)) => cid),
-    ~author="jared",
-    ~preSelection,
-    ~postSelection,
+    ~sessionInfo,
     ~link,
     world,
     changes
@@ -153,7 +149,7 @@ let apply = (~preSelection=?, ~postSelection=?, world: World.world('a), session,
     | _ => Error("Failed to apply change")
   };
 
-  Ok((world, session, changeEvents))
+  Ok((world, changeEvents))
 };
 
 /*
@@ -198,28 +194,19 @@ So the algorithm is:
 
  */
 
-let onChange = (store, session, events) => {
-  Subscription.trigger(session.Session.subs, [SharedTypes.Event.Update, ...events]);
-  Js.Global.setTimeout(() => {
-    LocalStorage.setItem("renm:store", Js.Json.stringify(Serialize.toJson(store.world)));
-    LocalStorage.setItem("renm:viewData", Js.Json.stringify(Serialize.toJson(session.sharedViewData)));
-  }, 0)->ignore;
-};
-
 let act = (~preSelection=?, ~postSelection=?, store: t('a), action) => {
   let session = store.session;
   let%Lets.TryLog {ActionResults.viewActions, changes} = processAction(store.world.current, action);
-  /* Js.log3(action, changes, viewActions); */
-
 
   let (session, viewEvents) =
     session
     ->Session.updateChangeSet(action)
     ->Session.applyView(viewActions);
 
-  let%Lets.TryLog (world, session, events) = apply(~preSelection?, ~postSelection?, store.world, session, changes, None);
-  store.world = world;
+  let (changeId, session, sessionInfo) = Session.makeSessionInfo(~preSelection?, ~postSelection?, session);
   store.session = session;
+  let%Lets.TryLog (world, events) = apply(store.world, changeId, sessionInfo, changes, None);
+  store.world = world;
   onChange(store, session, events @ viewEvents);
 };
 
@@ -249,9 +236,10 @@ let undo = store => {
   let session = {...session, changeSet: None};
   let (session, viewEvents) = Session.applyView(session, selectionEvents(preSelection));
 
-  let%Lets.TryLog (world, session, events) = apply(~preSelection=selPos(postSelection), ~postSelection=selPos(preSelection), store.world, session, change, Some(Undo(changeIds)))
-  store.world = world;
+  let (changeId, session, sessionInfo) = Session.makeSessionInfo(~preSelection=selPos(postSelection), ~postSelection=selPos(preSelection), session);
   store.session = session;
+  let%Lets.TryLog (world, events) = apply(store.world, changeId, sessionInfo, change, Some(Undo(changeIds)))
+  store.world = world;
   onChange(store, session, events @ viewEvents);
 };
 
@@ -266,9 +254,10 @@ let redo = store => {
   let session = {...session, changeSet: None};
   let (session, viewEvents) = Session.applyView(session, selectionEvents(preSelection));
 
-  let%Lets.TryLog (world, session, events) = apply(~preSelection=selPos(postSelection), ~postSelection=selPos(preSelection), store.world, session, change, Some(Redo(redoId)))
-  store.world = world;
+  let (changeId, session, sessionInfo) = Session.makeSessionInfo(~preSelection=selPos(postSelection), ~postSelection=selPos(preSelection), session);
   store.session = session;
+  let%Lets.TryLog (world, events) = apply(store.world, changeId, sessionInfo, change, Some(Redo(redoId)))
+  store.world = world;
   onChange(store, session, events @ viewEvents);
 };
 
