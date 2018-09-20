@@ -3,8 +3,8 @@ open SharedTypes;
 
 type session = {
   sessionId: string,
-  mutable changeNum: int,
-  mutable changeSet: option((string, float, string)),
+  changeNum: int,
+  changeSet: option((string, float, string)),
   mutable view: View.view,
   mutable sharedViewData: View.sharedViewData,
   subs: Hashtbl.t(Event.t, list((int, unit => unit))),
@@ -37,14 +37,14 @@ let actView = (store, action) => {
   }, 0)->ignore;
 };
 
-let applyView = (store, viewActions) => {
-  let (view, sharedViewData, viewEvents) = viewActions->List.reduce((store.view, store.sharedViewData, []), ((v, svd, evts), action) => {
+let applyView = (session, viewActions) => {
+  let (view, sharedViewData, viewEvents) = viewActions->List.reduce((session.view, session.sharedViewData, []), ((v, svd, evts), action) => {
     let (v, svg, nevts) = View.processViewAction(v, svd, action);
     (v, svg, nevts @ evts)
   });
 
-  store.view = view;
-  store.sharedViewData = sharedViewData;
+  session.view = view;
+  session.sharedViewData = sharedViewData;
 
   viewEvents
 };
@@ -52,9 +52,9 @@ let applyView = (store, viewActions) => {
 /** TODO test this to see if it makes sense */
 let changeSetTimeout = 500.;
 
-let updateChangeSet = (changeSet, action) => {
+let updateChangeSet = (session, action) => {
   let now = Js.Date.now();
-  switch (changeSet, action) {
+  {...session, changeSet: switch (session.changeSet, action) {
     | (Some((session, time, id)), Actions.ChangeContents(cid, _)) when id == cid && now -. time < changeSetTimeout => {
       Some((session, now, id))
     }
@@ -62,14 +62,17 @@ let updateChangeSet = (changeSet, action) => {
     /* Js.log3("New changeset", changeSet, now); */
     Some((Utils.newId(), now, id))
     | (_, _) => None
-  }
+  }}
 };
 
 let getChangeId = (session) => {
   let changeId = session.sessionId ++ ":" ++ string_of_int(session.changeNum);
-  session.changeNum = session.changeNum + 1;
+(changeId,
+  {
+    ...session,
+    changeNum: session.changeNum + 1
+  })
 
-  changeId
 };
 
 let makeSelection = (session, sel) => {

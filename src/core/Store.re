@@ -135,7 +135,8 @@ let eventsForChanges = (nodes, changes) => {
 let apply = (~preSelection=?, ~postSelection=?, store, changes, events, link) => {
   let%Lets.TryLog changeEvents = eventsForChanges(store.world.current.nodes, changes);
 
-  let changeId = Session.getChangeId(store.session);
+  let (changeId, session) = Session.getChangeId(store.session);
+  store.session = session
   let preSelection = Session.makeSelection(store.session, preSelection);
   let postSelection = Session.makeSelection(store.session, postSelection);
 
@@ -211,7 +212,7 @@ let act = (~preSelection=?, ~postSelection=?, store: t('a), action) => {
   let%Lets.TryLog {ActionResults.viewActions, changes} = processAction(store.world.current, action);
   /* Js.log3(action, changes, viewActions); */
 
-  store.session.changeSet = Session.updateChangeSet(store.session.changeSet, action);
+  store.session = Session.updateChangeSet(store.session, action);
 
   let viewEvents = Session.applyView(store.session, viewActions);
 
@@ -238,7 +239,7 @@ let undo = store => {
 
   let%Lets.Guard () = (change != [], ());
 
-  store.session.changeSet = None;
+  store.session = {...store.session, changeSet: None};
 
   let (_, postSelection) = selections->List.head->Lets.Opt.force;
   let (preSelection, _) = selections->List.get(List.length(selections) - 1)->Lets.Opt.force;
@@ -258,7 +259,7 @@ let redo = store => {
 
   /* Js.log3("Redo Changes", change, redoId); */
 
-  store.session.changeSet = None;
+  store.session = {...store.session, changeSet: None};
 
   /* let (activeId, selectionSet, (pos, length)) = preSelection; */
   /* Js.log3("Redo sels", preSelection, postSelection); */
