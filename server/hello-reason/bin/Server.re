@@ -32,8 +32,11 @@ let server = {
     )
     >>= (body => Server.respond_string(~status=`OK, ~body, ()));
   };
+  let port = try (Unix.getenv("PORT") |> int_of_string) { | _ => 8000 };
 
-  Server.create(~mode=`TCP(`Port(8000)), Server.make(~callback, ()));
+  print_endline("Listening on " ++ string_of_int(port));
+
+  Server.create(~mode=`TCP(`Port(port)), Server.make(~callback, ()));
 };
 
 let () = ignore(Lwt_main.run(server));

@@ -23,4 +23,4 @@ FROM alpine
 RUN apk add gmp-dev
 
 COPY --from=base /hello-reason/_build/default/bin/Server.exe /server
-CMD ["/server"]
+CMD /server $PORT
