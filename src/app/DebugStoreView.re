@@ -2,10 +2,10 @@
 let str = ReasonReact.string;
 
 let showChange = (change: World.thisChange) => {
-  <div key=change.change.changeId style=ReactDOMRe.Style.(make(~fontFamily="monospace", ~whiteSpace="pre-wrap", ()))>
-    {str(change.change.changeId ++ "\n")}
+  <div key=change.inner.changeId style=ReactDOMRe.Style.(make(~fontFamily="monospace", ~whiteSpace="pre-wrap", ()))>
+    {str(change.inner.changeId ++ "\n")}
     {str(Js.Json.stringify(
-      ChangeTransformer.transform_World__MultiChange__change(change.change.apply)
+      ChangeTransformer.transform_World__MultiChange__change(change.inner.apply)
     ) ++ "\n")}
     {str(Js.Json.stringify(
       ChangeTransformer.transform_World__MultiChange__change(change.revert)

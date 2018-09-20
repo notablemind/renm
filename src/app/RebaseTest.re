@@ -87,7 +87,7 @@ let make = (_children) => {
 
       let%Lets.TryForce events = switch result {
         | `Commit => Ok([])
-        | `Rebase(changes, _rebases) => Store.eventsForChanges(store.world.current.nodes, changes->List.map(c => c.change.apply)->List.reduce([], List.concat));
+        | `Rebase(changes, _rebases) => Store.eventsForChanges(store.world.current.nodes, changes->List.map(c => c.inner.apply)->List.reduce([], List.concat));
       }
       store.world = world;
 

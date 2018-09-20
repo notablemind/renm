@@ -197,14 +197,13 @@ So the algorithm is:
 let act = (~preSelection=?, ~postSelection=?, store: t('a), action) => {
   let session = store.session;
   let%Lets.TryLog {ActionResults.viewActions, changes} = processAction(store.world.current, action);
-
   let (session, viewEvents) =
     session
     ->Session.updateChangeSet(action)
     ->Session.applyView(viewActions);
-
   let (changeId, session, sessionInfo) = Session.makeSessionInfo(~preSelection?, ~postSelection?, session);
   store.session = session;
+
   let%Lets.TryLog (world, events) = apply(store.world, changeId, sessionInfo, changes, None);
   store.world = world;
   onChange(store, session, events @ viewEvents);

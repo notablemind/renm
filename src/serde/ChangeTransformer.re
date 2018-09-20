@@ -228,7 +228,7 @@ and transform_Sync____change:
         (
           "change",
           (transform_Sync____changeInner(changeTransformer, selectionTransformer))(
-            record.change,
+            record.inner,
           ),
         ),
         ("revert", changeTransformer(record.revert)),
