@@ -37,18 +37,22 @@ module Queue: {
 
 type link = Undo(list(string)) | Redo(string);
 
-type change('change, 'rebase, 'selection) = {
-  apply: 'change,
-  revert: 'change,
-  rebase: 'rebase,
-  link: option(link),
-
-  changeId: string,
+type sessionInfo('selection) = {
   preSelection: 'selection,
   postSelection: 'selection,
   sessionId: string,
   changeset: option(string),
   author: string,
+};
+
+type change('change, 'rebase, 'selection) = {
+  changeId: string,
+  apply: 'change,
+  revert: 'change,
+  rebase: 'rebase,
+  link: option(link),
+
+  sessionInfo: sessionInfo('selection),
 };
 
 module History : {
@@ -172,12 +176,14 @@ module F = (Config: {
       changeId,
       apply: change,
       revert,
-      preSelection,
-      postSelection,
       rebase,
-      sessionId,
-      changeset,
-      author,
+      sessionInfo: {
+        preSelection,
+        postSelection,
+        sessionId,
+        changeset,
+        author,
+      },
       link,
     };
     {
@@ -266,13 +272,13 @@ module F = (Config: {
         | [] => None
         | [one, ...rest] when redoneChanges->Set.String.has(one.changeId) =>
           loop(rest, rebases, redoneChanges)
-        | [one, ...rest] when one.sessionId != sessionId =>
+        | [one, ...rest] when one.sessionInfo.sessionId != sessionId =>
           loop(rest, [one, ...rebases], redoneChanges)
         | [{link: Some(Redo(id))}, ...rest] =>
           loop(rest, rebases, redoneChanges->Set.String.add(id))
         | [{link: Some(Undo(_))} as one, ...rest] =>
           /* Js.log((one, rebases, redoneChanges)) */
-          Some((rebaseMany(one, rebases), one.changeId, one.preSelection, one.postSelection))
+          Some((rebaseMany(one, rebases), one.changeId, one.sessionInfo.preSelection, one.sessionInfo.postSelection))
         | [one, ...rest] =>
           /* Nothing left is undone recently enough... */
           /* We could make it so you just rebase past the things you haven't done tho */
@@ -291,7 +297,7 @@ module F = (Config: {
       | [one, ...rest] when undoneChanges->Set.String.has(one.changeId) => {
         loop(rest, rebases, undoneChanges, changeSet)
       }
-      | [one, ...rest] when one.sessionId != sessionId => {
+      | [one, ...rest] when one.sessionInfo.sessionId != sessionId => {
         loop(rest, [one, ...rebases], undoneChanges, changeSet)
       }
       | [{link: Some(Undo(ids))}, ...rest] => {
@@ -302,12 +308,12 @@ module F = (Config: {
       | [one, ...rest] => {
         switch (changeSet) {
           | None =>
-            [(rebaseMany(one, rebases), (one.changeId, (one.preSelection, one.postSelection))), ...loop(rest, rebases, undoneChanges, Some(one.changeset))]
+            [(rebaseMany(one, rebases), (one.changeId, (one.sessionInfo.preSelection, one.sessionInfo.postSelection))), ...loop(rest, rebases, undoneChanges, Some(one.sessionInfo.changeset))]
           | Some(changeset) =>
-            if (changeset != one.changeset || changeset == None) {
+            if (changeset != one.sessionInfo.changeset || changeset == None) {
               []
             } else {
-              [(rebaseMany(one, rebases), (one.changeId, (one.preSelection, one.postSelection))), ...loop(rest, rebases, undoneChanges, Some(changeset))]
+              [(rebaseMany(one, rebases), (one.changeId, (one.sessionInfo.preSelection, one.sessionInfo.postSelection))), ...loop(rest, rebases, undoneChanges, Some(changeset))]
             }
         }
       }

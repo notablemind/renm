@@ -226,10 +226,10 @@ and transform_Sync__Notablemind____change:
         ("changeId", Js.Json.string(record.changeId)),
         ("apply", changeTransformer(record.apply)),
         ("revert", changeTransformer(record.revert)),
-        ("preSelection", selectionTransformer(record.preSelection)),
-        ("postSelection", selectionTransformer(record.postSelection)),
+        ("preSelection", selectionTransformer(record.sessionInfo.preSelection)),
+        ("postSelection", selectionTransformer(record.sessionInfo.postSelection)),
         ("rebase", rebaseTransformer(record.rebase)),
-        ("sessionId", Js.Json.string(record.sessionId)),
+        ("sessionId", Js.Json.string(record.sessionInfo.sessionId)),
         (
           "changeset",
           (
@@ -243,10 +243,10 @@ and transform_Sync__Notablemind____change:
               Js.Json.string,
             )
           )(
-            record.changeset,
+            record.sessionInfo.changeset,
           ),
         ),
-        ("author", Js.Json.string(record.author)),
+        ("author", Js.Json.string(record.sessionInfo.author)),
         (
           "link",
           (
