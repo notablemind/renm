@@ -6,9 +6,6 @@ type t('status) = {
   mutable session: Session.session,
 };
 
-/* let get = (store, id) => Map.String.get(store.world.current.nodes, id);
-let getResult = (store, id) => Map.String.get(store.world.current.nodes, id)->Lets.Opt.orError("No node " ++ id); */
-
 let makeNodeMap = (nodes: list(Data.Node.t('contents, 'prefix))) =>
   List.reduce(nodes, Map.String.empty, (map, node) =>
     Map.String.set(map, node.id, node)
@@ -22,7 +19,7 @@ let create = (~sessionId, ~root, ~nodes: list(Data.Node.t('contents, 'prefix))) 
   }
 };
 
-let fromWorld = (~sessionId, ~world, ) => {
+let fromWorld = (~sessionId, ~world) => {
   {
     session: {
       sessionId,
@@ -45,16 +42,6 @@ let viewNode = (store, id) => {
 };
 
 open Data;
-type action =
-  /** second arg is the thing to focus after */
-  | Remove(Node.id, Node.id)
-  | SetContents(Node.id, NodeType.contents)
-  | ChangeContents(Node.id, Delta.delta)
-  | Move(list(Node.id), Node.id, int)
-  | Create(int, NodeType.t)
-  | SplitAt(int)
-  | JoinUp(Node.id, NodeType.contents, Node.id)
-  ;
 
 module ActionResults = {
   type actionResults = {
@@ -68,10 +55,8 @@ module ActionResults = {
 
 let blank = {ActionResults.changes: [], viewActions: []};
 
-/* open Lets; */
+open Actions;
 
-/*
- */
 let processAction = (data, action): Result.t(ActionResults.actionResults, string) =>
   switch (action) {
   /* | ViewAction(viewAction) => {...blank, viewActions: [viewAction]} */
@@ -310,3 +295,12 @@ let redo = store => {
 };
 
 
+let clientStore = store => {
+  ClientStore.session: () => store.session,
+  data: () => store.world.current,
+  act: (~preSelection=?, ~postSelection=?, actions) => {
+    actions->List.forEach(act(~preSelection?, ~postSelection?, store ))
+  },
+  undo: () => store->undo,
+  redo: () => store->redo
+}

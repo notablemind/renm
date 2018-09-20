@@ -7,24 +7,24 @@ type data('contents, 'prefix) = {
   collapsed: bool,
 };
 
-let getData = (store: Store.t('a), id) =>
-  switch (Data.get(store.world.current, id)) {
+let getData = (store: ClientStore.t('a, 'b, 'c), id) =>
+  switch (Data.get(store.data(), id)) {
   | None => None
   | Some(node) =>
     Some({
       node,
-      editPos: id == store.session.view.active ? Some(store.session.view.editPos) : None,
-      selected: Set.String.has(store.session.view.selection, id),
+      editPos: id == store.session().view.active ? Some(store.session().view.editPos) : None,
+      selected: Set.String.has(store.session().view.selection, id),
       collapsed:
-        id == store.session.view.root ?
-          false : !Set.String.has(store.session.sharedViewData.expanded, id),
+        id == store.session().view.root ?
+          false : !Set.String.has(store.session().sharedViewData.expanded, id),
     })
   };
 
 let evtValue = evt => ReactEvent.Form.target(evt)##value;
 
 let renderContents =
-    (store, node: Data.Node.t(NodeType.contents, option(NodeType.prefix)), editPos, collapsed) =>
+    (store: ClientStore.t(NodeType.contents, option(NodeType.prefix), (int, int)), node: Data.Node.t(NodeType.contents, option(NodeType.prefix)), editPos, collapsed) =>
   switch (node.contents) {
   | Normal(text) =>
     <Quill
@@ -32,42 +32,41 @@ let renderContents =
         NodeTypes.value: text,
         editPos,
         onRedo: () => {
-          Store.redo(store)
+          store.redo()
         },
         onUndo: () => {
-          Store.undo(store)
+          store.undo()
         },
         onChange: (delta, postSelection, preSelection) =>
-          Store.act(
+          store.act(
             ~preSelection?,
             ~postSelection?,
-            store,
-            Store.ChangeContents(node.id, delta),
+            [Actions.ChangeContents(node.id, delta)],
           ),
         onToggleCollapse: () => {
-          Session.actView(store.session, View.SetCollapsed(node.id, !collapsed));
+          Session.actView(store.session(), View.SetCollapsed(node.id, !collapsed));
           false;
         },
         onEnter: () => {
-          Actions.createAfter(store, node);
+          ActionCreators.createAfter(store, node);
         },
         /** TODO indents n stuff */
         onIndent: () => {
-          Actions.indent(store, node);
+          ActionCreators.indent(store, node);
           true
         },
         onDedent: () => {
-          Actions.dedent(store, node);
+          ActionCreators.dedent(store, node);
           true
         },
-        onDown: () => Actions.down(store, node),
-        onRight: () => Actions.right(store,node),
-        onLeft: () => Actions.left(store, node),
-        onUp: () => Actions.up(store, node),
+        onDown: () => ActionCreators.down(store, node),
+        onRight: () => ActionCreators.right(store,node),
+        onLeft: () => ActionCreators.left(store, node),
+        onUp: () => ActionCreators.up(store, node),
         onBackspace: currentValue => {
-          Actions.backspace(store, node, currentValue);
+          ActionCreators.backspace(store, node, currentValue);
         },
-        onFocus: _evt => Actions.focus(store.session, node)
+        onFocus: _evt => ActionCreators.focus(store.session(), node)
       }
     />
   | _ => str("Other contents")
@@ -135,7 +134,7 @@ let renderHandle = (~onMouseDown, ~hasChildren, ~collapsed, ~toggleCollapsed) =>
 let component = ReasonReact.statelessComponent("NodeBody");
 let make =
     (
-      ~store: Store.t('status),
+      ~store: ClientStore.t('a, 'b, 'c),
       ~data as {node, selected, editPos, collapsed},
       ~renderChild,
       ~renderDraggable,
@@ -161,16 +160,16 @@ let make =
             onMouseDown={evt =>
               if (ReactEvent.Mouse.metaKey(evt)) {
                 ReactEvent.Mouse.preventDefault(evt);
-                Session.actView(store.session, AddToSelection(node.id))
+                Session.actView(store.session(), AddToSelection(node.id))
               } else {
-                Session.actView(store.session, SetActive(node.id, Default))
+                Session.actView(store.session(), SetActive(node.id, Default))
               }
             }>
             {
-              node.id != store.session.view.root ?
+              node.id != store.session().view.root ?
                 renderHandle(~onMouseDown, ~hasChildren=node.children != [], ~collapsed, ~toggleCollapsed={() => {
                   Session.actView(
-                    store.session,
+                    store.session(),
                     SetCollapsed(node.id, !collapsed),
                   )
                 }}) :

@@ -118,14 +118,14 @@ let make = (_children) => {
         <button onClick=(_ev => doSync(a)) >
           {ReasonReact.string("Sync")}
         </button>
-        <Tree store=a />
+        <Tree store=a->Store.clientStore />
         <DebugStoreView store=a />
       </div>
       <div className=Css.(style([flex(1)]))>
         <button onClick=(_ev => doSync(b)) >
           {ReasonReact.string("Sync")}
         </button>
-        <Tree store=b />
+        <Tree store=b->Store.clientStore />
         <DebugStoreView store=b />
       </div>
 
@@ -133,7 +133,7 @@ let make = (_children) => {
         <button onClick=(_ev => doSync(c)) >
           {ReasonReact.string("Sync")}
         </button>
-        <Tree store=c />
+        <Tree store=c->Store.clientStore />
         <DebugStoreView store=c />
       </div>
     </div>

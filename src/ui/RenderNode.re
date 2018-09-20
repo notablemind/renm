@@ -9,7 +9,7 @@ let rec make = (~depth, ~id, ~store, ~renderDraggable, _children) => {
     oldAndNewSelf.oldSelf.state !== oldAndNewSelf.newSelf.state,
   didMount: self =>
     self.onUnmount(
-      Session.subscribe(store.Store.session, id, (depth, () =>
+      Session.subscribe(store.ClientStore.session(), id, (depth, () =>
         self.send(NodeBody.getData(store, id))
       )),
     ),
