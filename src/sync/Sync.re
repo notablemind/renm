@@ -254,8 +254,8 @@ module F = (Config: {
         | [{link: Some(Redo(id))}, ...rest] =>
           loop(rest, rebases, redoneChanges->Set.String.add(id))
         | [{link: Some(Undo(_))} as one, ...rest] =>
-          Js.log((one, rebases, redoneChanges))
-          Some((rebaseMany(one, rebases), one.changeId, one.preSelection))
+          /* Js.log((one, rebases, redoneChanges)) */
+          Some((rebaseMany(one, rebases), one.changeId, one.preSelection, one.postSelection))
         | [one, ...rest] =>
           /* Nothing left is undone recently enough... */
           /* We could make it so you just rebase past the things you haven't done tho */

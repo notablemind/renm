@@ -308,9 +308,11 @@ let act = (~preSelection=?, ~postSelection=?, store, action) => {
 };
 
 let selectionEvents = ((id, set, (pos, length))) => [
-    View.SetActive(id, Exactly(pos, length)),
-    View.SetSelection(set),
-  ];
+  View.SetActive(id, Exactly(pos, length)),
+  View.SetSelection(set),
+];
+
+let selPos = ((_, _, pos)) => pos;
 
 let undo = store => {
 
@@ -321,39 +323,38 @@ let undo = store => {
   let (changeIds, selections) = List.unzip(idsAndSelections);
 
   let change = changes->World.MultiChange.mergeChanges;
-  Js.log3("Undo Changes", change, changeIds);
+  /* Js.log3("Undo Changes", change, changeIds); */
 
   let%Lets.Guard () = (change != [], ());
 
   store.changeSet = None;
 
-  let (preSelection, posSelection) = selections->List.head->Lets.Opt.force;
+  let (_, postSelection) = selections->List.head->Lets.Opt.force;
+  let (preSelection, _) = selections->List.get(List.length(selections) - 1)->Lets.Opt.force;
 
+  /* Js.log3("Undo sels", preSelection, postSelection); */
   let viewEvents = applyView(store, selectionEvents(preSelection));
 
-  apply(store, change, viewEvents, Some(Undo(changeIds)))
+  apply(~preSelection=selPos(postSelection), ~postSelection=selPos(preSelection), store, change, viewEvents, Some(Undo(changeIds)))
 };
 
 let redo = store => {
 
-  let%Lets.OptConsume (change, redoId, preSelection) = World.getRedoChange(
+  let%Lets.OptConsume (change, redoId, preSelection, postSelection) = World.getRedoChange(
     store.world.unsynced->Sync.Queue.toRevList,
     store.sessionId,
   );
 
-  Js.log3("Redo Changes", change, redoId);
+  /* Js.log3("Redo Changes", change, redoId); */
 
   store.changeSet = None;
 
-  let (activeId, selectionSet, (pos, length)) = preSelection;
+  /* let (activeId, selectionSet, (pos, length)) = preSelection; */
+  /* Js.log3("Redo sels", preSelection, postSelection); */
 
-  let viewEvents = applyView(store, [
-    View.SetActive(activeId, Start), /* TODO set selection */
-    View.SetSelection(selectionSet),
-    View.Edit(Exactly(pos, length))
-  ]);
+  let viewEvents = applyView(store, selectionEvents(preSelection));
 
-  apply(store, change, viewEvents, Some(Redo(redoId)))
+  apply(~preSelection=selPos(postSelection), ~postSelection=selPos(preSelection), store, change, viewEvents, Some(Redo(redoId)))
 };
 
 

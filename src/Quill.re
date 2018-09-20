@@ -29,6 +29,7 @@ register({
 [@bs.send] external getLength: (quill) => float = "";
 [@bs.send] external getSelection: (quill) => Js.nullable({."index": float, "length": float}) = "";
 [@bs.send] external setSelection: (quill, float, float, string) => unit = "";
+[@bs.send] external setSelectionRange: (quill, Js.nullable({."index": float, "length": float})) => unit = "setSelection";
 [@bs.send] external getBounds: (quill, float) => {."top": float} = "";
 type keyboard;
 [@bs.get] external keyboard: (quill) => keyboard = "";
@@ -117,7 +118,7 @@ let setupQuill = (element, props: ref(NodeTypes.props(Delta.delta, (int, int))))
 
   keyboard(quill)
   ->addBinding({"key": "z", "collapsed": true, "shortKey": true}, () => {
-    Js.log("hello");
+    /* Js.log("hello"); */
       props^.onUndo();
       /* props^.onToggleCollapse() */
       false
@@ -125,7 +126,7 @@ let setupQuill = (element, props: ref(NodeTypes.props(Delta.delta, (int, int))))
 
   keyboard(quill)
   ->addBinding({"key": "z", "collapsed": true, "shortKey": true, "shiftKey": true}, () =>{
-    Js.log("redo");
+    /* Js.log("redo"); */
       props^.onRedo();
       /* props^.onToggleCollapse() */
       false
@@ -222,7 +223,7 @@ let setupQuill = (element, props: ref(NodeTypes.props(Delta.delta, (int, int))))
   };
 
   onSelectionChange(quill, (range, oldRange, source) => {
-    Js.log3("Selection change", range, oldRange);
+    /* Js.log3("Selection change", range, oldRange); */
     savedRange := range;
     switch (oldRange->Js.toOption) {
       | None when props^.editPos == None => props^.onFocus()
@@ -240,7 +241,7 @@ let setupQuill = (element, props: ref(NodeTypes.props(Delta.delta, (int, int))))
   };
   on(quill, "text-change", (delta, oldDelta, source) => {
     let range = getSelection(quill);
-    Js.log2("Text change", range);
+    /* Js.log2("Text change", range); */
     props^.onChange(delta, rangePair(range->Js.toOption), rangePair(savedRange^ ->Js.toOption))
   });
   quill;
@@ -267,8 +268,10 @@ let make = (~props: NodeTypes.props(Delta.delta, (int, int)), _children) => {
     let%Lets.OptConsume quill = newSelf.state.quill^;
     let props = newSelf.state.props^;
     if (!Delta.deepEqual(props.value, getContents(quill))) {
-      Js.log3("New data!", props.value, getContents(quill));
-      quill->setContents(props.value, "silent")
+      /* Js.log3("New data!", props.value, getContents(quill)); */
+      let sel = getSelection(quill);
+      quill->setContents(props.value, "silent");
+      quill->setSelectionRange(sel);
     };
     if (hasFocus(quill) != (props.editPos != None)) {
       switch (props.editPos) {
@@ -284,6 +287,7 @@ let make = (~props: NodeTypes.props(Delta.delta, (int, int)), _children) => {
           };
       }
     } else if (newSelf.state.prevEditPos^ != oldSelf.state.props^.editPos) {
+      /* Js.log2("Setting selection ", newSelf.state.props^.editPos); */
       switch (newSelf.state.props^.editPos) {
         | None => ()
         | Some(pos) =>
