@@ -1,0 +1,7 @@
+FROM ocaml/opam:alpine
+
+RUN sudo apk update
+RUN sudo apk add m4
+RUN sh -c "cd ~/opam-repository && git pull -q && git checkout 1.2"
+RUN opam update
+RUN opam install dune reason

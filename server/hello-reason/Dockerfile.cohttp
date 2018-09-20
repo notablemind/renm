@@ -1,0 +1,8 @@
+FROM jaredly/opam
+
+# need these two for building tls, which is needed by cohttp
+RUN opam depext conf-gmp.1
+RUN opam depext conf-perl.1
+RUN opam install tls
+# for cohttp stuffs
+RUN opam install lwt cohttp cohttp-lwt-unix
