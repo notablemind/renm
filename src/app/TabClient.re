@@ -34,6 +34,12 @@ let make = (_) => {
       switch (evt##data) {
       | InitialData(data) => 
         let session = Session.createSession(~sessionId, ~root=data.Data.root);
+        let data = {...data, nodes: data.nodes->Map.String.map(node =>
+          {...node, contents: switch (node.contents) {
+            | Normal(delta) => NodeType.Normal(Delta.fromAny(delta))
+            | _ => node.contents
+          }}
+        )};
         let state = {session, data};
         let clientStore = {
           ClientStore.session: () => state.session,
@@ -72,7 +78,9 @@ let make = (_) => {
 
             state.data = data;
             Subscription.trigger(session.Session.subs, [SharedTypes.Event.Update, ...events]);
-          | Rebase(_) => ()
+          | Rebase(nodes) =>
+            let nodes = nodes->Array.reduce(state.data.nodes, (nodes, node) => nodes->Belt.Map.String.set(node.id, node))
+            state.data = {...state.data, nodes};
         })
       | _ => ()
     }})
