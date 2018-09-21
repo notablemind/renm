@@ -24,8 +24,15 @@ let worldRef = ref(initialWorld);
 
 /* [%%bs.raw "var globalWorldRef = worldRef"]; */
 
+let workerId = Utils.newId();
+let changeNum = ref(0);
+let nextChangeNum = () => {
+  changeNum := changeNum^ + 1;
+  changeNum^
+};
+
 let onUndo = (ports, sessionId) => {
-  /* let (changes, idsAndSelections) = World.getUndoChangeset(
+  let (changes, idsAndSelections) = World.getUndoChangeset(
     worldRef.contents.unsynced->Sync.Queue.toRevList @ worldRef.contents.history->Sync.History.itemsSince(None)->List.reverse,
     sessionId,
   )->List.unzip;
@@ -38,27 +45,52 @@ let onUndo = (ports, sessionId) => {
   let (_, postSelection) = selections->List.head->Lets.Opt.force;
   let (preSelection, _) = selections->List.get(List.length(selections) - 1)->Lets.Opt.force;
 
-  /* let (session, viewEvents) = Session.applyView(session, selectionEvents(preSelection)); */
+  let change = {
+    Sync.apply: change,
+    changeId: workerId ++ string_of_int(nextChangeNum()),
+    link: Some(Undo(changeIds)),
+    sessionInfo: {
+      sessionId,
+      changeset: None,
+      author: "worker", /* TODO fix */
+      preSelection,
+      postSelection,
+    }
+  };
 
-  let (change, session) =
-    Session.makeChange(
-      ~preSelection=selPos(postSelection),
-      ~postSelection=selPos(preSelection),
-      session,
-      change,
-      Some(Undo(changeIds)),
-    );
+  let%Lets.TryLog (world, events) = Store.apply(worldRef.contents, change);
+  worldRef := world;
 
-
-  store.session = session;
-  let%Lets.TryLog (world, events) = apply(worldRef.contents, change);
-  store.world = world;
-  onChange(store, session, events @ viewEvents); */
-  ()
+  ports->HashMap.String.forEach((sid, port) => {
+    port->postMessage(messageToJson(WorkerProtocol.TabChange(change)))
+  });
 };
 
 let onRedo = (ports, sessionId) => {
-  ()
+  let%Lets.OptConsume (change, redoId, preSelection, postSelection) = World.getRedoChange(
+    worldRef^.unsynced->Sync.Queue.toRevList,
+    sessionId,
+  );
+
+  let change = {
+    Sync.apply: change,
+    changeId: workerId ++ string_of_int(nextChangeNum()),
+    link: Some(Redo(redoId)),
+    sessionInfo: {
+      sessionId,
+      changeset: None,
+      author: "worker", /* TODO fix */
+      preSelection: postSelection,
+      postSelection: preSelection,
+    }
+  };
+
+  let%Lets.TryLog (world, events) = Store.apply(worldRef^, change);
+  worldRef := world;
+
+  ports->HashMap.String.forEach((sid, port) => {
+    port->postMessage(messageToJson(WorkerProtocol.TabChange(change)))
+  });
 }
 
 let onChange = (ports, id, change) => {

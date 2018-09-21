@@ -37,12 +37,6 @@ let make = (_) => {
       switch (messageFromJson(evt##data)) {
       | Ok(InitialData(data)) => 
         let session = Session.createSession(~sessionId, ~root=data.Data.root);
-        /* let data = {...data, nodes: data.nodes->Map.String.map(node =>
-          {...node, contents: switch (node.contents) {
-            | Normal(delta) => NodeType.Normal(Delta.fromAny(delta))
-            | _ => node.contents
-          }}
-        )}; */
         let state = {session, data};
         let clientStore = {
           ClientStore.session: () => state.session,
@@ -68,12 +62,14 @@ let make = (_) => {
             state.session = session;
             Subscription.trigger(session.subs, events);
           },
-          undo: () => (),
-          redo: () => (),
+          undo: () => port->postMessage(messageToJson(UndoRequest)),
+          redo: () => port->postMessage(messageToJson(RedoRequest)),
         };
         self.send(clientStore);
         port->onmessage(evt => switch (messageFromJson(evt##data)) {
           | Ok(InitialData(_)) => ()
+          /* | Ok(Redo(change)) */
+          /* | Ok(Undo(change)) */
           | Ok(TabChange(change)) =>
             /* TODO need to make sure that selections are updated correctly... */
             let%Lets.TryLog events = Store.eventsForChanges(state.data.nodes, change.Sync.apply);
@@ -84,7 +80,13 @@ let make = (_) => {
               ...state.session,
               sharedViewData: View.ensureVisible(data, state.session.view, state.session.sharedViewData)
             };
-            Subscription.trigger(session.Session.subs, [SharedTypes.Event.Update, ...events]);
+
+            let (session, viewEvents) = if (change.sessionInfo.sessionId == session.sessionId) {
+              Session.applyView(state.session, Store.selectionEvents(change.sessionInfo.postSelection))
+            } else { (session, []) };
+            state.session = session;
+
+            Subscription.trigger(session.Session.subs, [SharedTypes.Event.Update, ...events @ viewEvents]);
           | Ok(Rebase(nodeList)) =>
             let nodes = nodeList->Array.reduce(state.data.nodes, (nodes, node) => nodes->Belt.Map.String.set(node.id, node))
             state.data = {...state.data, nodes};

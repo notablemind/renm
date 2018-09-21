@@ -13,5 +13,5 @@ type serverMessage =
 | TabChange(changeInner)
 | InitialData(data)
 | Rebase(array(NodeType.t))
-| Undo(changeInner)
-| Redo(changeInner)
+/* | Undo(changeInner)
+| Redo(changeInner) */

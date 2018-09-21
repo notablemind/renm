@@ -2118,6 +2118,12 @@ and (deserialize_WorkerProtocol____message :
          | Belt.Result.Ok arg0 ->
              Belt.Result.Ok (Change (arg0) : WorkerProtocol.message)
          | Error error -> Error error)
+    | JSONArray [|tag|] when
+        (Js.Json.JSONString "UndoRequest") = (Js.Json.classify tag) ->
+        Belt.Result.Ok (UndoRequest : WorkerProtocol.message)
+    | JSONArray [|tag|] when
+        (Js.Json.JSONString "RedoRequest") = (Js.Json.classify tag) ->
+        Belt.Result.Ok (RedoRequest : WorkerProtocol.message)
     | _ -> Error "Expected an array"
 and deserialize_Belt_MapString____t :
   'arg0 .
@@ -3160,6 +3166,8 @@ and (serialize_WorkerProtocol____message :
         Js.Json.array
           [|(Js.Json.string "Change");(serialize_WorkerProtocol____changeInner
                                          arg0)|]
+    | UndoRequest -> Js.Json.array [|(Js.Json.string "UndoRequest")|]
+    | RedoRequest -> Js.Json.array [|(Js.Json.string "RedoRequest")|]
 and serialize_Belt_MapString____t :
   'arg0 . ('arg0 -> Js.Json.t) -> 'arg0 Belt_MapString.t -> Js.Json.t =
   fun valueTransformer ->
