@@ -4,10 +4,13 @@ type port;
 /* [@bs.val] external global: global = ""; */
 /* [@bs.set] external onconnect: (global, ) => unit = ""; */
 [@bs.val] external addEventListener: (string, ({. "ports": array(port)}) => unit) => unit = "";
-[@bs.set] external onmessage: (port, ({. "data": WorkerProtocol.message}) => unit) => unit = "";
-[@bs.send] external postMessage: (port, WorkerProtocol.serverMessage) => unit = "";
+[@bs.set] external onmessage: (port, ({. "data": Js.Json.t}) => unit) => unit = "";
+[@bs.send] external postMessage: (port, Js.Json.t) => unit = "";
 
-let world: World.world(World.notSyncing) = switch (LocalStorage.getJson("renm:store")) {
+let parseMessage = WorkerProtocolSerde.deserialize_WorkerProtocol____message;
+let messageToJson = WorkerProtocolSerde.serialize_WorkerProtocol____serverMessage;
+
+let initialWorld: World.world(World.notSyncing) = switch (LocalStorage.getJson("renm:store")) {
   /* Disabling "restore" for a minute */
   | Some(_)
   /* | Some(data) => data */
@@ -17,7 +20,7 @@ let world: World.world(World.notSyncing) = switch (LocalStorage.getJson("renm:st
   }, Sync.History.empty)
 };
 
-let worldRef = ref(world);
+let worldRef = ref(initialWorld);
 
 /* [%%bs.raw "var globalWorldRef = worldRef"]; */
 
@@ -27,18 +30,19 @@ let onChange = (ports, id, change) => {
   /* TODO go through events to see what needs to be persisted */
   ports->HashMap.String.forEach((sid, port) => {
     if (sid != id) {
-      port->postMessage(WorkerProtocol.TabChange(change))
+      port->postMessage(messageToJson(WorkerProtocol.TabChange(change)))
     }
   });
   /* LocalStorage.setItem("renm:store", Js.Json.stringify(Serialize.toJson(world))); */
   /* TODO debounced sync w/ server */
 };
 
-let handleMessage = (ports, sessionId, evt) => switch (evt##data) {
-  | WorkerProtocol.Change(change) => onChange(ports, sessionId, change)
-  | Close =>
+let handleMessage = (ports, sessionId, evt) => switch (parseMessage(evt##data)) {
+  | Ok(WorkerProtocol.Change(change)) => onChange(ports, sessionId, change)
+  | Ok(Close) =>
     ports->HashMap.String.remove(sessionId)
-  | Init(_) => ()
+  | Ok(Init(_)) => ()
+  | Error(message) => Js.log3("Invalid message received!", message, evt##data)
 };
 
 let ports = HashMap.String.make(~hintSize=5);
@@ -47,12 +51,12 @@ addEventListener("connect", e => {
 
   port->onmessage(evt => {
     Js.log2("Got message", evt);
-    switch (evt##data) {
-      | Close => ()
-      | Init(sessionId) =>
+    switch (parseMessage(evt##data)) {
+      | Ok(Close) => ()
+      | Ok(Init(sessionId)) =>
         ports->HashMap.String.set(sessionId, port);
         port->onmessage(handleMessage(ports, sessionId));
-        port->postMessage(InitialData(world.current))
+        port->postMessage(messageToJson(InitialData(worldRef^.current)))
       | _ => ()
     }
   });

@@ -1,12 +1,15 @@
 
 
+let messageToJson = WorkerProtocolSerde.serialize_WorkerProtocol____message;
+let messageFromJson = WorkerProtocolSerde.deserialize_WorkerProtocol____serverMessage;
+
 type sharedWorker;
 type port;
 [@bs.new] [@bs.scope "window"] external sharedWorker: string => sharedWorker = "SharedWorker";
 [@bs.get] external port: sharedWorker => port = "";
-[@bs.set] external onmessage: (port, ({. "data": WorkerProtocol.serverMessage}) => unit) => unit = "";
+[@bs.set] external onmessage: (port, ({. "data": Js.Json.t}) => unit) => unit = "";
 [@bs.set] external onerror: (sharedWorker, (Js.Exn.t) => unit) => unit = "";
-[@bs.send] external postMessage: (port, WorkerProtocol.message) => unit = "";
+[@bs.send] external postMessage: (port, Js.Json.t) => unit = "";
 [@bs.send] external start: (port) => unit = "";
 
 type state = {
@@ -28,18 +31,18 @@ let make = (_) => {
     let port = worker->port;
     port->start;
     let sessionId = Utils.newId();
-    port->postMessage(Init(sessionId));
+    port->postMessage(messageToJson(Init(sessionId)));
     port->onmessage(evt => {
       Js.log2("Got message", evt);
-      switch (evt##data) {
-      | InitialData(data) => 
+      switch (messageFromJson(evt##data)) {
+      | Ok(InitialData(data)) => 
         let session = Session.createSession(~sessionId, ~root=data.Data.root);
-        let data = {...data, nodes: data.nodes->Map.String.map(node =>
+        /* let data = {...data, nodes: data.nodes->Map.String.map(node =>
           {...node, contents: switch (node.contents) {
             | Normal(delta) => NodeType.Normal(Delta.fromAny(delta))
             | _ => node.contents
           }}
-        )};
+        )}; */
         let state = {session, data};
         let clientStore = {
           ClientStore.session: () => state.session,
@@ -53,7 +56,7 @@ let make = (_) => {
               let%Lets.TryLog (data, _, _) = World.MultiChange.apply(state.data, change.apply);
               state.data = data;
 
-              port->postMessage(WorkerProtocol.Change(change));
+              port->postMessage(messageToJson(WorkerProtocol.Change(change)));
 
               /* onChange(store, session, events @ viewEvents); */
               Subscription.trigger(session.Session.subs, [SharedTypes.Event.Update, ...events @ viewEvents]);
@@ -69,9 +72,9 @@ let make = (_) => {
           redo: () => (),
         };
         self.send(clientStore);
-        port->onmessage(evt => switch (evt##data) {
-          | InitialData(_) => ()
-          | TabChange(change) =>
+        port->onmessage(evt => switch (messageFromJson(evt##data)) {
+          | Ok(InitialData(_)) => ()
+          | Ok(TabChange(change)) =>
             /* TODO need to make sure that selections are updated correctly... */
             let%Lets.TryLog events = Store.eventsForChanges(state.data.nodes, change.Sync.apply);
             let%Lets.TryLog (data, _, _) = World.MultiChange.apply(state.data, change.apply);
@@ -82,10 +85,11 @@ let make = (_) => {
               sharedViewData: View.ensureVisible(data, state.session.view, state.session.sharedViewData)
             };
             Subscription.trigger(session.Session.subs, [SharedTypes.Event.Update, ...events]);
-          | Rebase(nodeList) =>
+          | Ok(Rebase(nodeList)) =>
             let nodes = nodeList->Array.reduce(state.data.nodes, (nodes, node) => nodes->Belt.Map.String.set(node.id, node))
             state.data = {...state.data, nodes};
             Subscription.trigger(session.subs, nodeList->Array.map(node => SharedTypes.Event.Node(node.id))->List.fromArray)
+          | Error(message) => Js.log3("Invalid message received", message, evt##data)
         })
       | _ => ()
     }})

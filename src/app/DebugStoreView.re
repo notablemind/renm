@@ -5,13 +5,13 @@ let showChange = (change: World.thisChange) => {
   <div key=change.inner.changeId style=ReactDOMRe.Style.(make(~fontFamily="monospace", ~whiteSpace="pre-wrap", ()))>
     {str(change.inner.changeId ++ "\n")}
     {str(Js.Json.stringify(
-      ChangeTransformer.transform_World__MultiChange__change(change.inner.apply)
+      WorkerProtocolSerde.serialize_World__MultiChange__change(change.inner.apply)
     ) ++ "\n")}
     {str(Js.Json.stringify(
-      ChangeTransformer.transform_World__MultiChange__change(change.revert)
+      WorkerProtocolSerde.serialize_World__MultiChange__change(change.revert)
     ) ++ "\n")}
     {str(Js.Json.stringify(
-      ChangeTransformer.transform_World__MultiChange__rebaseItem(change.rebase)
+      WorkerProtocolSerde.serialize_World__MultiChange__rebaseItem(change.rebase)
     ))}
   </div>
 };
