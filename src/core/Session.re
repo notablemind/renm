@@ -82,8 +82,8 @@ let makeSelection = (session, sel) => {
 
 let makeSessionInfo = (~preSelection, ~postSelection, session) => {
   let (changeId, session) = getChangeId(session);
-  let preSelection = makeSelection(session, preSelection);
-  let postSelection = makeSelection(session, postSelection);
+  /* let preSelection = makeSelection(session, preSelection);
+  let postSelection = makeSelection(session, postSelection); */
 
   (
     changeId,
@@ -98,7 +98,7 @@ let makeSessionInfo = (~preSelection, ~postSelection, session) => {
   );
 };
 
-let makeChange = (~preSelection=?, ~postSelection=?, session, change, link) => {
+let makeChange = (~preSelection, ~postSelection, session, change, link) => {
   let (changeId, session, sessionInfo) = makeSessionInfo(~preSelection, ~postSelection, session);
   ({
     Sync.apply: change,

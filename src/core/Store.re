@@ -169,18 +169,20 @@ let onChange = (store, session, events) => {
   }, 0)->ignore;
 };
 
-let prepareChange = (~preSelection=?, ~postSelection=?, data, session, action) => {
+let prepareChange = (~preSelection, ~postSelection, data, session, action) => {
   let%Lets.Try {ActionResults.viewActions, changes} = processAction(data, action);
   let (session, viewEvents) =
     session
     ->Session.updateChangeSet(action)
     ->Session.applyView(viewActions);
-  let (change, session) = Session.makeChange(~preSelection?, ~postSelection?, session, changes, None);
+  let (change, session) = Session.makeChange(~preSelection, ~postSelection, session, changes, None);
   Ok((change, session, viewEvents))
 };
 
 let act = (~preSelection=?, ~postSelection=?, store: t, action) => {
-  let%Lets.TryLog (change, session, viewEvents) = prepareChange(~preSelection?, ~postSelection?, store.world.current, store.session, action);
+  let preSelection = Session.makeSelection(store.session, preSelection);
+  let postSelection = Session.makeSelection(store.session, postSelection);
+  let%Lets.TryLog (change, session, viewEvents) = prepareChange(~preSelection, ~postSelection, store.world.current, store.session, action);
   store.session = session;
 
   let%Lets.TryLog (world, events) = apply(store.world, change);
@@ -215,7 +217,7 @@ let undo = store => {
   let session = {...session, changeSet: None};
   let (session, viewEvents) = Session.applyView(session, selectionEvents(preSelection));
 
-  let (change, session) = Session.makeChange(~preSelection=selPos(postSelection), ~postSelection=selPos(preSelection), session, change, Some(Undo(changeIds)));
+  let (change, session) = Session.makeChange(~preSelection=postSelection, ~postSelection=preSelection, session, change, Some(Undo(changeIds)));
   store.session = session;
   let%Lets.TryLog (world, events) = apply(store.world, change);
   store.world = world;
@@ -233,7 +235,7 @@ let redo = store => {
   let session = {...session, changeSet: None};
   let (session, viewEvents) = Session.applyView(session, selectionEvents(preSelection));
 
-  let (change, session) = Session.makeChange(~preSelection=selPos(postSelection), ~postSelection=selPos(preSelection), session, change, Some(Redo(redoId)));
+  let (change, session) = Session.makeChange(~preSelection=postSelection, ~postSelection=preSelection, session, change, Some(Redo(redoId)));
   store.session = session;
   let%Lets.TryLog (world, events) = apply(store.world, change);
   store.world = world;

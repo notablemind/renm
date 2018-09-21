@@ -49,7 +49,7 @@ let make = (_) => {
           data: () => state.data,
           act: (~preSelection=?, ~postSelection=?, actions) => {
             actions->List.forEach(action => {
-              let%Lets.TryLog (change, session, viewEvents) = Store.prepareChange(~preSelection?, ~postSelection?, state.data, state.session, action);
+              let%Lets.TryLog (change, session, viewEvents) = Store.prepareChange(~preSelection=Session.makeSelection(state.session, preSelection), ~postSelection=Session.makeSelection(state.session, postSelection), state.data, state.session, action);
               state.session = session;
 
               let%Lets.TryLog events = Store.eventsForChanges(state.data.nodes, change.apply);
