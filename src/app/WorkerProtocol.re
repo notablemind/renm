@@ -1,10 +1,13 @@
 
+type data = World.MultiChange.data;
+type changeInner = Sync.changeInner(World.MultiChange.change, World.MultiChange.selection);
+
 type message =
 | Close
 | Init(string)
-| Change(Sync.changeInner(World.MultiChange.change, World.MultiChange.selection))
+| Change(changeInner)
 
 type serverMessage =
-| TabChange(Sync.changeInner(World.MultiChange.change, World.MultiChange.selection))
-| InitialData(World.MultiChange.data)
+| TabChange(changeInner)
+| InitialData(data)
 | Rebase(array(NodeType.t))
