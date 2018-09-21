@@ -7,6 +7,7 @@ external insert: {. "insert": string} => deltaItem = "%identity";
 
 type rawDelta = array(deltaItem);
 [@bs.module] [@bs.new] external make: rawDelta => delta = "quill-delta";
+[@bs.module] [@bs.new] external fromAny: 'a => delta = "quill-delta";
 let withNewline = text => Js.String.endsWith(text, "\n") ? text : text ++ "\n";
 let fromString = str => make([|
   insert({"insert": withNewline(str)})
@@ -25,6 +26,17 @@ let getText: delta => string = [%bs.raw {|function(delta) {
 }|}];
 
 external toJson: delta => Js.Json.t = "%identity";
+let fromJson = json => switch (Js.Json.classify(json)) {
+  | JSONObject(items) => switch (Js.Dict.get(items, "ops")) {
+    | None => Result.Error("No ops")
+    | Some(json) => switch (Js.Json.classify(json)) {
+      | JSONArray(items) => Ok(fromAny(items))
+      | _ => Error("ops not an array")
+    }
+  }
+  | _ => Result.Error("Delta: Expected an object")
+};
+
 
 let makeDelete = (idx, num) => {
   let delta = make([||]);

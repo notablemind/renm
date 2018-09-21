@@ -6,6 +6,7 @@
     "start": "bsb -make-world -w -ws _ ",
     "serve": "http-server -p 6521 -c-1",
     "pack": "fpack --development --preprocess='\\.svg$:raw-loader'  src/app/Index.bs.js --no-cache -w --preprocess='\\.css$:style-loader!css-loader'",
+    "pack:worker": "fpack --preprocess='\\.svg$:raw-loader' -n SharedWorker.js src/app/SharedWorker.bs.js --no-cache -w --preprocess='\\.css$:style-loader!css-loader'",
     "clean": "bsb -clean-world",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
