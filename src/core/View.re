@@ -124,3 +124,22 @@ let processViewAction = (view, sharedViewData, action) => switch action {
   | HideCompleted(_) => (view, sharedViewData, [])
 
 };
+
+let ensureVisible = (data, view, sharedViewData) => {
+  let rec loop = (id, expanded) =>
+    if (id == view.root || id == data.Data.root) {
+      expanded;
+    } else {
+      {
+        let%Lets.OptWrap node = data.nodes->Map.String.get(id);
+        let expanded = expanded->Set.String.add(node.parent);
+        if (node.id == node.parent) {
+          expanded
+        } else {
+          loop(node.parent, expanded);
+        }
+      }
+      ->Lets.OptDefault.or_(expanded);
+    };
+  {expanded: loop(view.active, sharedViewData.expanded)}
+};

@@ -77,10 +77,15 @@ let make = (_) => {
             let%Lets.TryLog (data, _, _) = World.MultiChange.apply(state.data, change.apply);
 
             state.data = data;
+            state.session = {
+              ...state.session,
+              sharedViewData: View.ensureVisible(data, state.session.view, state.session.sharedViewData)
+            };
             Subscription.trigger(session.Session.subs, [SharedTypes.Event.Update, ...events]);
-          | Rebase(nodes) =>
-            let nodes = nodes->Array.reduce(state.data.nodes, (nodes, node) => nodes->Belt.Map.String.set(node.id, node))
+          | Rebase(nodeList) =>
+            let nodes = nodeList->Array.reduce(state.data.nodes, (nodes, node) => nodes->Belt.Map.String.set(node.id, node))
             state.data = {...state.data, nodes};
+            Subscription.trigger(session.subs, nodeList->Array.map(node => SharedTypes.Event.Node(node.id))->List.fromArray)
         })
       | _ => ()
     }})

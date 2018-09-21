@@ -99,6 +99,7 @@ type error =
 let changeContents = (node, change) => Data.Node.(
   switch (node.contents) {
   | NodeType.Normal(contents) =>
+    let contents = Delta.fromAny(contents);
     let newContents = Delta.compose(contents, change);
     let undo = Delta.diff(newContents, contents);
     Result.Ok(({

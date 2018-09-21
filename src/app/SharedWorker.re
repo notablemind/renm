@@ -19,7 +19,7 @@ let world: World.world(World.notSyncing) = switch (LocalStorage.getJson("renm:st
 
 let worldRef = ref(world);
 
-[%%bs.raw "var worldRef = worldRef"];
+/* [%%bs.raw "var globalWorldRef = worldRef"]; */
 
 let onChange = (ports, id, change) => {
   let%Lets.TryLog (world, events) = Store.apply(worldRef.contents, change);
@@ -30,7 +30,7 @@ let onChange = (ports, id, change) => {
       port->postMessage(WorkerProtocol.TabChange(change))
     }
   });
-  LocalStorage.setItem("renm:store", Js.Json.stringify(Serialize.toJson(world)));
+  /* LocalStorage.setItem("renm:store", Js.Json.stringify(Serialize.toJson(world))); */
   /* TODO debounced sync w/ server */
 };
 
