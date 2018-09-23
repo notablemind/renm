@@ -111,25 +111,32 @@ let onChange = (ports, id, change) => {
   /* TODO debounced sync w/ server */
 };
 
+let cursorsForSession = sid =>
+  Hashtbl.fold(
+    (sessionId, (nodeId, range), collector) =>
+      if (sessionId != sid) {
+        [
+          {
+            View.userId: sessionId ++ ":" ++ "userId",
+            userName: "Fake",
+            color: "red",
+            range,
+            node: nodeId,
+          },
+          ...collector,
+        ];
+      } else {
+        collector;
+      },
+    cursors,
+    [],
+  );
+
 let sendCursors = (ports, sessionId) => {
   ports->HashMap.String.forEach((sid, port) => {
     if (sid != sessionId) {
       port->postMessage(messageToJson(
-        WorkerProtocol.RemoteCursors(
-          Hashtbl.fold((sessionId, (nodeId, range), collector) => {
-            if (sessionId != sid) {
-              [{
-                View.userId: sessionId ++ ":" ++ "userId",
-                userName: "Fake",
-                color: "red",
-                range,
-                node: nodeId,
-              }, ...collector]
-            } else {
-              collector
-            }
-          }, cursors, [])
-        )
+        WorkerProtocol.RemoteCursors(cursorsForSession(sid))
       ))
     }
   });
@@ -165,7 +172,7 @@ addEventListener("connect", e => {
       | Ok(Init(sessionId)) =>
         ports->HashMap.String.set(sessionId, port);
         port->onmessage(handleMessage(ports, sessionId));
-        port->postMessage(messageToJson(InitialData(worldRef^.current)))
+        port->postMessage(messageToJson(InitialData(worldRef^.current, cursorsForSession(sessionId))))
       | _ => ()
     }
   });

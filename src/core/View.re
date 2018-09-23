@@ -79,13 +79,7 @@ let emptyView = (~id, ~root) => {
   hideCompleted: false,
   editPos: Default,
   active: root,
-  remoteCursors: [{
-    node: "root",
-    userId: "1",
-    userName: "I am root",
-    range: Range.range(~index=0., ~length=3.),
-    color: "green"
-  }],
+  remoteCursors: [],
   prevActive: None,
   lastEdited: None,
 };

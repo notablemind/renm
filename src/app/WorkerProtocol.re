@@ -12,6 +12,6 @@ type message =
 
 type serverMessage =
 | TabChange(changeInner)
-| InitialData(data)
+| InitialData(data, list(View.cursor))
 | Rebase(array(NodeType.t))
 | RemoteCursors(list(View.cursor))

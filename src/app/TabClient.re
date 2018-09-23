@@ -42,8 +42,9 @@ let make = (_) => {
     port->onmessage(evt => {
       Js.log2("Got message", evt);
       switch (messageFromJson(evt##data)) {
-      | Ok(InitialData(data)) => 
+      | Ok(InitialData(data, cursors)) => 
         let session = Session.createSession(~sessionId, ~root=data.Data.root);
+        let session = {...session, view: {...session.view, remoteCursors: cursors}};
         let state = {session, data};
         let clientStore = {
           ClientStore.session: () => state.session,

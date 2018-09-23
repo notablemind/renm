@@ -366,12 +366,43 @@ and (deserialize_WorkerProtocol____serverMessage :
          | Belt.Result.Ok arg0 ->
              Belt.Result.Ok (TabChange (arg0) : WorkerProtocol.serverMessage)
          | Error error -> Error error)
-    | JSONArray [|tag;arg0|] when
+    | JSONArray [|tag;arg0;arg1|] when
         (Js.Json.JSONString "InitialData") = (Js.Json.classify tag) ->
-        (match deserialize_WorkerProtocol____data arg0 with
-         | Belt.Result.Ok arg0 ->
-             Belt.Result.Ok
-               (InitialData (arg0) : WorkerProtocol.serverMessage)
+        (match (fun list ->
+                  match Js.Json.classify list with
+                  | ((JSONArray (items))[@explicit_arity ]) ->
+                      let transformer = deserialize_View____cursor in
+                      let rec loop items =
+                        match items with
+                        | [] -> ((Belt.Result.Ok ([]))[@explicit_arity ])
+                        | one::rest ->
+                            (match transformer one with
+                             | ((Belt.Result.Error
+                                 (error))[@explicit_arity ]) ->
+                                 ((Belt.Result.Error (error))
+                                 [@explicit_arity ])
+                             | ((Ok (value))[@explicit_arity ]) ->
+                                 (match loop rest with
+                                  | ((Belt.Result.Error
+                                      (error))[@explicit_arity ]) ->
+                                      ((Belt.Result.Error (error))
+                                      [@explicit_arity ])
+                                  | ((Ok (rest))[@explicit_arity ]) ->
+                                      ((Ok ((value :: rest)))
+                                      [@explicit_arity ]))) in
+                      loop (Belt.List.fromArray items)
+                  | _ ->
+                      ((Belt.Result.Error
+                          ((("expected an array")
+                            [@reason.raw_literal "expected an array"])))
+                      [@explicit_arity ])) arg1
+         with
+         | Belt.Result.Ok arg1 ->
+             (match deserialize_WorkerProtocol____data arg0 with
+              | Belt.Result.Ok arg0 ->
+                  Belt.Result.Ok
+                    (InitialData (arg0, arg1) : WorkerProtocol.serverMessage)
+              | Error error -> Error error)
          | Error error -> Error error)
     | JSONArray [|tag;arg0|] when
         (Js.Json.JSONString "Rebase") = (Js.Json.classify tag) ->
@@ -3109,10 +3140,16 @@ and (serialize_WorkerProtocol____serverMessage :
         Js.Json.array
           [|(Js.Json.string "TabChange");(serialize_WorkerProtocol____changeInner
                                             arg0)|]
-    | InitialData arg0 ->
+    | InitialData (arg0, arg1) ->
         Js.Json.array
           [|(Js.Json.string "InitialData");(serialize_WorkerProtocol____data
-                                              arg0)|]
+                                              arg0);(((fun list ->
+                                                         Js.Json.array
+                                                           (Belt.List.toArray
+                                                              (Belt.List.map
+                                                                 list
+                                                                 serialize_View____cursor))))
+                                                       arg1)|]
     | Rebase arg0 ->
         Js.Json.array
           [|(Js.Json.string "Rebase");((((fun transformer ->
