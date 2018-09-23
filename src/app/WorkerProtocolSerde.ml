@@ -1,4 +1,163 @@
-let rec (deserialize_Js_date____t :
+let rec (deserialize_View____cursor :
+  Js.Json.t -> (View.cursor, string) Belt.Result.t) =
+  fun record ->
+    match Js.Json.classify record with
+    | ((JSONObject (dict))[@explicit_arity ]) ->
+        (match Js.Dict.get dict "node" with
+         | None ->
+             ((Belt.Result.Error
+                 (((("No attribute ")[@reason.raw_literal "No attribute "]) ^
+                     "node")))
+             [@explicit_arity ])
+         | ((Some (json))[@explicit_arity ]) ->
+             (match deserialize_Data__Node__id json with
+              | ((Belt.Result.Error (error))[@explicit_arity ]) ->
+                  ((Belt.Result.Error (error))[@explicit_arity ])
+              | ((Ok (attr_node))[@explicit_arity ]) ->
+                  (match Js.Dict.get dict "range" with
+                   | None ->
+                       ((Belt.Result.Error
+                           (((("No attribute ")
+                               [@reason.raw_literal "No attribute "]) ^
+                               "range")))
+                       [@explicit_arity ])
+                   | ((Some (json))[@explicit_arity ]) ->
+                       (match deserialize_View__Range__range json with
+                        | ((Belt.Result.Error (error))[@explicit_arity ]) ->
+                            ((Belt.Result.Error (error))[@explicit_arity ])
+                        | ((Ok (attr_range))[@explicit_arity ]) ->
+                            (match Js.Dict.get dict "color" with
+                             | None ->
+                                 ((Belt.Result.Error
+                                     (((("No attribute ")
+                                         [@reason.raw_literal
+                                           "No attribute "])
+                                         ^ "color")))
+                                 [@explicit_arity ])
+                             | ((Some (json))[@explicit_arity ]) ->
+                                 (match (fun string ->
+                                           match Js.Json.classify string with
+                                           | ((JSONString
+                                               (string))[@explicit_arity ])
+                                               -> ((Belt.Result.Ok (string))
+                                               [@explicit_arity ])
+                                           | _ ->
+                                               ((Error
+                                                   ((("epected a string")
+                                                     [@reason.raw_literal
+                                                       "epected a string"])))
+                                               [@explicit_arity ])) json
+                                  with
+                                  | ((Belt.Result.Error
+                                      (error))[@explicit_arity ]) ->
+                                      ((Belt.Result.Error (error))
+                                      [@explicit_arity ])
+                                  | ((Ok (attr_color))[@explicit_arity ]) ->
+                                      (match Js.Dict.get dict "userName" with
+                                       | None ->
+                                           ((Belt.Result.Error
+                                               (((("No attribute ")
+                                                   [@reason.raw_literal
+                                                     "No attribute "])
+                                                   ^ "userName")))
+                                           [@explicit_arity ])
+                                       | ((Some (json))[@explicit_arity ]) ->
+                                           (match (fun string ->
+                                                     match Js.Json.classify
+                                                             string
+                                                     with
+                                                     | ((JSONString
+                                                         (string))[@explicit_arity
+                                                                    ])
+                                                         ->
+                                                         ((Belt.Result.Ok
+                                                             (string))
+                                                         [@explicit_arity ])
+                                                     | _ ->
+                                                         ((Error
+                                                             ((("epected a string")
+                                                               [@reason.raw_literal
+                                                                 "epected a string"])))
+                                                         [@explicit_arity ]))
+                                                    json
+                                            with
+                                            | ((Belt.Result.Error
+                                                (error))[@explicit_arity ])
+                                                ->
+                                                ((Belt.Result.Error (error))
+                                                [@explicit_arity ])
+                                            | ((Ok
+                                                (attr_userName))[@explicit_arity
+                                                                  ])
+                                                ->
+                                                (match Js.Dict.get dict
+                                                         "userId"
+                                                 with
+                                                 | None ->
+                                                     ((Belt.Result.Error
+                                                         (((("No attribute ")
+                                                             [@reason.raw_literal
+                                                               "No attribute "])
+                                                             ^ "userId")))
+                                                     [@explicit_arity ])
+                                                 | ((Some
+                                                     (json))[@explicit_arity
+                                                              ])
+                                                     ->
+                                                     (match (fun string ->
+                                                               match 
+                                                                 Js.Json.classify
+                                                                   string
+                                                               with
+                                                               | ((JSONString
+                                                                   (string))
+                                                                   [@explicit_arity
+                                                                    ])
+                                                                   ->
+                                                                   ((
+                                                                   Belt.Result.Ok
+                                                                    (string))
+                                                                   [@explicit_arity
+                                                                    ])
+                                                               | _ ->
+                                                                   ((
+                                                                   Error
+                                                                    ((("epected a string")
+                                                                    [@reason.raw_literal
+                                                                    "epected a string"])))
+                                                                   [@explicit_arity
+                                                                    ])) json
+                                                      with
+                                                      | ((Belt.Result.Error
+                                                          (error))[@explicit_arity
+                                                                    ])
+                                                          ->
+                                                          ((Belt.Result.Error
+                                                              (error))
+                                                          [@explicit_arity ])
+                                                      | ((Ok
+                                                          (attr_userId))
+                                                          [@explicit_arity ])
+                                                          ->
+                                                          Belt.Result.Ok
+                                                            {
+                                                              userId =
+                                                                attr_userId;
+                                                              userName =
+                                                                attr_userName;
+                                                              color =
+                                                                attr_color;
+                                                              range =
+                                                                attr_range;
+                                                              node =
+                                                                attr_node
+                                                            }))))))))))
+    | _ ->
+        ((Belt.Result.Error
+            ((("Expected an object")
+              [@reason.raw_literal "Expected an object"])))
+        [@explicit_arity ])
+and (deserialize_Js_date____t :
   Js.Json.t -> (Js_date.t, string) Belt.Result.t) =
   TransformHelpers.deserialize_Js_date____t
 and (deserialize_WorkerProtocol____changeInner :
@@ -6,6 +165,9 @@ and (deserialize_WorkerProtocol____changeInner :
   fun value ->
     (deserialize_Sync____changeInner deserialize_World__MultiChange__change
        deserialize_World__MultiChange__selection) value
+and (deserialize_Quill____range :
+  Js.Json.t -> (Quill.range, string) Belt.Result.t) =
+  fun value -> deserialize_View__Range__range value
 and (deserialize_World__MultiChange__selection :
   Js.Json.t -> (World.MultiChange.selection, string) Belt.Result.t) =
   fun value ->
@@ -250,6 +412,41 @@ and (deserialize_WorkerProtocol____serverMessage :
          with
          | Belt.Result.Ok arg0 ->
              Belt.Result.Ok (Rebase (arg0) : WorkerProtocol.serverMessage)
+         | Error error -> Error error)
+    | JSONArray [|tag;arg0|] when
+        (Js.Json.JSONString "RemoteCursors") = (Js.Json.classify tag) ->
+        (match (fun list ->
+                  match Js.Json.classify list with
+                  | ((JSONArray (items))[@explicit_arity ]) ->
+                      let transformer = deserialize_View____cursor in
+                      let rec loop items =
+                        match items with
+                        | [] -> ((Belt.Result.Ok ([]))[@explicit_arity ])
+                        | one::rest ->
+                            (match transformer one with
+                             | ((Belt.Result.Error
+                                 (error))[@explicit_arity ]) ->
+                                 ((Belt.Result.Error (error))
+                                 [@explicit_arity ])
+                             | ((Ok (value))[@explicit_arity ]) ->
+                                 (match loop rest with
+                                  | ((Belt.Result.Error
+                                      (error))[@explicit_arity ]) ->
+                                      ((Belt.Result.Error (error))
+                                      [@explicit_arity ])
+                                  | ((Ok (rest))[@explicit_arity ]) ->
+                                      ((Ok ((value :: rest)))
+                                      [@explicit_arity ]))) in
+                      loop (Belt.List.fromArray items)
+                  | _ ->
+                      ((Belt.Result.Error
+                          ((("expected an array")
+                            [@reason.raw_literal "expected an array"])))
+                      [@explicit_arity ])) arg0
+         with
+         | Belt.Result.Ok arg0 ->
+             Belt.Result.Ok
+               (RemoteCursors (arg0) : WorkerProtocol.serverMessage)
          | Error error -> Error error)
     | _ -> Error "Expected an array"
 and (deserialize_NodeType__Svg__point :
@@ -1867,6 +2064,9 @@ and (deserialize_Delta____delta :
 and (deserialize_Belt_SetString____t :
   Js.Json.t -> (Belt_SetString.t, string) Belt.Result.t) =
   TransformHelpers.deserialize_Belt_SetString____t
+and (deserialize_View__Range__range :
+  Js.Json.t -> (View.Range.range, string) Belt.Result.t) =
+  TransformHelpers.deserialize_View__Range__range
 and (deserialize_WorkerProtocol____data :
   Js.Json.t -> (WorkerProtocol.data, string) Belt.Result.t) =
   fun value -> deserialize_World__MultiChange__data value
@@ -2124,6 +2324,16 @@ and (deserialize_WorkerProtocol____message :
     | JSONArray [|tag|] when
         (Js.Json.JSONString "RedoRequest") = (Js.Json.classify tag) ->
         Belt.Result.Ok (RedoRequest : WorkerProtocol.message)
+    | JSONArray [|tag;arg0;arg1|] when
+        (Js.Json.JSONString "SelectionChanged") = (Js.Json.classify tag) ->
+        (match deserialize_Quill____range arg1 with
+         | Belt.Result.Ok arg1 ->
+             (match deserialize_Data__Node__id arg0 with
+              | Belt.Result.Ok arg0 ->
+                  Belt.Result.Ok
+                    (SelectionChanged (arg0, arg1) : WorkerProtocol.message)
+              | Error error -> Error error)
+         | Error error -> Error error)
     | _ -> Error "Expected an array"
 and deserialize_Belt_MapString____t :
   'arg0 .
@@ -2844,13 +3054,26 @@ and (deserialize_World____thisChange :
     (deserialize_Sync____change deserialize_World__MultiChange__change
        deserialize_World__MultiChange__rebaseItem
        deserialize_World__MultiChange__selection) value
-let rec (serialize_Js_date____t : Js_date.t -> Js.Json.t) =
+let rec (serialize_View____cursor : View.cursor -> Js.Json.t) =
+  fun record ->
+    Js.Json.object_
+      (Js.Dict.fromArray
+         [|("userId", (Js.Json.string record.userId));("userName",
+                                                        (Js.Json.string
+                                                           record.userName));
+           ("color", (Js.Json.string record.color));("range",
+                                                      (serialize_View__Range__range
+                                                         record.range));
+           ("node", (serialize_Data__Node__id record.node))|])
+and (serialize_Js_date____t : Js_date.t -> Js.Json.t) =
   TransformHelpers.serialize_Js_date____t
 and (serialize_WorkerProtocol____changeInner :
   WorkerProtocol.changeInner -> Js.Json.t) =
   fun value ->
     (serialize_Sync____changeInner serialize_World__MultiChange__change
        serialize_World__MultiChange__selection) value
+and (serialize_Quill____range : Quill.range -> Js.Json.t) =
+  fun value -> serialize_View__Range__range value
 and (serialize_World__MultiChange__selection :
   World.MultiChange.selection -> Js.Json.t) =
   fun value ->
@@ -2898,6 +3121,14 @@ and (serialize_WorkerProtocol____serverMessage :
                                                 (Belt.Array.map array
                                                    transformer)))
                                           serialize_NodeType____t) arg0)|]
+    | RemoteCursors arg0 ->
+        Js.Json.array
+          [|(Js.Json.string "RemoteCursors");(((fun list ->
+                                                  Js.Json.array
+                                                    (Belt.List.toArray
+                                                       (Belt.List.map list
+                                                          serialize_View____cursor))))
+                                                arg0)|]
 and (serialize_NodeType__Svg__point : NodeType.Svg.point -> Js.Json.t) =
   fun record ->
     Js.Json.object_
@@ -3110,6 +3341,8 @@ and (serialize_Delta____delta : Delta.delta -> Js.Json.t) =
   TransformHelpers.serialize_Delta____delta
 and (serialize_Belt_SetString____t : Belt_SetString.t -> Js.Json.t) =
   TransformHelpers.serialize_Belt_SetString____t
+and (serialize_View__Range__range : View.Range.range -> Js.Json.t) =
+  TransformHelpers.serialize_View__Range__range
 and (serialize_WorkerProtocol____data : WorkerProtocol.data -> Js.Json.t) =
   fun value -> serialize_World__MultiChange__data value
 and (serialize_NodeType____contents : NodeType.contents -> Js.Json.t) =
@@ -3168,6 +3401,11 @@ and (serialize_WorkerProtocol____message :
                                          arg0)|]
     | UndoRequest -> Js.Json.array [|(Js.Json.string "UndoRequest")|]
     | RedoRequest -> Js.Json.array [|(Js.Json.string "RedoRequest")|]
+    | SelectionChanged (arg0, arg1) ->
+        Js.Json.array
+          [|(Js.Json.string "SelectionChanged");(serialize_Data__Node__id
+                                                   arg0);(serialize_Quill____range
+                                                            arg1)|]
 and serialize_Belt_MapString____t :
   'arg0 . ('arg0 -> Js.Json.t) -> 'arg0 Belt_MapString.t -> Js.Json.t =
   fun valueTransformer ->

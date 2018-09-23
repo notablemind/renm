@@ -56,5 +56,11 @@ let deserialize_Js_date____t = num => switch (Js.Json.classify(num)) {
   | _ => Error("Expected a float")
 };
 
+let serialize_View__Range__range = t => Obj.magic(t);
+let deserialize_View__Range__range = t => Result.Ok(Obj.magic(t));
+
+/* let serialize_Js____t: ('a => Js.Json.t, Js.t('a)) => Js.Json.t = (_, t) => Obj.magic(t);
+let deserialize_Js____t: (Js.Json.t => Result.t('a, string), Js.Json.t) => Result.t(Js.t('a), string) = (_, t) => Result.Ok(Obj.magic(t)); */
+
 let serialize_Delta____delta = Delta.toJson;
 let deserialize_Delta____delta = Delta.fromJson;

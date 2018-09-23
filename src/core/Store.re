@@ -246,6 +246,7 @@ let redo = store => {
 let clientStore = store => {
   ClientStore.session: () => store.session,
   data: () => store.world.current,
+  cursorChange: (_, _) => (),
   act: (~preSelection=?, ~postSelection=?, actions) => {
     actions->List.forEach(act(~preSelection?, ~postSelection?, store ))
   },

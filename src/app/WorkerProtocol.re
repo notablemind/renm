@@ -8,10 +8,10 @@ type message =
 | Change(changeInner)
 | UndoRequest
 | RedoRequest
+| SelectionChanged(Data.Node.id, Quill.range)
 
 type serverMessage =
 | TabChange(changeInner)
 | InitialData(data)
 | Rebase(array(NodeType.t))
-/* | Undo(changeInner)
-| Redo(changeInner) */
+| RemoteCursors(list(View.cursor))

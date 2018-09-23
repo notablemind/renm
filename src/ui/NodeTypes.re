@@ -2,8 +2,10 @@
 type props('value, 'selection) = {
   value: 'value,
   editPos: option(View.editPos),
+  remoteCursors: list(View.cursor),
   onUndo: unit => unit,
   onRedo: unit => unit,
+  onCursorChange: (View.Range.range) => unit,
   onChange: ('value, option('selection), option('selection)) => unit,
   onUp: unit => option(Data.Node.id),
   onDown: unit => option(Data.Node.id),

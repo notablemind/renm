@@ -41,6 +41,10 @@ let make = (_) => {
         let clientStore = {
           ClientStore.session: () => state.session,
           data: () => state.data,
+          cursorChange: (nodeId, range) => {
+            [%bs.debugger];
+            port->postMessage(messageToJson(WorkerProtocol.SelectionChanged(nodeId, range)))
+          },
           act: (~preSelection=?, ~postSelection=?, actions) => {
             actions->List.forEach(action => {
               let%Lets.TryLog (change, session, viewEvents) = Store.prepareChange(~preSelection=Session.makeSelection(state.session, preSelection), ~postSelection=Session.makeSelection(state.session, postSelection), state.data, state.session, action);
@@ -67,30 +71,44 @@ let make = (_) => {
         };
         self.send(clientStore);
         port->onmessage(evt => switch (messageFromJson(evt##data)) {
-          | Ok(InitialData(_)) => ()
-          /* | Ok(Redo(change)) */
-          /* | Ok(Undo(change)) */
-          | Ok(TabChange(change)) =>
-            /* TODO need to make sure that selections are updated correctly... */
-            let%Lets.TryLog events = Store.eventsForChanges(state.data.nodes, change.Sync.apply);
-            let%Lets.TryLog (data, _, _) = World.MultiChange.apply(state.data, change.apply);
+          | Ok(message) => switch message {
+            | InitialData(_) => ()
+            /* | Ok(Redo(change)) */
+            /* | Ok(Undo(change)) */
+            | TabChange(change) =>
+              /* TODO need to make sure that selections are updated correctly... */
+              let%Lets.TryLog events = Store.eventsForChanges(state.data.nodes, change.Sync.apply);
+              let%Lets.TryLog (data, _, _) = World.MultiChange.apply(state.data, change.apply);
 
-            state.data = data;
-            state.session = {
-              ...state.session,
-              sharedViewData: View.ensureVisible(data, state.session.view, state.session.sharedViewData)
-            };
+              state.data = data;
+              state.session = {
+                ...state.session,
+                sharedViewData: View.ensureVisible(data, state.session.view, state.session.sharedViewData)
+              };
 
-            let (session, viewEvents) = if (change.sessionInfo.sessionId == session.sessionId) {
-              Session.applyView(state.session, Store.selectionEvents(change.sessionInfo.postSelection))
-            } else { (session, []) };
-            state.session = session;
+              let (session, viewEvents) = if (change.sessionInfo.sessionId == session.sessionId) {
+                Session.applyView(state.session, Store.selectionEvents(change.sessionInfo.postSelection))
+              } else { (session, []) };
+              state.session = session;
 
-            Subscription.trigger(session.Session.subs, [SharedTypes.Event.Update, ...events @ viewEvents]);
-          | Ok(Rebase(nodeList)) =>
-            let nodes = nodeList->Array.reduce(state.data.nodes, (nodes, node) => nodes->Belt.Map.String.set(node.id, node))
-            state.data = {...state.data, nodes};
-            Subscription.trigger(session.subs, nodeList->Array.map(node => SharedTypes.Event.Node(node.id))->List.fromArray)
+              Subscription.trigger(session.Session.subs, [SharedTypes.Event.Update, ...events @ viewEvents]);
+            | Rebase(nodeList) =>
+              let nodes = nodeList->Array.reduce(state.data.nodes, (nodes, node) => nodes->Belt.Map.String.set(node.id, node))
+              state.data = {...state.data, nodes};
+              Subscription.trigger(session.subs, nodeList->Array.map(node => SharedTypes.Event.Node(node.id))->List.fromArray)
+            | RemoteCursors(cursors) =>
+              state.session = {
+                ...state.session,
+                view: {
+                  ...state.session.view,
+                  remoteCursors: cursors
+                }
+              };
+              Subscription.trigger(
+                session.subs,
+                cursors->List.map(cursor => SharedTypes.Event.View(Node(cursor.node)))
+              )
+          }
           | Error(message) => Js.log3("Invalid message received", message, evt##data)
         })
       | _ => ()

@@ -33,12 +33,10 @@ let make = (_) => {
       world,
     };
 
-    [%bs.raw "window.store = store"];
+    [%bs.raw "window.store = store"] |> ignore;
 
     store
   },
   reducer: ((), _) => ReasonReact.NoUpdate,
   render: ({state}) => <Tree store={state->Store.clientStore} />
 };
-
-/* ReactDOMRe.renderToElementWithId(<Tree store />, "root"); */

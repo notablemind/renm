@@ -21,8 +21,10 @@ let initialWorld: World.world(World.notSyncing) = switch (LocalStorage.getJson("
 };
 
 let worldRef = ref(initialWorld);
+let cursors = Hashtbl.create(10);
 
-/* [%%bs.raw "var globalWorldRef = worldRef"]; */
+let persist = (world, events) => {
+};
 
 let workerId = Utils.newId();
 let changeNum = ref(0);
@@ -107,11 +109,38 @@ let onChange = (ports, id, change) => {
 };
 
 let handleMessage = (ports, sessionId, evt) => switch (parseMessage(evt##data)) {
-  | Ok(WorkerProtocol.Change(change)) => onChange(ports, sessionId, change)
-  | Ok(UndoRequest) => onUndo(ports, sessionId)
-  | Ok(RedoRequest) => onRedo(ports, sessionId)
-  | Ok(Close) => ports->HashMap.String.remove(sessionId)
-  | Ok(Init(_)) => ()
+  | Ok(message) => switch message {
+    | WorkerProtocol.Change(change) => onChange(ports, sessionId, change)
+    | UndoRequest => onUndo(ports, sessionId)
+    | RedoRequest => onRedo(ports, sessionId)
+    | Close => ports->HashMap.String.remove(sessionId)
+    | SelectionChanged(nodeId, range) => {
+      Js.log2(nodeId, range);
+      Hashtbl.replace(cursors, sessionId, (nodeId, range));
+      ports->HashMap.String.forEach((sid, port) => {
+        if (sid != sessionId) {
+          port->postMessage(messageToJson(
+            WorkerProtocol.RemoteCursors(
+              Hashtbl.fold((sessionId, (nodeId, range), collector) => {
+                if (sessionId != sid) {
+                  [{
+                    View.userId: sessionId ++ ":" ++ "userId",
+                    userName: "Fake",
+                    color: "red",
+                    range,
+                    node: nodeId,
+                  }, ...collector]
+                } else {
+                  collector
+                }
+              }, cursors, [])
+            )
+          ))
+        }
+      });
+    }
+    | Init(_) => ()
+  }
   | Error(message) => Js.log3("Invalid message received!", message, evt##data)
 };
 

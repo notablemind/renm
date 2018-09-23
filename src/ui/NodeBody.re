@@ -31,6 +31,7 @@ let renderContents =
       props={
         NodeTypes.value: text,
         editPos,
+        remoteCursors: store.session().view.remoteCursors->Belt.List.keep(cursor => cursor.node == node.id),
         onRedo: () => {
           store.redo()
         },
@@ -43,6 +44,9 @@ let renderContents =
             ~postSelection?,
             [Actions.ChangeContents(node.id, delta)],
           ),
+        onCursorChange: (range: Quill.range) => {
+          store.cursorChange(node.id, range)
+        },
         onToggleCollapse: () => {
           store.actView(View.SetCollapsed(node.id, !collapsed));
           false;

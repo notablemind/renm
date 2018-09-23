@@ -1,6 +1,7 @@
 
 [%bs.raw {|require("quill/dist/quill.core.css")|}];
 [%bs.raw {|require("quill/dist/quill.bubble.css")|}];
+[%bs.raw {|require("quill-cursors/dist/quill-cursors.css")|}];
 
 type quill;
 
@@ -11,13 +12,18 @@ let historyClass = [%bs.raw{|class MyHistory {
   constructor(quill, options) { }
   clear() { }
   cutoff() { }
-}|}]
+}|}];
+
+[@bs.module "quill-cursors"] external quillCursors: 'a = "default";
+Js.log(quillCursors);
 
 register({
-  "modules/history": historyClass
+  "modules/history": historyClass,
+  "modules/cursors": quillCursors,
 });
 
 [%bs.raw {|require("quill-mention")|}];
+[%bs.raw {|require("quill-cursors")|}];
 
 [@bs.send] external setText: (quill, string) => unit = "";
 [@bs.send] external getText: (quill) => string = "";
@@ -27,9 +33,9 @@ register({
 [@bs.send] external focus: (quill) => unit = "";
 [@bs.send] external blur: (quill) => unit = "";
 [@bs.send] external getLength: (quill) => float = "";
-[@bs.send] external getSelection: (quill) => Js.nullable({."index": float, "length": float}) = "";
+[@bs.send] external getSelection: (quill) => Js.nullable(View.Range.range) = "";
 [@bs.send] external setSelection: (quill, float, float, string) => unit = "";
-[@bs.send] external setSelectionRange: (quill, Js.nullable({."index": float, "length": float})) => unit = "setSelection";
+[@bs.send] external setSelectionRange: (quill, Js.nullable(View.Range.range)) => unit = "setSelection";
 [@bs.send] external getBounds: (quill, float) => {."top": float} = "";
 type keyboard;
 [@bs.get] external keyboard: (quill) => keyboard = "";
@@ -37,17 +43,22 @@ type keyboard;
 
 [@bs.send] external on: (quill, string, 'fn) => unit = "";
 
-type range = {. "index": float, "length": float};
+type range = View.Range.range;
+/* type range = {. "index": float, "length": float}; */
 
+type cursorsModule;
+[@bs.send] external getCursorsModule: (quill, [@bs.as "cursors"]_) => cursorsModule = "getModule";
+[@bs.send] external setCursor: (cursorsModule, ~id: string, ~range: range, ~userName: string, ~color: string) => unit = "";
+[@bs.send] external removeCursor: (cursorsModule, string) => unit = "";
 
 let atLeft = quill => {
   let sel = getSelection(quill);
   switch (Js.toOption(sel)) {
     | None => false
     | Some(sel) =>
-  sel##length == 0.
+  View.Range.indexGet(sel) == 0.
   &&
-  sel##index == 0.;
+  View.Range.lengthGet(sel) == 0.;
   }
 };
 
@@ -56,9 +67,9 @@ let atRight = quill => {
   switch (Js.toOption(sel)) {
     | None => false
     | Some(sel) =>
-  sel##length == 0.
+  View.Range.lengthGet(sel) == 0.
   &&
-  sel##index == getLength(quill) -. 1.;
+  View.Range.indexGet(sel) == getLength(quill) -. 1.;
   }
 };
 
@@ -67,9 +78,9 @@ let atTop = quill => {
   switch (Js.toOption(sel)) {
     | None => false
     | Some(sel) =>
-  sel##length == 0.
+  View.Range.lengthGet(sel) == 0.
   &&
-  getBounds(quill, sel##index)##top == getBounds(quill, 0.)##top;
+  getBounds(quill, View.Range.indexGet(sel))##top == getBounds(quill, 0.)##top;
   }
 };
 
@@ -78,9 +89,9 @@ let atBottom = quill => {
   switch (Js.toOption(sel)) {
     | None => false
     | Some(sel) =>
-  sel##length == 0.
+  View.Range.lengthGet(sel) == 0.
   &&
-  getBounds(quill, sel##index)##top ==
+  getBounds(quill, View.Range.indexGet(sel))##top ==
   getBounds(quill, getLength(quill))##top;
   }
 };
@@ -99,6 +110,7 @@ let setupQuill = (element, props: ref(NodeTypes.props(Delta.delta, (int, int))))
         "placeholder": " ",
         "modules":
           {
+            "cursors": true,
             "mention": {
               "mentionDenotationChars": [|"/"|],
               "source":
@@ -115,6 +127,14 @@ let setupQuill = (element, props: ref(NodeTypes.props(Delta.delta, (int, int))))
           },
       },
     );
+
+  /* [%bs.raw {|
+  quill.getModule('cursors').setCursor(
+    '1',
+    {index: 0, length: 3},
+    'User 1',
+    'red')
+  |}]|>ignore; */
 
   keyboard(quill)
   ->addBinding({"key": "z", "shortKey": true}, () => {
@@ -185,7 +205,7 @@ let setupQuill = (element, props: ref(NodeTypes.props(Delta.delta, (int, int))))
         switch (Js.toOption(selection)) {
           | None => ()
           | Some(selection) =>
-        quill->setSelection(selection##index +. selection##length, 0., "user");
+        quill->setSelection(View.Range.indexGet(selection) +. View.Range.lengthGet(selection), 0., "user");
         };
         false;
       },
@@ -219,11 +239,11 @@ let setupQuill = (element, props: ref(NodeTypes.props(Delta.delta, (int, int))))
 
   let rangePair = range => switch range {
     | None => None
-    | Some(range) => Some((range##index |> int_of_float, range##length |> int_of_float))
+    | Some(range) => Some((View.Range.indexGet(range) |> int_of_float, View.Range.lengthGet(range) |> int_of_float))
   };
 
   onSelectionChange(quill, (range, oldRange, source) => {
-    /* Js.log3("Selection change", range, oldRange); */
+    Js.log3("Selection change", range, oldRange);
     savedRange := range;
     switch (oldRange->Js.toOption) {
       | None when props^.editPos == None => props^.onFocus()
@@ -231,6 +251,10 @@ let setupQuill = (element, props: ref(NodeTypes.props(Delta.delta, (int, int))))
     };
     switch (range->Js.toOption) {
       | None when props^.editPos != None => ()
+      | Some(range) => {
+        Js.log2("Sending range", range);
+        props^.onCursorChange(range)
+      }
       /* focus(quill); */
       | _ => ()
     };
@@ -242,6 +266,10 @@ let setupQuill = (element, props: ref(NodeTypes.props(Delta.delta, (int, int))))
   on(quill, "text-change", (delta, oldDelta, source) => {
     let range = getSelection(quill);
     /* Js.log2("Text change", range); */
+    switch (range->Js.toOption) {
+      | Some(range) => props^.onCursorChange(range)
+      | None => ()
+    };
     props^.onChange(delta, rangePair(range->Js.toOption), rangePair(savedRange^ ->Js.toOption))
   });
   quill;
@@ -252,26 +280,54 @@ type state = {
   props: ref(NodeTypes.props(Delta.delta, (int, int))),
   quill: ref(option(quill)),
   prevEditPos: ref(option(View.editPos)),
+  prevCursors: ref(list(View.cursor))
 };
 
 let component = ReasonReact.reducerComponent("Quill");
 
 let make = (~props: NodeTypes.props(Delta.delta, (int, int)), _children) => {
   ...component,
-  initialState: () => {props: ref(props), quill: ref(None), prevEditPos: ref(None)},
+  initialState: () => {props: ref(props), quill: ref(None), prevEditPos: ref(None), prevCursors: ref([])},
   reducer: ((), state) => ReasonReact.NoUpdate,
   willUpdate: ({newSelf}) => {
     newSelf.state.prevEditPos := newSelf.state.props^.editPos;
-    newSelf.state.props := props
+    newSelf.state.prevCursors := newSelf.state.props^.remoteCursors;
+    newSelf.state.props := props;
+  },
+  didMount: (self) => {
+    switch (self.state.quill^) {
+      | None => ()
+      | Some(quill) =>
+    self.state.props^.remoteCursors->List.forEach(({userId, range, userName, color}) => {
+      quill->getCursorsModule->setCursor(
+        ~id=userId,
+        ~range,
+        ~userName,
+        ~color,
+      );
+    })
+    }
   },
   didUpdate: ({newSelf, oldSelf}) => {
     let%Lets.OptConsume quill = newSelf.state.quill^;
     let props = newSelf.state.props^;
     if (!Delta.deepEqual(props.value, getContents(quill))) {
-      /* Js.log3("New data!", props.value, getContents(quill)); */
       let sel = getSelection(quill);
       quill->setContents(props.value, "silent");
       quill->setSelectionRange(sel);
+    };
+    if (newSelf.state.prevCursors^ !== newSelf.state.props^.remoteCursors) {
+      newSelf.state.prevCursors^ -> List.forEach(({userId}) => {
+        quill->getCursorsModule->removeCursor(userId);
+      })
+      newSelf.state.props^.remoteCursors->List.forEach(({userId, range, userName, color}) => {
+        quill->getCursorsModule->setCursor(
+          ~id=userId,
+          ~range,
+          ~userName,
+          ~color,
+        );
+      })
     };
     if (hasFocus(quill) != (props.editPos != None)) {
       switch (props.editPos) {

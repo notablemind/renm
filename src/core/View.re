@@ -16,6 +16,28 @@ type mode = Normal | Insert | Visual | Dragging | Dropping;
 
 type viewId = int;
 
+module Range = {
+  [@bs.deriving abstract]
+  type range = {
+    index: float,
+    length: float,
+  };
+};
+
+type cursor = {
+  userId: string,
+  userName: string,
+  color: string,
+  range: Range.range,
+  node: Data.Node.id,
+};
+
+/* module CursorHashable = Id.MakeHashable({
+  type t = cursor;
+  let hash = Hashtbl.hash;
+  let eq = (one, two) => one.userId == two.userId;
+}); */
+
 type view = {
   id: viewId,
   root: Data.Node.id,
@@ -25,6 +47,7 @@ type view = {
   selection: Set.String.t,
   editPos,
   active: Data.Node.id,
+  remoteCursors: list(cursor),
 
   prevActive: option(Data.Node.id),
   lastEdited: option(Data.Node.id),
@@ -56,6 +79,13 @@ let emptyView = (~id, ~root) => {
   hideCompleted: false,
   editPos: Default,
   active: root,
+  remoteCursors: [{
+    node: "root",
+    userId: "1",
+    userName: "I am root",
+    range: Range.range(~index=0., ~length=3.),
+    color: "green"
+  }],
   prevActive: None,
   lastEdited: None,
 };
