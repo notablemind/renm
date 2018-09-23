@@ -2,7 +2,7 @@
 open SharedTypes;
 
 type t = {
-  mutable world: World.world(World.notSyncing),
+  mutable world: World.world,
   mutable session: Session.session,
 };
 
@@ -106,7 +106,7 @@ let eventsForChanges = (nodes, changes) => {
   });
 };
 
-let apply = (world: World.world('a), changes) => {
+let apply = (world: World.world, changes) => {
   let%Lets.Try changeEvents = eventsForChanges(world.current.nodes, changes.Sync.apply);
 
   let%Lets.Try world = try%Lets.Try (World.applyChange(

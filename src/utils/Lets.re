@@ -4,6 +4,14 @@ module Async = {
   let let_ = (promise, continuation) => Js.Promise.then_(continuation, promise);
   let resolve = Js.Promise.resolve;
   let reject = Js.Promise.reject;
+  module Consume = {
+    let let_ = (promise, cont) => {
+      Js.Promise.then_(value => {
+        let () = cont(value);
+        Js.Promise.resolve(())
+      }, promise) |> ignore
+    };
+  };
 };
 
 module Guard = {

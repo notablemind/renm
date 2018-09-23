@@ -5,7 +5,7 @@ let make = (_) => {
   ...component,
   initialState: () => {
 
-    let world: World.world(World.notSyncing) = switch (LocalStorage.getJson("renm:store")) {
+    let world: World.world = switch (LocalStorage.getJson("renm:store")) {
       /* Disabling "restore" for a minute */
       | Some(_)
       /* | Some(data) => data */

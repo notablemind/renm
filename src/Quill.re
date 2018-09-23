@@ -106,7 +106,7 @@ let setupQuill = (element, props: ref(NodeTypes.props(Delta.delta, (int, int))))
     makeQuill(
       element,
       {
-        "theme": "bubble",
+        "theme": false,
         "placeholder": " ",
         "modules":
           {
@@ -128,30 +128,17 @@ let setupQuill = (element, props: ref(NodeTypes.props(Delta.delta, (int, int))))
       },
     );
 
-  /* [%bs.raw {|
-  quill.getModule('cursors').setCursor(
-    '1',
-    {index: 0, length: 3},
-    'User 1',
-    'red')
-  |}]|>ignore; */
-
   keyboard(quill)
   ->addBinding({"key": "z", "shortKey": true}, () => {
-    /* Js.log("hello"); */
       props^.onUndo();
-      /* props^.onToggleCollapse() */
       false
   });
 
   keyboard(quill)
   ->addBinding({"key": "z", "shortKey": true, "shiftKey": true}, () =>{
-    /* Js.log("redo"); */
       props^.onRedo();
-      /* props^.onToggleCollapse() */
       false
   });
-
 
   keyboard(quill)
   ->addBinding({"key": "Tab", "collapsed": true, "shiftKey": true}, () => {

@@ -142,7 +142,7 @@ module F = (Config: {
 
   type thisChange = change(Config.change, Config.rebaseItem, Config.selection);
   type history = History.t(Config.change, Config.rebaseItem, Config.selection);
-  type world('status) = {
+  type world = {
     snapshot: Config.data,
     history: history,
     syncing: Queue.t(thisChange),
@@ -156,7 +156,7 @@ module F = (Config: {
   type notSyncing;
   type syncing;
 
-  let make = (current, history): world(notSyncing) => {
+  let make = (current, history): world => {
     snapshot: current,
     history,
     current,
@@ -168,9 +168,9 @@ module F = (Config: {
     /* ~changeId,
     ~sessionInfo,
     ~link, */
-    world: world('a),
+    world: world,
     change: changeInner(Config.change, Config.selection)
-  ): Result.t(world('a), Config.error) => {
+  ): Result.t(world, Config.error) => {
     let%Lets.TryWrap (current, revert, rebase) = Config.apply(world.current, change.apply);
     let change = {
       inner: change/*: {
@@ -214,12 +214,12 @@ module F = (Config: {
     }
   };
 
-  let prepareSync = (world: world(notSyncing)): world(notSyncing) => {
+  let prepareSync = (world: world): world => {
       {...world, syncing: world.unsynced, unsynced: Queue.empty}
   };
 
   let commit =
-      (world: world(notSyncing)): world(notSyncing) => {
+      (world: world): world => {
     let (snapshot, unsynced) =
       if (world.unsynced == Queue.empty) {
         (world.current, world.unsynced);
@@ -240,8 +240,8 @@ module F = (Config: {
   };
 
   let applyRebase =
-      (world: world('anyStatus), changes, rebases)
-      : world(notSyncing) => {
+      (world: world, changes, rebases)
+      : world => {
     /* open Lets; */
     let (snapshot, changes) = changes->reduceChanges(world.snapshot);
     let (current, unsynced) = world.unsynced->Queue.toList->processRebases(snapshot, rebases);
