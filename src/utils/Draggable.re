@@ -1,4 +1,3 @@
-
 [@bs.val] external window: Dom.window = "";
 type mouseEvt = ReactEvent.Mouse.t;
 [@bs.send]
@@ -8,7 +7,6 @@ external removeEventListener: (Dom.window, string, mouseEvt => unit) => unit =
   "";
 [@bs.get] external clientX: mouseEvt => float = "";
 [@bs.get] external clientY: mouseEvt => float = "";
-
 
 [@bs.send]
 external getBoundingClientRect:
@@ -31,21 +29,21 @@ type state = {
 let component = ReasonReact.reducerComponent("Draggable");
 
 /* let findDistanceToNode = (domNode, x, y) => {
-  let rect = getBoundingClientRect(domNode);
-  let dist = y -. (rect##top +. rect##bottom) /. 2.;
-  let dropPos =
-    switch (dist < 0., x > rect##left +. (rect##right -. rect##left) /. 2.) {
-    | (true, true) => SharedTypes.ChildAbove
-    | (true, false) => Above
-    | (false, true) => Child
-    | (false, false) => Below
-    };
-  (
-    abs_float(dist),
-    dropPos,
-    (dist < 0. ? rect##top : rect##bottom, rect##left, rect##right),
-  );
-}; */
+     let rect = getBoundingClientRect(domNode);
+     let dist = y -. (rect##top +. rect##bottom) /. 2.;
+     let dropPos =
+       switch (dist < 0., x > rect##left +. (rect##right -. rect##left) /. 2.) {
+       | (true, true) => SharedTypes.ChildAbove
+       | (true, false) => Above
+       | (false, true) => Child
+       | (false, false) => Below
+       };
+     (
+       abs_float(dist),
+       dropPos,
+       (dist < 0. ? rect##top : rect##bottom, rect##left, rect##right),
+     );
+   }; */
 
 /**
 TODO
@@ -58,9 +56,9 @@ TODO
 
  */
 
-
 let minDist = 10.;
-let handleDrag = (~id, ~state, ~onStart, ~onDrop, ~testNode, ~updateMarker, ~clear, evt) => {
+let handleDrag =
+    (~id, ~state, ~onStart, ~onDrop, ~testNode, ~updateMarker, ~clear, evt) => {
   let initialX = clientX(evt);
   let initialY = clientY(evt);
   ReactEvent.Mouse.stopPropagation(evt);
@@ -70,7 +68,8 @@ let handleDrag = (~id, ~state, ~onStart, ~onDrop, ~testNode, ~updateMarker, ~cle
   let onMouseMove = evt => {
     let x = clientX(evt);
     let y = clientY(evt);
-    if (abs_float(x -. initialX) < minDist && abs_float(y -. initialY) < minDist) {
+    if (abs_float(x -. initialX) < minDist
+        && abs_float(y -. initialY) < minDist) {
       clear();
     } else {
       let%Lets.OptConsume (distance, dropPos, position) =
@@ -82,10 +81,13 @@ let handleDrag = (~id, ~state, ~onStart, ~onDrop, ~testNode, ~updateMarker, ~cle
               !blacklistedIds->Set.String.has(itemId),
               candidate,
             );
-            let%Lets.OptDefault (distance, dropPos, position) = ({
-              let rect = getBoundingClientRect(itemNode);
-              testNode(itemId, x, y, rect);
-            }, candidate);
+            let%Lets.OptDefault (distance, dropPos, position) = (
+              {
+                let rect = getBoundingClientRect(itemNode);
+                testNode(itemId, x, y, rect);
+              },
+              candidate,
+            );
             Some(
               switch (candidate) {
               | None => (distance, dropPos, position)
@@ -100,7 +102,7 @@ let handleDrag = (~id, ~state, ~onStart, ~onDrop, ~testNode, ~updateMarker, ~cle
           },
         );
       updateMarker(~id, ~dropPos, ~position);
-    }
+    };
   };
   let rec onMouseUp = evt => {
     switch (state^.current) {
@@ -114,7 +116,6 @@ let handleDrag = (~id, ~state, ~onStart, ~onDrop, ~testNode, ~updateMarker, ~cle
   addEventListener(window, "mouseup", onMouseUp);
   addEventListener(window, "mousemove", onMouseMove);
 };
-
 
 let make = (~onDrop, ~onStart, ~renderPlaceholder, ~testNode, children) => {
   ...component,

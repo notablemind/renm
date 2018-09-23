@@ -9,9 +9,11 @@ let rec make = (~depth, ~id, ~store, ~renderDraggable, _children) => {
     oldAndNewSelf.oldSelf.state !== oldAndNewSelf.newSelf.state,
   didMount: self =>
     self.onUnmount(
-      Session.subscribe(store.ClientStore.session(), id, (depth, () =>
-        self.send(NodeBody.getData(store, id))
-      )),
+      Session.subscribe(
+        store.ClientStore.session(),
+        id,
+        (depth, () => self.send(NodeBody.getData(store, id))),
+      ),
     ),
   render: self =>
     switch (self.state) {
@@ -22,7 +24,11 @@ let rec make = (~depth, ~id, ~store, ~renderDraggable, _children) => {
         data
         renderDraggable
         renderChild=(
-          id => ReasonReact.element(~key=id, make(~depth=depth+1, ~id, ~store, ~renderDraggable, [||]))
+          id =>
+            ReasonReact.element(
+              ~key=id,
+              make(~depth=depth + 1, ~id, ~store, ~renderDraggable, [||]),
+            )
         )
       />
     },

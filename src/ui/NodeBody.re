@@ -13,7 +13,9 @@ let getData = (store: ClientStore.t('a, 'b, 'c), id) =>
   | Some(node) =>
     Some({
       node,
-      editPos: id == store.session().view.active ? Some(store.session().view.editPos) : None,
+      editPos:
+        id == store.session().view.active ?
+          Some(store.session().view.editPos) : None,
       selected: Set.String.has(store.session().view.selection, id),
       collapsed:
         id == store.session().view.root ?
@@ -24,53 +26,57 @@ let getData = (store: ClientStore.t('a, 'b, 'c), id) =>
 let evtValue = evt => ReactEvent.Form.target(evt)##value;
 
 let renderContents =
-    (store: ClientStore.t(NodeType.contents, option(NodeType.prefix), (int, int)), node: Data.Node.t(NodeType.contents, option(NodeType.prefix)), editPos, collapsed) =>
+    (
+      store:
+        ClientStore.t(
+          NodeType.contents,
+          option(NodeType.prefix),
+          (int, int),
+        ),
+      node: Data.Node.t(NodeType.contents, option(NodeType.prefix)),
+      editPos,
+      collapsed,
+    ) =>
   switch (node.contents) {
   | Normal(text) =>
     <Quill
       props={
         NodeTypes.value: text,
         editPos,
-        remoteCursors: store.session().view.remoteCursors->Belt.List.keep(cursor => cursor.node == node.id),
-        onRedo: () => {
-          store.redo()
-        },
-        onUndo: () => {
-          store.undo()
-        },
+        remoteCursors:
+          store.session().view.remoteCursors
+          ->Belt.List.keep(cursor => cursor.node == node.id),
+        onRedo: () => store.redo(),
+        onUndo: () => store.undo(),
         onChange: (delta, postSelection, preSelection) =>
           store.act(
             ~preSelection?,
             ~postSelection?,
             [Actions.ChangeContents(node.id, delta)],
           ),
-        onCursorChange: (range: Quill.range) => {
-          store.cursorChange(node.id, range)
-        },
+        onCursorChange: (range: Quill.range) =>
+          store.cursorChange(node.id, range),
         onToggleCollapse: () => {
           store.actView(View.SetCollapsed(node.id, !collapsed));
           false;
         },
-        onEnter: () => {
-          ActionCreators.createAfter(store, node);
-        },
-        /** TODO indents n stuff */
+        onEnter: () => ActionCreators.createAfter(store, node),
+        /*** TODO indents n stuff */
         onIndent: () => {
           ActionCreators.indent(store, node);
-          true
+          true;
         },
         onDedent: () => {
           ActionCreators.dedent(store, node);
-          true
+          true;
         },
         onDown: () => ActionCreators.down(store, node),
-        onRight: () => ActionCreators.right(store,node),
+        onRight: () => ActionCreators.right(store, node),
         onLeft: () => ActionCreators.left(store, node),
         onUp: () => ActionCreators.up(store, node),
-        onBackspace: currentValue => {
-          ActionCreators.backspace(store, node, currentValue);
-        },
-        onFocus: _evt => ActionCreators.focus(store, node)
+        onBackspace: currentValue =>
+          ActionCreators.backspace(store, node, currentValue),
+        onFocus: _evt => ActionCreators.focus(store, node),
       }
     />
   | _ => str("Other contents")
@@ -78,60 +84,63 @@ let renderContents =
 
 module Styles = {
   open Css;
-  let handle = style([
-    cursor(`pointer),
-    left(px(-20)),
-    width(px(8)),
-    height(px(8)),
-    top(px(4)),
-    padding(px(5)),
-    hover([
-      backgroundColor(rgba(0, 0, 0, 0.05)),
-    ]),
-    borderRadius(`percent(50.)),
-    position(`absolute),
-  ]);
-  let circle = style([
-    backgroundColor(hex("ccc")),
-    borderRadius(px(2)),
-    width(px(7)),
-    marginTop(px(2)),
-    height(px(6)),
-  ]);
-  let triangleDown = style([
-    width(px(0)),
-    height(px(0)),
-    borderRadius(px(4)),
-    borderLeft(px(5), `solid, `transparent),
-    borderRight(px(5), `solid, `transparent),
-    borderTop(px(8), `solid, hex("ccc")),
-    position(`absolute),
-    left(px(4)),
-    top(px(6)),
-  ]);
-  let triangleRight = style([
-    width(px(0)),
-    height(px(0)),
-    position(`absolute),
-    left(px(6)),
-    top(px(4)),
-    borderRadius(px(4)),
-    borderTop(px(5), `solid, `transparent),
-    borderBottom(px(5), `solid, `transparent),
-    borderLeft(px(8), `solid, hex("ccc")),
-  ]);
+  let handle =
+    style([
+      cursor(`pointer),
+      left(px(-20)),
+      width(px(8)),
+      height(px(8)),
+      top(px(4)),
+      padding(px(5)),
+      hover([backgroundColor(rgba(0, 0, 0, 0.05))]),
+      borderRadius(`percent(50.)),
+      position(`absolute),
+    ]);
+  let circle =
+    style([
+      backgroundColor(hex("ccc")),
+      borderRadius(px(2)),
+      width(px(7)),
+      marginTop(px(2)),
+      height(px(6)),
+    ]);
+  let triangleDown =
+    style([
+      width(px(0)),
+      height(px(0)),
+      borderRadius(px(4)),
+      borderLeft(px(5), `solid, `transparent),
+      borderRight(px(5), `solid, `transparent),
+      borderTop(px(8), `solid, hex("ccc")),
+      position(`absolute),
+      left(px(4)),
+      top(px(6)),
+    ]);
+  let triangleRight =
+    style([
+      width(px(0)),
+      height(px(0)),
+      position(`absolute),
+      left(px(6)),
+      top(px(4)),
+      borderRadius(px(4)),
+      borderTop(px(5), `solid, `transparent),
+      borderBottom(px(5), `solid, `transparent),
+      borderLeft(px(8), `solid, hex("ccc")),
+    ]);
 };
 
 let renderHandle = (~onMouseDown, ~hasChildren, ~collapsed, ~toggleCollapsed) =>
   <div
     onMouseDown
-    onClick={_evt => {
-      hasChildren ? toggleCollapsed() : ()
-    }}
-    className=Styles.handle
-  >
+    onClick={_evt => hasChildren ? toggleCollapsed() : ()}
+    className=Styles.handle>
     <div
-      className=(hasChildren ? (collapsed ? Styles.triangleRight : Styles.triangleDown) : Styles.circle)
+      className={
+        hasChildren ?
+          collapsed ? Styles.triangleRight : Styles.triangleDown :
+          Styles.circle
+      }
     />
   </div>;
 
@@ -157,25 +166,31 @@ let make =
                 ~flexDirection="row",
                 ~alignItems="center",
                 ~margin="1px",
-                ~outline=editPos != None ? "2px solid #9de3ff" : (selected ? "2px solid #d2ff95" : "none"),
+                ~outline=
+                  editPos != None ?
+                    "2px solid #9de3ff" :
+                    selected ? "2px solid #d2ff95" : "none",
                 (),
               )
             )
-            onMouseDown={evt =>
-              if (ReactEvent.Mouse.metaKey(evt)) {
-                ReactEvent.Mouse.preventDefault(evt);
-                store.actView(AddToSelection(node.id))
-              } else {
-                store.actView(SetActive(node.id, Default))
-              }
+            onMouseDown={
+              evt =>
+                if (ReactEvent.Mouse.metaKey(evt)) {
+                  ReactEvent.Mouse.preventDefault(evt);
+                  store.actView(AddToSelection(node.id));
+                } else {
+                  store.actView(SetActive(node.id, Default));
+                }
             }>
             {
               node.id != store.session().view.root ?
-                renderHandle(~onMouseDown, ~hasChildren=node.children != [], ~collapsed, ~toggleCollapsed={() => {
-                  store.actView(
-                    SetCollapsed(node.id, !collapsed),
-                  )
-                }}) :
+                renderHandle(
+                  ~onMouseDown,
+                  ~hasChildren=node.children != [],
+                  ~collapsed,
+                  ~toggleCollapsed=() =>
+                  store.actView(SetCollapsed(node.id, !collapsed))
+                ) :
                 ReasonReact.null
             }
             <div style=ReactDOMRe.Style.(make(~flex="1", ()))>
@@ -195,10 +210,8 @@ let make =
                 (),
               )
             }>
-            {node.children
-            ->List.map(renderChild)
-            ->List.toArray
-            ->ReasonReact.array}
+            node.children->List.map
+            renderChild->List.toArray->ReasonReact.array
           </div> :
           ReasonReact.null
       }

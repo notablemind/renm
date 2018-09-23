@@ -1,7 +1,7 @@
-
 type t;
 
-let _toJson : t => Js.Json.t = [%raw data => {|
+let _toJson: t => Js.Json.t = [%raw
+  data => {|
   if (!data) {
     return data
   } else if (typeof data === 'function') {
@@ -43,12 +43,14 @@ let _toJson : t => Js.Json.t = [%raw data => {|
   } else {
     return data
   }
-|}];
+|}
+];
 
 external toT: 'a => t = "%identity";
-let toJson = data => _toJson(toT(data))
+let toJson = data => _toJson(toT(data));
 
-let unsafeFromJson: Js.Json.t => 'a = [%raw (data) => {|
+let unsafeFromJson: Js.Json.t => 'a = [%raw
+  data => {|
   if (!data) {
     return data
   } else if (typeof data == 'object') {
@@ -80,6 +82,7 @@ let unsafeFromJson: Js.Json.t => 'a = [%raw (data) => {|
   } else {
     return data
   }
-|}];
+|}
+];
 
-let fromJson = unsafeFromJson
+let fromJson = unsafeFromJson;

@@ -1,4 +1,3 @@
-
 type pair;
 
 [@bs.get] external provider: pair => ReasonReact.reactClass = "Provider";
@@ -7,9 +6,9 @@ type pair;
 [@bs.module "React"] external createContext: 'a => pair = "";
 
 module MakePair = (Config: {
-  type t;
-  let defaultValue: t;
-}) => {
+                     type t;
+                     let defaultValue: t;
+                   }) => {
   let _pair = createContext(Config.defaultValue);
 
   module Provider = {
@@ -22,11 +21,11 @@ module MakePair = (Config: {
   };
 
   module Consumer = {
-    let make = (children: (Config.t) => ReasonReact.reactElement) =>
+    let make = (children: Config.t => ReasonReact.reactElement) =>
       ReasonReact.wrapJsForReason(
         ~reactClass=consumer(_pair),
         ~props=Js.Obj.empty(),
-        children
-      )
+        children,
+      );
   };
 };

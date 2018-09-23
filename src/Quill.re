@@ -1,44 +1,45 @@
-
 [%bs.raw {|require("quill/dist/quill.core.css")|}];
 [%bs.raw {|require("quill/dist/quill.bubble.css")|}];
 [%bs.raw {|require("quill-cursors/dist/quill-cursors.css")|}];
 
 type quill;
 
-[@bs.module] [@bs.new] external makeQuill: ('element, 'config) => quill = "quill";
-[@bs.module "quill"]  external register: 'a => unit = "register";
+[@bs.module] [@bs.new]
+external makeQuill: ('element, 'config) => quill = "quill";
+[@bs.module "quill"] external register: 'a => unit = "register";
 
-let historyClass = [%bs.raw{|class MyHistory {
+let historyClass = [%bs.raw
+  {|class MyHistory {
   constructor(quill, options) { }
   clear() { }
   cutoff() { }
-}|}];
+}|}
+];
 
 [@bs.module "quill-cursors"] external quillCursors: 'a = "default";
 Js.log(quillCursors);
 
-register({
-  "modules/history": historyClass,
-  "modules/cursors": quillCursors,
-});
+register({"modules/history": historyClass, "modules/cursors": quillCursors});
 
 [%bs.raw {|require("quill-mention")|}];
 [%bs.raw {|require("quill-cursors")|}];
 
 [@bs.send] external setText: (quill, string) => unit = "";
-[@bs.send] external getText: (quill) => string = "";
-[@bs.send] external getContents: (quill) => Delta.delta = "";
+[@bs.send] external getText: quill => string = "";
+[@bs.send] external getContents: quill => Delta.delta = "";
 [@bs.send] external setContents: (quill, Delta.delta, string) => unit = "";
-[@bs.send] external hasFocus: (quill) => bool = "";
-[@bs.send] external focus: (quill) => unit = "";
-[@bs.send] external blur: (quill) => unit = "";
-[@bs.send] external getLength: (quill) => float = "";
-[@bs.send] external getSelection: (quill) => Js.nullable(View.Range.range) = "";
+[@bs.send] external hasFocus: quill => bool = "";
+[@bs.send] external focus: quill => unit = "";
+[@bs.send] external blur: quill => unit = "";
+[@bs.send] external getLength: quill => float = "";
+[@bs.send] external getSelection: quill => Js.nullable(View.Range.range) = "";
 [@bs.send] external setSelection: (quill, float, float, string) => unit = "";
-[@bs.send] external setSelectionRange: (quill, Js.nullable(View.Range.range)) => unit = "setSelection";
-[@bs.send] external getBounds: (quill, float) => {."top": float} = "";
+[@bs.send]
+external setSelectionRange: (quill, Js.nullable(View.Range.range)) => unit =
+  "setSelection";
+[@bs.send] external getBounds: (quill, float) => {. "top": float} = "";
 type keyboard;
-[@bs.get] external keyboard: (quill) => keyboard = "";
+[@bs.get] external keyboard: quill => keyboard = "";
 [@bs.send] external addBinding: (keyboard, 'a, unit => bool) => unit = "";
 
 [@bs.send] external on: (quill, string, 'fn) => unit = "";
@@ -47,117 +48,135 @@ type range = View.Range.range;
 /* type range = {. "index": float, "length": float}; */
 
 type cursorsModule;
-[@bs.send] external getCursorsModule: (quill, [@bs.as "cursors"]_) => cursorsModule = "getModule";
-[@bs.send] external setCursor: (cursorsModule, ~id: string, ~range: range, ~userName: string, ~color: string) => unit = "";
+[@bs.send]
+external getCursorsModule: (quill, [@bs.as "cursors"] _) => cursorsModule =
+  "getModule";
+[@bs.send]
+external setCursor:
+  (
+    cursorsModule,
+    ~id: string,
+    ~range: range,
+    ~userName: string,
+    ~color: string
+  ) =>
+  unit =
+  "";
 [@bs.send] external removeCursor: (cursorsModule, string) => unit = "";
 
 let atLeft = quill => {
   let sel = getSelection(quill);
   switch (Js.toOption(sel)) {
-    | None => false
-    | Some(sel) =>
-  View.Range.indexGet(sel) == 0.
-  &&
-  View.Range.lengthGet(sel) == 0.;
-  }
+  | None => false
+  | Some(sel) =>
+    View.Range.indexGet(sel) == 0. && View.Range.lengthGet(sel) == 0.
+  };
 };
 
 let atRight = quill => {
   let sel = getSelection(quill);
   switch (Js.toOption(sel)) {
-    | None => false
-    | Some(sel) =>
-  View.Range.lengthGet(sel) == 0.
-  &&
-  View.Range.indexGet(sel) == getLength(quill) -. 1.;
-  }
+  | None => false
+  | Some(sel) =>
+    View.Range.lengthGet(sel) == 0.
+    && View.Range.indexGet(sel) == getLength(quill)
+    -. 1.
+  };
 };
 
 let atTop = quill => {
   let sel = getSelection(quill);
   switch (Js.toOption(sel)) {
-    | None => false
-    | Some(sel) =>
-  View.Range.lengthGet(sel) == 0.
-  &&
-  getBounds(quill, View.Range.indexGet(sel))##top == getBounds(quill, 0.)##top;
-  }
+  | None => false
+  | Some(sel) =>
+    View.Range.lengthGet(sel) == 0.
+    &&
+    getBounds(quill, View.Range.indexGet(sel))##top ==
+    getBounds(quill, 0.)##top
+  };
 };
 
 let atBottom = quill => {
   let sel = getSelection(quill);
   switch (Js.toOption(sel)) {
-    | None => false
-    | Some(sel) =>
-  View.Range.lengthGet(sel) == 0.
-  &&
-  getBounds(quill, View.Range.indexGet(sel))##top ==
-  getBounds(quill, getLength(quill))##top;
-  }
+  | None => false
+  | Some(sel) =>
+    View.Range.lengthGet(sel) == 0.
+    &&
+    getBounds(quill, View.Range.indexGet(sel))##top ==
+    getBounds(quill, getLength(quill))##top
+  };
 };
 
-let onSelectionChange = (quill, fn: (Js.nullable(range), Js.nullable(range), string) => unit) => {
-  on(quill, "selection-change", fn)
-};
+let onSelectionChange =
+    (quill, fn: (Js.nullable(range), Js.nullable(range), string) => unit) =>
+  on(quill, "selection-change", fn);
 
-
-let setupQuill = (element, props: ref(NodeTypes.props(Delta.delta, (int, int)))) => {
+let setupQuill =
+    (element, props: ref(NodeTypes.props(Delta.delta, (int, int)))) => {
   let quill =
     makeQuill(
       element,
       {
         "theme": false,
         "placeholder": " ",
-        "modules":
-          {
-            "cursors": true,
-            "mention": {
-              "mentionDenotationChars": [|"/"|],
-              "source":
-                (. searchTerm: string, renderList, mentionChar: string) =>
-                  renderList(.
-                    [|
-                      {"id": 0, "value": "Header"},
-                      {"id": 1, "value": "Normal"},
-                      {"id": 2, "value": "Code"},
-                    |],
-                    searchTerm,
-                  ),
-            },
+        "modules": {
+          "cursors": true,
+          "mention": {
+            "mentionDenotationChars": [|"/"|],
+            "source":
+              (. searchTerm: string, renderList, mentionChar: string) =>
+                renderList(.
+                  [|
+                    {"id": 0, "value": "Header"},
+                    {"id": 1, "value": "Normal"},
+                    {"id": 2, "value": "Code"},
+                  |],
+                  searchTerm,
+                ),
           },
+        },
       },
     );
 
   keyboard(quill)
-  ->addBinding({"key": "z", "shortKey": true}, () => {
-      props^.onUndo();
-      false
-  });
+  ->addBinding(
+      {"key": "z", "shortKey": true},
+      () => {
+        props^.onUndo();
+        false;
+      },
+    );
 
   keyboard(quill)
-  ->addBinding({"key": "z", "shortKey": true, "shiftKey": true}, () =>{
-      props^.onRedo();
-      false
-  });
+  ->addBinding(
+      {"key": "z", "shortKey": true, "shiftKey": true},
+      () => {
+        props^.onRedo();
+        false;
+      },
+    );
 
   keyboard(quill)
-  ->addBinding({"key": "Tab", "collapsed": true, "shiftKey": true}, () => {
+  ->addBinding({"key": "Tab", "collapsed": true, "shiftKey": true}, () =>
       !props^.onDedent()
-  });
-  let () = [%bs.raw {|quill.keyboard.bindings[9].unshift(quill.keyboard.bindings[9].pop())|} ];
+    );
+  let () = [%bs.raw
+    {|quill.keyboard.bindings[9].unshift(quill.keyboard.bindings[9].pop())|}
+  ];
   keyboard(quill)
-  ->addBinding({"key": "Tab", "collapsed": true}, () => {
-      !props^.onIndent()
-  });
-  let () = [%bs.raw {|quill.keyboard.bindings[9].unshift(quill.keyboard.bindings[9].pop())|} ];
+  ->addBinding({"key": "Tab", "collapsed": true}, () => !props^.onIndent());
+  let () = [%bs.raw
+    {|quill.keyboard.bindings[9].unshift(quill.keyboard.bindings[9].pop())|}
+  ];
   keyboard(quill)
   ->addBinding({"key": "z", "collapsed": true, "altKey": true}, () =>
       props^.onToggleCollapse()
     );
   keyboard(quill)
-  ->addBinding({"key": "Left"}, () => {
+  ->addBinding({"key": "Left"}, () =>
       !(atLeft(quill) && props^.onLeft() != None)
-    });
+    );
   let () = [%bs.raw
     {|quill.keyboard.bindings[37].unshift(quill.keyboard.bindings[37].pop())|}
   ];
@@ -190,9 +209,15 @@ let setupQuill = (element, props: ref(NodeTypes.props(Delta.delta, (int, int))))
       () => {
         let selection = quill->getSelection;
         switch (Js.toOption(selection)) {
-          | None => ()
-          | Some(selection) =>
-        quill->setSelection(View.Range.indexGet(selection) +. View.Range.lengthGet(selection), 0., "user");
+        | None => ()
+        | Some(selection) =>
+          quill
+          ->setSelection(
+              View.Range.indexGet(selection)
+              +. View.Range.lengthGet(selection),
+              0.,
+              "user",
+            )
         };
         false;
       },
@@ -224,77 +249,93 @@ let setupQuill = (element, props: ref(NodeTypes.props(Delta.delta, (int, int))))
 
   let savedRange = ref(quill->getSelection);
 
-  let rangePair = range => switch range {
+  let rangePair = range =>
+    switch (range) {
     | None => None
-    | Some(range) => Some((View.Range.indexGet(range) |> int_of_float, View.Range.lengthGet(range) |> int_of_float))
-  };
+    | Some(range) =>
+      Some((
+        View.Range.indexGet(range) |> int_of_float,
+        View.Range.lengthGet(range) |> int_of_float,
+      ))
+    };
 
-  onSelectionChange(quill, (range, oldRange, source) => {
-    Js.log3("Selection change", range, oldRange);
-    savedRange := range;
-    switch (oldRange->Js.toOption) {
+  onSelectionChange(
+    quill,
+    (range, oldRange, source) => {
+      Js.log3("Selection change", range, oldRange);
+      savedRange := range;
+      switch (oldRange->Js.toOption) {
       | None when props^.editPos == None => props^.onFocus()
       | _ => ()
-    };
-    switch (range->Js.toOption) {
+      };
+      switch (range->Js.toOption) {
       | None when props^.editPos != None => ()
-      | Some(range) => {
+      | Some(range) =>
         Js.log2("Sending range", range);
-        props^.onCursorChange(range)
-      }
+        props^.onCursorChange(range);
       /* focus(quill); */
       | _ => ()
-    };
-  });
+      };
+    },
+  );
   setContents(quill, props^.value, "silent");
   if (props^.editPos != None) {
     focus(quill);
   };
-  on(quill, "text-change", (delta, oldDelta, source) => {
-    let range = getSelection(quill);
-    /* Js.log2("Text change", range); */
-    props^.onChange(delta, rangePair(range->Js.toOption), rangePair(savedRange^ ->Js.toOption));
-    switch (range->Js.toOption) {
+  on(
+    quill,
+    "text-change",
+    (delta, oldDelta, source) => {
+      let range = getSelection(quill);
+      /* Js.log2("Text change", range); */
+      props^.onChange(
+        delta,
+        rangePair(range->Js.toOption),
+        rangePair((savedRange^)->Js.toOption),
+      );
+      switch (range->Js.toOption) {
       | Some(range) => props^.onCursorChange(range)
       | None => ()
-    };
-  });
+      };
+    },
+  );
   quill;
 };
-
 
 type state = {
   props: ref(NodeTypes.props(Delta.delta, (int, int))),
   quill: ref(option(quill)),
   prevEditPos: ref(option(View.editPos)),
-  prevCursors: ref(list(View.cursor))
+  prevCursors: ref(list(View.cursor)),
 };
 
 let component = ReasonReact.reducerComponent("Quill");
 
 let make = (~props: NodeTypes.props(Delta.delta, (int, int)), _children) => {
   ...component,
-  initialState: () => {props: ref(props), quill: ref(None), prevEditPos: ref(None), prevCursors: ref([])},
+  initialState: () => {
+    props: ref(props),
+    quill: ref(None),
+    prevEditPos: ref(None),
+    prevCursors: ref([]),
+  },
   reducer: ((), state) => ReasonReact.NoUpdate,
   willUpdate: ({newSelf}) => {
     newSelf.state.prevEditPos := newSelf.state.props^.editPos;
     newSelf.state.prevCursors := newSelf.state.props^.remoteCursors;
     newSelf.state.props := props;
   },
-  didMount: (self) => {
+  didMount: self =>
     switch (self.state.quill^) {
-      | None => ()
-      | Some(quill) =>
-    self.state.props^.remoteCursors->List.forEach(({userId, range, userName, color}) => {
-      quill->getCursorsModule->setCursor(
-        ~id=userId,
-        ~range,
-        ~userName,
-        ~color,
-      );
-    })
-    }
-  },
+    | None => ()
+    | Some(quill) =>
+      self.state.props^.remoteCursors
+      ->List.forEach(({userId, range, userName, color}) =>
+          quill
+          ->getCursorsModule
+          ->setCursor(~id=userId, ~range, ~userName, ~color)
+        )
+    },
   didUpdate: ({newSelf, oldSelf}) => {
     let%Lets.OptConsume quill = newSelf.state.quill^;
     let props = newSelf.state.props^;
@@ -304,56 +345,67 @@ let make = (~props: NodeTypes.props(Delta.delta, (int, int)), _children) => {
       quill->setSelectionRange(sel);
     };
     if (newSelf.state.prevCursors^ !== newSelf.state.props^.remoteCursors) {
-      newSelf.state.prevCursors^ -> List.forEach(({userId}) => {
-        quill->getCursorsModule->removeCursor(userId);
-      })
-      newSelf.state.props^.remoteCursors->List.forEach(({userId, range, userName, color}) => {
-        quill->getCursorsModule->setCursor(
-          ~id=userId,
-          ~range,
-          ~userName,
-          ~color,
+      (newSelf.state.prevCursors^)
+      ->List.forEach(({userId}) =>
+          quill->getCursorsModule->removeCursor(userId)
         );
-      })
+      newSelf.state.props^.remoteCursors
+      ->List.forEach(({userId, range, userName, color}) =>
+          quill
+          ->getCursorsModule
+          ->setCursor(~id=userId, ~range, ~userName, ~color)
+        );
     };
     if (hasFocus(quill) != (props.editPos != None)) {
       switch (props.editPos) {
-        | None => blur(quill)
-        | Some(pos) =>
-          focus(quill);
-          switch (pos) {
-          | Start => setSelection(quill, 0., 0., "api")
-          | End => setSelection(quill, getLength(quill), 0., "api")
-          | Replace => setSelection(quill, 0., getLength(quill), "api")
-          | Exactly(index, length) => setSelection(quill, float_of_int(index), float_of_int(length), "api")
-          | Default => ()
-          };
-      }
+      | None => blur(quill)
+      | Some(pos) =>
+        focus(quill);
+        switch (pos) {
+        | Start => setSelection(quill, 0., 0., "api")
+        | End => setSelection(quill, getLength(quill), 0., "api")
+        | Replace => setSelection(quill, 0., getLength(quill), "api")
+        | Exactly(index, length) =>
+          setSelection(
+            quill,
+            float_of_int(index),
+            float_of_int(length),
+            "api",
+          )
+        | Default => ()
+        };
+      };
     } else if (newSelf.state.prevEditPos^ != oldSelf.state.props^.editPos) {
       /* Js.log2("Setting selection ", newSelf.state.props^.editPos); */
       switch (newSelf.state.props^.editPos) {
-        | None => ()
-        | Some(pos) =>
-          switch (pos) {
-          | Start => setSelection(quill, 0., 0., "api")
-          | End => setSelection(quill, getLength(quill), 0., "api")
-          | Replace => setSelection(quill, 0., getLength(quill), "api")
-          | Exactly(index, length) => setSelection(quill, float_of_int(index), float_of_int(length), "api")
-          | Default => ()
-          };
-      }
-
-    }
-  },
-  render: self => {
-    <div
-    ref={node => {
-      switch (Js.toOption(node), self.state.quill^) {
-        | (None, _) | (_, Some(_)) => ()
-        | (Some(el), None) => {
-          self.state.quill := Some(setupQuill(el, self.state.props));
+      | None => ()
+      | Some(pos) =>
+        switch (pos) {
+        | Start => setSelection(quill, 0., 0., "api")
+        | End => setSelection(quill, getLength(quill), 0., "api")
+        | Replace => setSelection(quill, 0., getLength(quill), "api")
+        | Exactly(index, length) =>
+          setSelection(
+            quill,
+            float_of_int(index),
+            float_of_int(length),
+            "api",
+          )
+        | Default => ()
         }
+      };
+    };
+  },
+  render: self =>
+    <div
+      ref={
+        node =>
+          switch (Js.toOption(node), self.state.quill^) {
+          | (None, _)
+          | (_, Some(_)) => ()
+          | (Some(el), None) =>
+            self.state.quill := Some(setupQuill(el, self.state.props))
+          }
       }
-    }} />
-  }
+    />,
 };

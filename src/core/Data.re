@@ -1,4 +1,3 @@
-
 type date = float;
 
 /** TODO hide the type of ID */
@@ -17,7 +16,7 @@ module Node = {
   type id = string;
 
   type t('contents, 'prefix) = {
-    id: id,
+    id,
     parent: id,
     author: string,
     created: date,
@@ -27,7 +26,6 @@ module Node = {
     modified: date,
     childrenModified: date,
     children: list(string),
-
     /* contentsy-stuff */
     contents: 'contents,
     tags: Set.String.t,
@@ -47,7 +45,7 @@ module Node = {
     childrenModified: Js.Date.now(),
     children,
     prefix,
-  }
+  };
 };
 
 type data('contents, 'prefix) = {
@@ -56,7 +54,12 @@ type data('contents, 'prefix) = {
   root: Node.id,
 };
 
-let emptyData = (~root) => {root, nodes: Map.String.empty, tags: Map.String.empty};
+let emptyData = (~root) => {
+  root,
+  nodes: Map.String.empty,
+  tags: Map.String.empty,
+};
 
 let get = (data, id) => Map.String.get(data.nodes, id);
-let getResult = (data, id) => Map.String.get(data.nodes, id)->Lets.Opt.orError("No node " ++ id);
+let getResult = (data, id) =>
+  Map.String.get(data.nodes, id)->Lets.Opt.orError("No node " ++ id);

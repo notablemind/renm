@@ -1,4 +1,3 @@
-
 open SharedTypes;
 
 type session = {
@@ -25,26 +24,31 @@ let createSession = (~sessionId, ~root) => {
 };
 
 let actView_ = (store, action) => {
-  let (view, sharedViewData, events) = View.processViewAction(store.view, store.sharedViewData, action);
+  let (view, sharedViewData, events) =
+    View.processViewAction(store.view, store.sharedViewData, action);
 
-  ({...store, view, sharedViewData}, events)
-
+  ({...store, view, sharedViewData}, events);
   /* store.view = view;
-  store.sharedViewData = sharedViewData;
+     store.sharedViewData = sharedViewData;
 
-  Subscription.trigger(store.subs, events); 
-  Js.Global.setTimeout(() => {
-    LocalStorage.setItem("renm:viewData", Js.Json.stringify(Serialize.toJson(store.sharedViewData)));
-  }, 0)->ignore; */
+     Subscription.trigger(store.subs, events);
+     Js.Global.setTimeout(() => {
+       LocalStorage.setItem("renm:viewData", Js.Json.stringify(Serialize.toJson(store.sharedViewData)));
+     }, 0)->ignore; */
 };
 
 let applyView = (session, viewActions) => {
-  let (view, sharedViewData, viewEvents) = viewActions->List.reduce((session.view, session.sharedViewData, []), ((v, svd, evts), action) => {
-    let (v, svg, nevts) = View.processViewAction(v, svd, action);
-    (v, svg, nevts @ evts)
-  });
+  let (view, sharedViewData, viewEvents) =
+    viewActions
+    ->List.reduce(
+        (session.view, session.sharedViewData, []),
+        ((v, svd, evts), action) => {
+          let (v, svg, nevts) = View.processViewAction(v, svd, action);
+          (v, svg, nevts @ evts);
+        },
+      );
 
-  ({...session, view, sharedViewData}, viewEvents)
+  ({...session, view, sharedViewData}, viewEvents);
 };
 
 /** TODO test this to see if it makes sense */
@@ -52,38 +56,39 @@ let changeSetTimeout = 500.;
 
 let updateChangeSet = (session, action) => {
   let now = Js.Date.now();
-  {...session, changeSet: switch (session.changeSet, action) {
-    | (Some((session, time, id)), Actions.ChangeContents(cid, _)) when id == cid && now -. time < changeSetTimeout => {
-      Some((session, now, id))
-    }
-    | (_, ChangeContents(id, _)) =>
-    /* Js.log3("New changeset", changeSet, now); */
-    Some((Utils.newId(), now, id))
-    | (_, _) => None
-  }}
-};
-
-let getChangeId = (session) => {
-  let changeId = session.sessionId ++ ":" ++ string_of_int(session.changeNum);
-(changeId,
   {
     ...session,
-    changeNum: session.changeNum + 1
-  })
-
+    changeSet:
+      switch (session.changeSet, action) {
+      | (Some((session, time, id)), Actions.ChangeContents(cid, _))
+          when id == cid && now -. time < changeSetTimeout =>
+        Some((session, now, id))
+      | (_, ChangeContents(id, _)) =>
+        /* Js.log3("New changeset", changeSet, now); */
+        Some((Utils.newId(), now, id))
+      | (_, _) => None
+      },
+  };
 };
 
-let makeSelection = (session, sel) => {
-(session.view.active, session.view.selection, switch sel {
-    | None => (0, 0)
-    | Some(sel) => sel
-  })
+let getChangeId = session => {
+  let changeId = session.sessionId ++ ":" ++ string_of_int(session.changeNum);
+  (changeId, {...session, changeNum: session.changeNum + 1});
 };
+
+let makeSelection = (session, sel) => (
+  session.view.active,
+  session.view.selection,
+  switch (sel) {
+  | None => (0, 0)
+  | Some(sel) => sel
+  },
+);
 
 let makeSessionInfo = (~preSelection, ~postSelection, session) => {
   let (changeId, session) = getChangeId(session);
   /* let preSelection = makeSelection(session, preSelection);
-  let postSelection = makeSelection(session, postSelection); */
+     let postSelection = makeSelection(session, postSelection); */
 
   (
     changeId,
@@ -99,11 +104,7 @@ let makeSessionInfo = (~preSelection, ~postSelection, session) => {
 };
 
 let makeChange = (~preSelection, ~postSelection, session, change, link) => {
-  let (changeId, session, sessionInfo) = makeSessionInfo(~preSelection, ~postSelection, session);
-  ({
-    Sync.apply: change,
-    changeId,
-    sessionInfo,
-    link,
-  }, session)
+  let (changeId, session, sessionInfo) =
+    makeSessionInfo(~preSelection, ~postSelection, session);
+  ({Sync.apply: change, changeId, sessionInfo, link}, session);
 };

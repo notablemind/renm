@@ -1,4 +1,3 @@
-
 type leveljs;
 type levelup;
 type sublevelup;
@@ -11,11 +10,24 @@ type sublevelup;
 [@bs.send] external get: (sublevelup, string) => Js.Promise.t('a) = "";
 
 type batchCommand;
-external batchPut: ({. "type": string, "key": string, "value": 'a}) => batchCommand = "%identity";
-external batchDel: ({. "type": string, "key": string}) => batchCommand = "%identity";
-[@bs.send] external batch: (sublevelup, array(batchCommand)) => Js.Promise.t(unit) = "";
+external batchPut:
+  {
+    .
+    "type": string,
+    "key": string,
+    "value": 'a,
+  } =>
+  batchCommand =
+  "%identity";
+external batchDel:
+  {
+    .
+    "type": string,
+    "key": string,
+  } =>
+  batchCommand =
+  "%identity";
+[@bs.send]
+external batch: (sublevelup, array(batchCommand)) => Js.Promise.t(unit) = "";
 
-let load = (docId) => {
-  levelup(leveljs("doc:" ++ docId))
-};
-
+let load = docId => levelup(leveljs("doc:" ++ docId));
