@@ -35,12 +35,23 @@ type metaData = {
   lastModified: float,
   sync: option(sync),
 };
+/* None for sync means "not synced yet". I'm not initially interested in supporting a "local only" model.
+ * When I allow multiple sync sources, then I could imagine one of them being "dont", and another being
+ * "a file on my OS" */
+
+/*
+ * Where to put file-level configuration? (like code kernels stuff). Probably here.
+ * What other fancy things do I want?
+ - scripture story (don't think this needs any file-level configs)
+ */
 
 type file = {
   meta: metaData,
   mutable world: World.world,
   mutable cursors: Hashtbl.t(string, (string, View.Range.range)),
 };
+
+/* file should have a list of attachments as well. with indicators whether they have been synced yet. */
 
 
 let workerId = Utils.newId();
@@ -209,7 +220,7 @@ let getInitialState = () => {
 
 let initialPromise = getInitialState();
 
-[%bs.raw "this.state = state"];
+[%bs.raw "this.state = initialPromise"];
 
 let ports = HashMap.String.make(~hintSize=5);
 addEventListener("connect", e => {
