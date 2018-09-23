@@ -266,11 +266,11 @@ let setupQuill = (element, props: ref(NodeTypes.props(Delta.delta, (int, int))))
   on(quill, "text-change", (delta, oldDelta, source) => {
     let range = getSelection(quill);
     /* Js.log2("Text change", range); */
+    props^.onChange(delta, rangePair(range->Js.toOption), rangePair(savedRange^ ->Js.toOption));
     switch (range->Js.toOption) {
       | Some(range) => props^.onCursorChange(range)
       | None => ()
     };
-    props^.onChange(delta, rangePair(range->Js.toOption), rangePair(savedRange^ ->Js.toOption))
   });
   quill;
 };

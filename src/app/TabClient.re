@@ -12,6 +12,10 @@ type port;
 [@bs.send] external postMessage: (port, Js.Json.t) => unit = "";
 [@bs.send] external start: (port) => unit = "";
 
+type window;
+[@bs.val] external window: window = "";
+[@bs.send] external addUnloadEvent: (window, [@bs.as "beforeunload"]_, unit => unit) => unit = "addEventListener";
+
 type state = {
   mutable session: Session.session,
   mutable data: World.MultiChange.data,
@@ -31,6 +35,9 @@ let make = (_) => {
     let port = worker->port;
     port->start;
     let sessionId = Utils.newId();
+    window->addUnloadEvent(() => {
+      port->postMessage(messageToJson(Close))
+    });
     port->postMessage(messageToJson(Init(sessionId)));
     port->onmessage(evt => {
       Js.log2("Got message", evt);
@@ -97,6 +104,7 @@ let make = (_) => {
               state.data = {...state.data, nodes};
               Subscription.trigger(session.subs, nodeList->Array.map(node => SharedTypes.Event.Node(node.id))->List.fromArray)
             | RemoteCursors(cursors) =>
+              let oldCursors = state.session.view.remoteCursors;
               state.session = {
                 ...state.session,
                 view: {
@@ -107,6 +115,8 @@ let make = (_) => {
               Subscription.trigger(
                 session.subs,
                 cursors->List.map(cursor => SharedTypes.Event.View(Node(cursor.node)))
+                @
+                oldCursors->List.map(cursor => SharedTypes.Event.View(Node(cursor.node)))
               )
           }
           | Error(message) => Js.log3("Invalid message received", message, evt##data)

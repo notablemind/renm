@@ -23,6 +23,9 @@ let initialWorld: World.world(World.notSyncing) = switch (LocalStorage.getJson("
 let worldRef = ref(initialWorld);
 let cursors = Hashtbl.create(10);
 
+[%bs.raw "SharedWorkerGlobalScope.pub = {worldRef, cursors}"];
+[%bs.raw "this.pub = {worldRef, cursors}"];
+
 let persist = (world, events) => {
 };
 
@@ -108,36 +111,43 @@ let onChange = (ports, id, change) => {
   /* TODO debounced sync w/ server */
 };
 
+let sendCursors = (ports, sessionId) => {
+  ports->HashMap.String.forEach((sid, port) => {
+    if (sid != sessionId) {
+      port->postMessage(messageToJson(
+        WorkerProtocol.RemoteCursors(
+          Hashtbl.fold((sessionId, (nodeId, range), collector) => {
+            if (sessionId != sid) {
+              [{
+                View.userId: sessionId ++ ":" ++ "userId",
+                userName: "Fake",
+                color: "red",
+                range,
+                node: nodeId,
+              }, ...collector]
+            } else {
+              collector
+            }
+          }, cursors, [])
+        )
+      ))
+    }
+  });
+};
+
 let handleMessage = (ports, sessionId, evt) => switch (parseMessage(evt##data)) {
   | Ok(message) => switch message {
     | WorkerProtocol.Change(change) => onChange(ports, sessionId, change)
     | UndoRequest => onUndo(ports, sessionId)
     | RedoRequest => onRedo(ports, sessionId)
-    | Close => ports->HashMap.String.remove(sessionId)
+    | Close =>
+      cursors->Hashtbl.remove(sessionId);
+      ports->HashMap.String.remove(sessionId);
+      sendCursors(ports, sessionId);
     | SelectionChanged(nodeId, range) => {
       Js.log2(nodeId, range);
       Hashtbl.replace(cursors, sessionId, (nodeId, range));
-      ports->HashMap.String.forEach((sid, port) => {
-        if (sid != sessionId) {
-          port->postMessage(messageToJson(
-            WorkerProtocol.RemoteCursors(
-              Hashtbl.fold((sessionId, (nodeId, range), collector) => {
-                if (sessionId != sid) {
-                  [{
-                    View.userId: sessionId ++ ":" ++ "userId",
-                    userName: "Fake",
-                    color: "red",
-                    range,
-                    node: nodeId,
-                  }, ...collector]
-                } else {
-                  collector
-                }
-              }, cursors, [])
-            )
-          ))
-        }
-      });
+      sendCursors(ports, sessionId);
     }
     | Init(_) => ()
   }
