@@ -5,8 +5,9 @@
     "build": "bsb -make-world",
     "start": "bsb -make-world -w -ws _ ",
     "serve": "http-server -p 6521 -c-1",
-    "pack": "fpack watch --development --preprocess='\\.svg$:raw-loader'  src/app/Index.bs.js --no-cache --preprocess='\\.css$:style-loader!css-loader'",
-    "pack:worker": "fpack watch --development --preprocess='\\.svg$:raw-loader' -n SharedWorker.js src/app/SharedWorker.bs.js --no-cache --preprocess='\\.css$:style-loader!css-loader'",
+    "pack": "webpack -w",
+    "_pack": "fpack watch --development --preprocess='\\.svg$:raw-loader'  src/app/Index.bs.js --no-cache --preprocess='\\.css$:style-loader!css-loader'",
+    "_pack:worker": "fpack watch --development --preprocess='\\.svg$:raw-loader' -n SharedWorker.js src/app/SharedWorker.bs.js --no-cache --preprocess='\\.css$:style-loader!css-loader'",
     "clean": "bsb -clean-world",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -34,7 +35,7 @@
     "react-dom": "^16.2.0",
     "reason-react": ">=0.4.0",
     "style-loader": "^0.23.0",
-    "sublevelup": "^4.0.0",
+    "subleveldown": "^3.0.1",
     "url-loader": "^1.1.1",
     "webpack": "^4.20.2"
   },

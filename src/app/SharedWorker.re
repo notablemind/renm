@@ -36,7 +36,7 @@ type file = {
   meta: WorkerProtocol.metaData,
   mutable world: World.world,
   mutable cursors: Hashtbl.t(string, (string, View.Range.range)),
-  db: Persistance.sublevelup,
+  db: Persistance.levelup(unit),
 };
 
 /* file should have a list of attachments as well. with indicators whether they have been synced yet. */
@@ -208,14 +208,61 @@ let handleMessage = (state, ports, sessionId, evt) =>
 
 /* let files = HashMap.String.make(~hintSize=10); */
 
-let filesDb = Persistance.(sublevelup(levelup(leveljs("nm:files"))));
+let getDb = name => Persistance.(levelup(leveljs(name)));
+
+let json = {"valueEncoding": "json"};
+let string = {"valueEncoding": "string"};
+
+let getEncoder = (name, encode, decode) => {
+  "valueEncoding": {
+    "encode": value => {
+      encode(value)->Js.Json.stringify
+    },
+    "decode": string => {
+      switch (decode(Js.Json.parseExn(string))) {
+        | Result.Error(e) => Js.Exn.raiseError(e)
+        | Ok(v) => v
+      }
+    },
+    "buffer": false,
+    "type": name,
+  }
+};
+
+let filesDb: Persistance.levelup(unit) = getDb("nm:files");
+let metasDb: Persistance.levelup(WorkerProtocol.metaData) = filesDb->Persistance.subleveldown("metas", {
+  getEncoder(
+    "WorkerProtocol__metaData",
+    WorkerProtocolSerde.serialize_WorkerProtocol____metaData,
+    WorkerProtocolSerde.deserialize_WorkerProtocol____metaData,
+  )
+});
+
+let homeDb: Persistance.levelup(string) = filesDb->Persistance.subleveldown("home", {
+  "valueEncoding": {
+    "encode": s => s,
+    "decode": s => s,
+    "buffer": false,
+    "type": "string"
+  }
+});
+
+let getFileDb: string => Persistance.levelup(unit) = id => getDb("nm:doc:" ++ id);
+let getNodesDb: Persistance.levelup(unit) => Persistance.levelup(NodeType.t) = fileDb => fileDb->Persistance.subleveldown("nodes", getEncoder(
+  "NodeType____t",
+  WorkerProtocolSerde.serialize_NodeType____t,
+  WorkerProtocolSerde.deserialize_NodeType____t,
+));
+
 
 let arrayFind = (items, fn) => Array.reduce(items, None, (current, item) => switch current {
   | None => fn(item)
   | Some(_) => current
 });
 
+
 let makeHome = () => {
+  Js.log("Making a home");
   let meta = {
     WorkerProtocol.id: Utils.newId(),
     title: "Home",
@@ -225,38 +272,51 @@ let makeHome = () => {
     lastModified: 0.,
     sync: None,
   };
-  let%Lets.Async _ = filesDb->Persistance.sublevel("metas")->Persistance.put(meta.id, WorkerProtocolSerde.serialize_WorkerProtocol____metaData(meta));
-  let%Lets.Async _ = filesDb->Persistance.sublevel("home")->Persistance.put("home", meta.id);
+  let%Lets.Async _ = metasDb->Persistance.put(meta.id, meta);
+  let%Lets.Async _ = homeDb->Persistance.put("home", meta.id);
+  let%Lets.Async _ = getFileDb(meta.id)->getNodesDb->Persistance.batch(
+    Fixture.large->Belt.List.map(node => {
+      Persistance.batchPut({
+        "key": node.id,
+        "type": "put",
+        "value": node
+      })
+    })->List.toArray
+  );
   Js.Promise.resolve(meta.id)
 };
 
 let getHome = () => {
   let%Lets.Async homeId =
     try%Lets.Async (
-      filesDb->Persistance.sublevel("home")->Persistance.get("home")
-      ->Lets.Async.map(value => value##value)
+      homeDb->Persistance.get("home")
+      ->Lets.Async.map(value => {
+        value
+      })
     ) {
     | _ => makeHome()
     };
-  filesDb->Persistance.sublevel("metas")->Persistance.get(homeId);
+  Js.log2("Home id", homeId);
+  metasDb->Persistance.get(homeId);
 };
 
 let loadNodes = db => {
-  let%Lets.Async nodes = db->Persistance.sublevel("nodes")->Persistance.getAll;
-  let nodeMap = nodes->Array.map(WorkerProtocolSerde.deserialize_NodeType____t)
-  ->Array.reduce(Result.Ok(Map.String.empty), (map, item) => switch (map, item) {
+  let%Lets.Async nodes = db->getNodesDb->Persistance.getAll;
+  let nodeMap = nodes->Array.map(node => (node##key, node##value))->Map.String.fromArray;
+  Js.Promise.resolve(nodeMap)
+  /* ->Array.reduce(Result.Ok(Map.String.empty), (map, item) => switch (map, item) {
     | (Error(_), _) => map
     | (Ok(map), Ok(node)) => map->Map.String.set(node.id, node)->Ok
     | (_, Error(e)) => Error(e)
-  });
-  switch nodeMap {
+  }); */
+  /* switch nodeMap {
     | Ok(map) => Js.Promise.resolve(map)
     | Error(e) => Js.Promise.reject(Obj.magic(e))
-  };
+  }; */
 };
 
 let loadFile = id => {
-  let db = Persistance.(sublevelup(levelup(leveljs("nm:doc:" ++ id))));
+  let db = getFileDb(id);
   let%Lets.Async nodeMap = loadNodes(db);
 
   let world = World.make({
@@ -267,28 +327,18 @@ let loadFile = id => {
     );
 
   /* let nodes = Map.String.fromArray(nodeMap); */
-  Js.Promise.resolve(())
+  Js.Promise.resolve((db, world))
 };
 
 let getInitialState = () => {
-  let%Lets.Async files = filesDb->Persistance.getAll;
+  let%Lets.Async meta = getHome();
+  let%Lets.Async (db, world) = loadFile(meta.WorkerProtocol.id);
   Js.Promise.resolve({
-    meta: {
-      id: "home",
-      title: "Home",
-      nodeCount: 0,
-      created: 0.,
-      lastOpened: 0.,
-      lastModified: 0.,
-      sync: None,
-    },
-    db: Persistance.(sublevelup(levelup(leveljs("db")))),
-    world: World.make({
-      ...Data.emptyData(~root="root"),
-      nodes: Store.makeNodeMap(Fixture.large),
-    }, Sync.History.empty),
-    cursors: Hashtbl.create(10),
-  });
+    meta,
+    db,
+    world,
+    cursors: Hashtbl.create(10)
+  })
 };
 
 let initialPromise = getInitialState();
