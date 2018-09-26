@@ -1,9 +1,9 @@
 type leveljs;
 type levelup;
 type sublevelup;
-[@bs.module "levelup"] external levelup: leveljs => levelup = "";
-[@bs.module "leveljs"] external leveljs: string => leveljs = "";
-[@bs.module "sublevelup"] external sublevelup: levelup => sublevelup = "";
+[@bs.module] external levelup: leveljs => levelup = "";
+[@bs.module] external leveljs: string => leveljs = "level-js";
+[@bs.module] external sublevelup: levelup => sublevelup = "";
 [@bs.send] external sublevel: (sublevelup, string) => sublevelup = "";
 
 [@bs.send] external put: (sublevelup, string, 'a) => Js.Promise.t(unit) = "";

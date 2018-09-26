@@ -1,6 +1,7 @@
 const path = require('path')
 
 module.exports = {
+  mode: 'development',
   entry: {
     index: './src/app/Index.bs.js',
     SharedWorker: './src/app/SharedWorker.bs.js'

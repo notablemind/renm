@@ -283,7 +283,10 @@ let getInitialState = () => {
       sync: None,
     },
     db: Persistance.(sublevelup(levelup(leveljs("db")))),
-    world: World.make(Data.emptyData(~root="root"), Sync.History.empty),
+    world: World.make({
+      ...Data.emptyData(~root="root"),
+      nodes: Store.makeNodeMap(Fixture.large),
+    }, Sync.History.empty),
     cursors: Hashtbl.create(10),
   });
 };
