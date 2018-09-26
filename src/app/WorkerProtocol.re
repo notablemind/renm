@@ -15,3 +15,19 @@ type serverMessage =
   | InitialData(data, list(View.cursor))
   | Rebase(array(NodeType.t))
   | RemoteCursors(list(View.cursor));
+
+type sync = {
+  googleFileId: string,
+  owningUserName: string,
+  lastSyncTime: float,
+};
+
+type metaData = {
+  id: string,
+  title: string,
+  nodeCount: int,
+  created: float,
+  lastOpened: float,
+  lastModified: float,
+  sync: option(sync),
+};

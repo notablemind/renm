@@ -22,21 +22,6 @@ let messageToJson = WorkerProtocolSerde.serialize_WorkerProtocol____serverMessag
  * (well, doesn't quite work with the browser-based version)
  */
 
-type sync = {
-  googleFileId: string,
-  owningUserName: string,
-  lastSyncTime: float,
-};
-
-type metaData = {
-  id: string,
-  title: string,
-  nodeCount: int,
-  created: float,
-  lastOpened: float,
-  lastModified: float,
-  sync: option(sync),
-};
 /* None for sync means "not synced yet". I'm not initially interested in supporting a "local only" model.
  * When I allow multiple sync sources, then I could imagine one of them being "dont", and another being
  * "a file on my OS" */
@@ -48,9 +33,10 @@ type metaData = {
  */
 
 type file = {
-  meta: metaData,
+  meta: WorkerProtocol.metaData,
   mutable world: World.world,
   mutable cursors: Hashtbl.t(string, (string, View.Range.range)),
+  db: Persistance.sublevelup,
 };
 
 /* file should have a list of attachments as well. with indicators whether they have been synced yet. */
@@ -201,7 +187,7 @@ let handleMessage = (state, ports, sessionId, evt) =>
     Js.log3("Invalid message received!", message, evt##data)
   };
 
-let initialWorld: World.world =
+/* let initialWorld: World.world =
   switch (LocalStorage.getJson("renm:store")) {
   /* Disabling "restore" for a minute */
   | Some(_)
@@ -214,7 +200,7 @@ let initialWorld: World.world =
       },
       Sync.History.empty,
     )
-  };
+  }; */
 
 /* type fileStatus =
    | Loading(Js.Promise.t(unit))
@@ -222,7 +208,70 @@ let initialWorld: World.world =
 
 /* let files = HashMap.String.make(~hintSize=10); */
 
-let getInitialState = () =>
+let filesDb = Persistance.(sublevelup(levelup(leveljs("nm:files"))));
+
+let arrayFind = (items, fn) => Array.reduce(items, None, (current, item) => switch current {
+  | None => fn(item)
+  | Some(_) => current
+});
+
+let makeHome = () => {
+  let meta = {
+    WorkerProtocol.id: Utils.newId(),
+    title: "Home",
+    nodeCount: 1,
+    created: 0.,
+    lastOpened: 0.,
+    lastModified: 0.,
+    sync: None,
+  };
+  let%Lets.Async _ = filesDb->Persistance.sublevel("metas")->Persistance.put(meta.id, WorkerProtocolSerde.serialize_WorkerProtocol____metaData(meta));
+  let%Lets.Async _ = filesDb->Persistance.sublevel("home")->Persistance.put("home", meta.id);
+  Js.Promise.resolve(meta.id)
+};
+
+let getHome = () => {
+  let%Lets.Async homeId =
+    try%Lets.Async (
+      filesDb->Persistance.sublevel("home")->Persistance.get("home")
+      ->Lets.Async.map(value => value##value)
+    ) {
+    | _ => makeHome()
+    };
+  filesDb->Persistance.sublevel("metas")->Persistance.get(homeId);
+};
+
+let loadNodes = db => {
+  let%Lets.Async nodes = db->Persistance.sublevel("nodes")->Persistance.getAll;
+  let nodeMap = nodes->Array.map(WorkerProtocolSerde.deserialize_NodeType____t)
+  ->Array.reduce(Result.Ok(Map.String.empty), (map, item) => switch (map, item) {
+    | (Error(_), _) => map
+    | (Ok(map), Ok(node)) => map->Map.String.set(node.id, node)->Ok
+    | (_, Error(e)) => Error(e)
+  });
+  switch nodeMap {
+    | Ok(map) => Js.Promise.resolve(map)
+    | Error(e) => Js.Promise.reject(Obj.magic(e))
+  };
+};
+
+let loadFile = id => {
+  let db = Persistance.(sublevelup(levelup(leveljs("nm:doc:" ++ id))));
+  let%Lets.Async nodeMap = loadNodes(db);
+
+  let world = World.make({
+        ...Data.emptyData(~root="root"),
+        nodes: nodeMap,
+      },
+      Sync.History.empty,
+    );
+
+  /* let nodes = Map.String.fromArray(nodeMap); */
+  Js.Promise.resolve(())
+};
+
+let getInitialState = () => {
+  let%Lets.Async files = filesDb->Persistance.getAll;
   Js.Promise.resolve({
     meta: {
       id: "home",
@@ -233,9 +282,11 @@ let getInitialState = () =>
       lastModified: 0.,
       sync: None,
     },
-    world: initialWorld,
+    db: Persistance.(sublevelup(levelup(leveljs("db")))),
+    world: World.make(Data.emptyData(~root="root"), Sync.History.empty),
     cursors: Hashtbl.create(10),
   });
+};
 
 let initialPromise = getInitialState();
 

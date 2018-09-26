@@ -1,9 +1,12 @@
 module Async = {
   type t('a) = Js.Promise.t('a);
+  let try_ = (promise, continuation) => Js.Promise.catch(continuation, promise);
   let let_ = (promise, continuation) =>
     Js.Promise.then_(continuation, promise);
   let resolve = Js.Promise.resolve;
   let reject = Js.Promise.reject;
+  let map = (promise, fn) => Js.Promise.then_(v => Js.Promise.resolve(fn(v)), promise);
+
   module Consume = {
     let let_ = (promise, cont) =>
       Js.Promise.then_(
