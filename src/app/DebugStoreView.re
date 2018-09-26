@@ -77,19 +77,15 @@ let make = (~store: Store.t, _children) => {
     <div>
       <div>
         <h4> {ReasonReact.string("Unsynced")} </h4>
-        unsynced->Sync.Queue.toList->List.map
-        showChange->List.toArray->ReasonReact.array
+        {unsynced->Sync.Queue.toList->List.map(showChange)->List.toArray->ReasonReact.array}
       </div>
       <div>
         <h4> {ReasonReact.string("Syncing")} </h4>
-        syncing->Sync.Queue.toList->List.map
-        showChange->List.toArray->ReasonReact.array
+        {syncing->Sync.Queue.toList->List.map(showChange)->List.toArray->ReasonReact.array}
       </div>
       <div>
         <h4> {ReasonReact.string("History")} </h4>
-        history->Sync.History.itemsSince
-        None->List.map
-        showChange->List.toArray->ReasonReact.array
+        {history->Sync.History.itemsSince (None)->List.map (showChange)->List.toArray->ReasonReact.array}
       </div>
     </div>,
 };

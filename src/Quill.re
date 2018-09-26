@@ -262,7 +262,7 @@ let setupQuill =
   onSelectionChange(
     quill,
     (range, oldRange, source) => {
-      Js.log3("Selection change", range, oldRange);
+      /* Js.log3("Selection change", range, oldRange); */
       savedRange := range;
       switch (oldRange->Js.toOption) {
       | None when props^.editPos == None => props^.onFocus()
@@ -271,7 +271,7 @@ let setupQuill =
       switch (range->Js.toOption) {
       | None when props^.editPos != None => ()
       | Some(range) =>
-        Js.log2("Sending range", range);
+        /* Js.log2("Sending range", range); */
         props^.onCursorChange(range);
       /* focus(quill); */
       | _ => ()

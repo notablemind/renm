@@ -57,7 +57,6 @@ let make = _ => {
             ClientStore.session: () => state.session,
             data: () => state.data,
             cursorChange: (nodeId, range) => {
-              [%bs.debugger];
               port
               ->postMessage(
                   messageToJson(

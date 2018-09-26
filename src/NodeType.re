@@ -20,7 +20,8 @@ module Svg = {
     | Rect(float, float, float)
     | Ellipse(float, float)
     /* TODO arrow heads? */
-    | Line(float, float);
+    | Line(float, float)
+    | Text(string);
 
   type shape = {
     id: string,

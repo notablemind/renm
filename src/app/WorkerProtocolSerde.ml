@@ -2320,6 +2320,21 @@ and (deserialize_NodeType__Svg__kind :
                   Belt.Result.Ok (Line (arg0, arg1) : NodeType.Svg.kind)
               | Error error -> Error error)
          | Error error -> Error error)
+    | JSONArray [|tag;arg0|] when
+        (Js.Json.JSONString "Text") = (Js.Json.classify tag) ->
+        (match (fun string ->
+                  match Js.Json.classify string with
+                  | ((JSONString (string))[@explicit_arity ]) ->
+                      ((Belt.Result.Ok (string))[@explicit_arity ])
+                  | _ ->
+                      ((Error
+                          ((("epected a string")
+                            [@reason.raw_literal "epected a string"])))
+                      [@explicit_arity ])) arg0
+         with
+         | Belt.Result.Ok arg0 ->
+             Belt.Result.Ok (Text (arg0) : NodeType.Svg.kind)
+         | Error error -> Error error)
     | _ -> Error "Expected an array"
 and (deserialize_WorkerProtocol____message :
   Js.Json.t -> (WorkerProtocol.message, string) Belt.Result.t) =
@@ -3425,6 +3440,8 @@ and (serialize_NodeType__Svg__kind : NodeType.Svg.kind -> Js.Json.t) =
         Js.Json.array
           [|(Js.Json.string "Line");(Js.Json.number arg0);(Js.Json.number
                                                              arg1)|]
+    | Text arg0 ->
+        Js.Json.array [|(Js.Json.string "Text");(Js.Json.string arg0)|]
 and (serialize_WorkerProtocol____message :
   WorkerProtocol.message -> Js.Json.t) =
   fun constructor ->

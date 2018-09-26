@@ -9,8 +9,8 @@ module ShowServer = {
     <div key={node.id}>
       {renderContents(node.contents)}
       <div style=ReactDOMRe.Style.(make(~paddingLeft="10px", ()))>
-        node.children->List.map
-        renderNode(server)->List.toArray->ReasonReact.array
+        {node.children->List.map
+        (renderNode(server))->List.toArray->ReasonReact.array}
       </div>
     </div>;
   };
@@ -21,9 +21,9 @@ module ShowServer = {
       <div>
         <div> {renderNode(server, server.current.root)} </div>
         <div>
-          server.history->Sync.History.itemsSince
-          None->List.map
-          DebugStoreView.showChange->List.toArray->ReasonReact.array
+          {server.history->Sync.History.itemsSince
+          (None)->List.map
+          (DebugStoreView.showChange)->List.toArray->ReasonReact.array}
         </div>
       </div>,
   };

@@ -50,11 +50,11 @@ let make = (~store: ClientStore.t('a, 'b, 'c), _children) => {
               )>
               <div
                 className=NodeBody.Styles.circle
-                          /* Css.(style([
-                               position(`absolute),
-                               left(px(-20)),
-                               top(px(0)),
-                             ])) */
+                /* Css.(style([
+                     position(`absolute),
+                     left(px(-20)),
+                     top(px(0)),
+                   ])) */
               />
             </div>
           </div>

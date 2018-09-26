@@ -33,7 +33,7 @@ let renderContents =
           option(NodeType.prefix),
           (int, int),
         ),
-      node: Data.Node.t(NodeType.contents, option(NodeType.prefix)),
+      node: NodeType.t,
       editPos,
       collapsed,
     ) =>
@@ -210,8 +210,7 @@ let make =
                 (),
               )
             }>
-            node.children->List.map
-            renderChild->List.toArray->ReasonReact.array
+            {node.children->List.map(renderChild)->List.toArray->ReasonReact.array}
           </div> :
           ReasonReact.null
       }
