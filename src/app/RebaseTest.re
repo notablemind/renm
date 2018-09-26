@@ -38,6 +38,21 @@ type state = {
 
 let component = ReasonReact.reducerComponent("RebaseTest");
 
+
+
+
+
+let prepareSync = (world: World.world): World.world => {
+  ...world,
+  syncing: world.unsynced,
+  unsynced: Sync.Queue.empty,
+};
+
+
+
+
+
+
 let baseWorld =
   World.make(
     {
@@ -60,7 +75,7 @@ let make = _children => {
   reducer: (state, _) => ReasonReact.Update(state),
   render: ({state: {root, a, b, c}} as self) => {
     let startSync = (store: Store.t) => {
-      let world = World.prepareSync(store.world);
+      let world = prepareSync(store.world);
       store.world = world;
     };
     let finishSync = (store: Store.t) => {

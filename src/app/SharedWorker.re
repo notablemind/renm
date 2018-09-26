@@ -187,79 +187,10 @@ let handleMessage = (state, ports, sessionId, evt) =>
     Js.log3("Invalid message received!", message, evt##data)
   };
 
-/* let initialWorld: World.world =
-  switch (LocalStorage.getJson("renm:store")) {
-  /* Disabling "restore" for a minute */
-  | Some(_)
-  /* | Some(data) => data */
-  | None =>
-    World.make(
-      {
-        ...Data.emptyData(~root="root"),
-        nodes: Store.makeNodeMap(Fixture.large),
-      },
-      Sync.History.empty,
-    )
-  }; */
-
-/* type fileStatus =
-   | Loading(Js.Promise.t(unit))
-   | Loaded(state); */
-
-/* let files = HashMap.String.make(~hintSize=10); */
-
-let getDb = name => Persistance.(levelup(leveljs(name)));
-
-let json = {"valueEncoding": "json"};
-let string = {"valueEncoding": "string"};
-
-let getEncoder = (name, encode, decode) => {
-  "valueEncoding": {
-    "encode": value => {
-      encode(value)->Js.Json.stringify
-    },
-    "decode": string => {
-      switch (decode(Js.Json.parseExn(string))) {
-        | Result.Error(e) => Js.Exn.raiseError(e)
-        | Ok(v) => v
-      }
-    },
-    "buffer": false,
-    "type": name,
-  }
-};
-
-let filesDb: Persistance.levelup(unit) = getDb("nm:files");
-let metasDb: Persistance.levelup(WorkerProtocol.metaData) = filesDb->Persistance.subleveldown("metas", {
-  getEncoder(
-    "WorkerProtocol__metaData",
-    WorkerProtocolSerde.serialize_WorkerProtocol____metaData,
-    WorkerProtocolSerde.deserialize_WorkerProtocol____metaData,
-  )
-});
-
-let homeDb: Persistance.levelup(string) = filesDb->Persistance.subleveldown("home", {
-  "valueEncoding": {
-    "encode": s => s,
-    "decode": s => s,
-    "buffer": false,
-    "type": "string"
-  }
-});
-
-let getFileDb: string => Persistance.levelup(unit) = id => getDb("nm:doc:" ++ id);
-let getNodesDb: Persistance.levelup(unit) => Persistance.levelup(NodeType.t) = fileDb => fileDb->Persistance.subleveldown("nodes", getEncoder(
-  "NodeType____t",
-  WorkerProtocolSerde.serialize_NodeType____t,
-  WorkerProtocolSerde.deserialize_NodeType____t,
-));
-
-
 let arrayFind = (items, fn) => Array.reduce(items, None, (current, item) => switch current {
   | None => fn(item)
   | Some(_) => current
 });
-
 
 let makeHome = () => {
   Js.log("Making a home");
@@ -272,9 +203,9 @@ let makeHome = () => {
     lastModified: 0.,
     sync: None,
   };
-  let%Lets.Async _ = metasDb->Persistance.put(meta.id, meta);
-  let%Lets.Async _ = homeDb->Persistance.put("home", meta.id);
-  let%Lets.Async _ = getFileDb(meta.id)->getNodesDb->Persistance.batch(
+  let%Lets.Async _ = Dbs.metasDb->Persistance.put(meta.id, meta);
+  let%Lets.Async _ = Dbs.homeDb->Persistance.put("home", meta.id);
+  let%Lets.Async _ = Dbs.getFileDb(meta.id)->Dbs.getNodesDb->Persistance.batch(
     Fixture.large->Belt.List.map(node => {
       Persistance.batchPut({
         "key": node.id,
@@ -289,7 +220,7 @@ let makeHome = () => {
 let getHome = () => {
   let%Lets.Async homeId =
     try%Lets.Async (
-      homeDb->Persistance.get("home")
+      Dbs.homeDb->Persistance.get("home")
       ->Lets.Async.map(value => {
         value
       })
@@ -297,26 +228,17 @@ let getHome = () => {
     | _ => makeHome()
     };
   Js.log2("Home id", homeId);
-  metasDb->Persistance.get(homeId);
+  Dbs.metasDb->Persistance.get(homeId);
 };
 
 let loadNodes = db => {
-  let%Lets.Async nodes = db->getNodesDb->Persistance.getAll;
+  let%Lets.Async nodes = db->Dbs.getNodesDb->Persistance.getAll;
   let nodeMap = nodes->Array.map(node => (node##key, node##value))->Map.String.fromArray;
   Js.Promise.resolve(nodeMap)
-  /* ->Array.reduce(Result.Ok(Map.String.empty), (map, item) => switch (map, item) {
-    | (Error(_), _) => map
-    | (Ok(map), Ok(node)) => map->Map.String.set(node.id, node)->Ok
-    | (_, Error(e)) => Error(e)
-  }); */
-  /* switch nodeMap {
-    | Ok(map) => Js.Promise.resolve(map)
-    | Error(e) => Js.Promise.reject(Obj.magic(e))
-  }; */
 };
 
 let loadFile = id => {
-  let db = getFileDb(id);
+  let db = Dbs.getFileDb(id);
   let%Lets.Async nodeMap = loadNodes(db);
 
   let world = World.make({
