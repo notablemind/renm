@@ -9,6 +9,9 @@ external addEventListener: (string, {. "ports": array(port)} => unit) => unit =
 external onmessage: (port, {. "data": Js.Json.t} => unit) => unit = "";
 [@bs.send] external postMessage: (port, Js.Json.t) => unit = "";
 
+/** Use this to shut down the shared worker. The clients can then reload to restart the sharedworker. */
+[@bs.val] external close: unit => unit = "";
+
 let parseMessage = WorkerProtocolSerde.deserialize_WorkerProtocol____message;
 let messageToJson = WorkerProtocolSerde.serialize_WorkerProtocol____serverMessage;
 

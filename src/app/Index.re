@@ -1,6 +1,11 @@
 /* [%%debugger.chrome]; */
 [%bs.raw "require('./SetupDebugger')"];
 
-ReactDOMRe.renderToElementWithId(<RebaseTest />, "root");
-/* ReactDOMRe.renderToElementWithId(<TabClient />, "root"); */
-/* ReactDOMRe.renderToElementWithId(<OnePage />, "root"); */
+[@bs.val] external location: {. "search": string} = "";
+
+switch (location##search) {
+  | "?rebase" => ReactDOMRe.renderToElementWithId(<RebaseTest />, "root");
+  | "?single" => ReactDOMRe.renderToElementWithId(<OnePage />, "root");
+  | _ => ReactDOMRe.renderToElementWithId(<TabClient />, "root");
+}
+
