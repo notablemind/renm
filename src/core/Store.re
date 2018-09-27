@@ -41,98 +41,16 @@ let viewNode = (store, id) => [Event.View(Node(id))];
 
 open Data;
 
-module ActionResults = {
+/* module ActionResults = {
   type actionResults = {
     changes: list(Change.change),
     viewActions: list(View.action),
   };
 };
 
-let blank = {ActionResults.changes: [], viewActions: []};
+let blank = {ActionResults.changes: [], viewActions: []}; */
 
 open Actions;
-
-let processAction =
-    (data, action): Result.t(ActionResults.actionResults, string) =>
-  switch (action) {
-  | Remove(id, focusNext) =>
-    Ok({
-      changes: [RemoveNode(id)],
-      viewActions: [View.SetActive(focusNext, Default)],
-    })
-
-  | SetContents(id, contents) =>
-    Ok({...blank, changes: [SetContents(id, contents)]})
-
-  /* TODO track selection here */
-  | ChangeContents(id, delta) =>
-    Ok({...blank, changes: [ChangeContents(id, delta)]})
-
-  | Move(ids, pid, index) =>
-    let%Lets.Try (_, changes) =
-      ids
-      ->List.reverse
-      ->Sync.tryReduce(
-          (0, []),
-          ((off, changes), id) => {
-            let%Lets.Try node =
-              data->get(id)->Lets.Opt.orError("Cannot find node " ++ id);
-            let%Lets.Try off =
-              if (node.parent == pid) {
-                let%Lets.Try parent =
-                  data
-                  ->get(pid)
-                  ->Lets.Opt.orError("Cannot find node " ++ pid);
-                let%Lets.Try idx =
-                  TreeTraversal.childPos(parent.children, node.id)
-                  ->Lets.Opt.orError("Not in children " ++ node.id);
-                Ok(idx < index ? off + 1 : 0);
-              } else {
-                Ok(off);
-              };
-            Ok((off, [Change.MoveNode(pid, index - off, id), ...changes]));
-          },
-        );
-    let changes = List.reverse(changes);
-    /* let index = index - indexCorrection; */
-    /* let changes = ids->List.reverse->List.map(id => (Change.MoveNode(pid, index, id))); */
-
-    Ok({
-      ActionResults.changes,
-      viewActions: [View.SetCollapsed(pid, false)],
-    });
-
-  | Create(idx, node) =>
-    Ok({
-      ActionResults.changes: [AddNode(idx, node)],
-      viewActions: [View.SetActive(node.id, Default)],
-    })
-
-  | SplitAt(_) => Ok(blank)
-  | JoinUp(_, _, _) => Ok(blank)
-  };
-
-let eventsForChanges = (nodes, changes) =>
-  changes
-  ->Sync.tryReduce(
-      [],
-      (events, change) => {
-        let%Lets.TryWrap more = Change.events(nodes, change);
-        events->List.concat(more);
-      },
-    );
-
-let apply = (world: World.world, changes) => {
-  let%Lets.Try changeEvents =
-    eventsForChanges(world.current.nodes, changes.Sync.apply);
-
-  let%Lets.Try world =
-    try%Lets.Try (World.applyChange(world, changes)) {
-    | _ => Error("Failed to apply change")
-    };
-
-  Ok((world, changeEvents));
-};
 
 /*
 
@@ -198,13 +116,26 @@ let onChange = (store, session, events) => {
 };
 
 let prepareChange = (~preSelection, ~postSelection, data, session, action) => {
-  let%Lets.Try {ActionResults.viewActions, changes} =
-    processAction(data, action);
+  let%Lets.Try (changes, viewActions) =
+    Actions.processAction(data, action);
   let (session, viewEvents) =
     session->Session.updateChangeSet(action)->Session.applyView(viewActions);
   let (change, session) =
     Session.makeChange(~preSelection, ~postSelection, session, changes, None);
   Ok((change, session, viewEvents));
+};
+
+
+let apply = (world: World.world, changes) => {
+  let%Lets.Try changeEvents =
+    eventsForChanges(world.current.nodes, changes.Sync.apply);
+
+  let%Lets.Try world =
+    try%Lets.Try (World.applyChange(world, changes)) {
+    | _ => Error("Failed to apply change")
+    };
+
+  Ok((world, changeEvents));
 };
 
 let act = (~preSelection=?, ~postSelection=?, store: t, action) => {

@@ -82,6 +82,18 @@ let events = (data: Map.String.t(NodeType.t), change) =>
   | SetContents(id, _) => Ok([Event.Node(id)])
   };
 
+let eventsForChanges = (nodes, changes) =>
+  changes
+  ->Sync.tryReduce(
+      [],
+      (evts, change) => {
+        let%Lets.TryWrap more = events(nodes, change);
+        evts->List.concat(more);
+      },
+    );
+
+
+
 type error =
   | MissingNode(Node.id)
   /* parent, id */

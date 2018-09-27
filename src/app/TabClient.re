@@ -80,7 +80,7 @@ let make = _ => {
                   state.session = session;
 
                   let%Lets.TryLog events =
-                    Store.eventsForChanges(state.data.nodes, change.apply);
+                    Change.eventsForChanges(state.data.nodes, change.apply);
                   let%Lets.TryLog (data, _, _) =
                     World.MultiChange.apply(state.data, change.apply);
                   state.data = data;
@@ -118,7 +118,7 @@ let make = _ => {
                 | TabChange(change) =>
                   /* TODO need to make sure that selections are updated correctly... */
                   let%Lets.TryLog events =
-                    Store.eventsForChanges(
+                    Change.eventsForChanges(
                       state.data.nodes,
                       change.Sync.apply,
                     );

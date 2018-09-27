@@ -48,6 +48,19 @@ let nextChangeNum = () => {
   changeNum^;
 };
 
+let applyChange = (world: World.world, changes) => {
+  let%Lets.Try changeEvents =
+    Change.eventsForChanges(world.current.nodes, changes.Sync.apply);
+
+  let%Lets.Try (current, change) =
+    try%Lets.Try (World.applyChange_(world.current, changes)) {
+    | _ => Error("Failed to apply change")
+    };
+  let world = {...world, current, unsynced: Sync.Queue.append(world.unsynced, change)};
+
+  Ok((world, changeEvents));
+};
+
 let onUndo = (state, ports, sessionId) => {
   let (changes, idsAndSelections) =
     World.getUndoChangeset(
@@ -79,7 +92,7 @@ let onUndo = (state, ports, sessionId) => {
     },
   };
 
-  let%Lets.TryLog (world, events) = Store.apply(state.world, change);
+  let%Lets.TryLog (world, events) = applyChange(state.world, change);
   state.world = world;
 
   ports
@@ -108,7 +121,7 @@ let onRedo = (state, ports, sessionId) => {
     },
   };
 
-  let%Lets.TryLog (world, events) = Store.apply(state.world, change);
+  let%Lets.TryLog (world, events) = applyChange(state.world, change);
   state.world = world;
 
   ports
@@ -118,7 +131,7 @@ let onRedo = (state, ports, sessionId) => {
 };
 
 let onChange = (state, ports, id, change) => {
-  let%Lets.TryLog (world, events) = Store.apply(state.world, change);
+  let%Lets.TryLog (world, events) = applyChange(state.world, change);
   state.world = world;
   /* TODO go through events to see what needs to be persisted */
   ports

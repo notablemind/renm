@@ -121,7 +121,7 @@ let make = _children => {
         switch (result) {
         | `Commit => Ok([])
         | `Rebase(changes, _rebases) =>
-          Store.eventsForChanges(
+          Change.eventsForChanges(
             store.world.current.nodes,
             changes
             ->List.map(c => c.inner.apply)

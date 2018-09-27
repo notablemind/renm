@@ -194,8 +194,6 @@ module F =
     history,
     current: Config.data,
   };
-  type notSyncing;
-  type syncing;
 
   let make = (current, history): world => {
     snapshot: current,
@@ -205,16 +203,26 @@ module F =
     unsynced: Queue.empty,
   };
 
+  let applyChange_ =
+      (current, change: changeInner(Config.change, Config.selection))
+      : Result.t((Config.data, thisChange), Config.error) => {
+    let%Lets.TryWrap (current, revert, rebase) =
+      Config.apply(current, change.apply);
+    let change = {
+      inner: change,
+      revert,
+      rebase,
+    };
+    (current, change);
+  };
+
   let applyChange =
-      /* ~changeId,
-         ~sessionInfo,
-         ~link, */
       (world: world, change: changeInner(Config.change, Config.selection))
       : Result.t(world, Config.error) => {
     let%Lets.TryWrap (current, revert, rebase) =
       Config.apply(world.current, change.apply);
     let change = {
-      inner: change /*: {    changeId,    apply: change,    sessionInfo,    link,  }*/,
+      inner: change,
       revert,
       rebase,
     };
@@ -256,11 +264,7 @@ module F =
     };
   };
 
-  let prepareSync = (world: world): world => {
-    ...world,
-    syncing: world.unsynced,
-    unsynced: Queue.empty,
-  };
+  /* let commit_ =  */
 
   let commit = (world: world): world => {
     let (snapshot, unsynced) =
