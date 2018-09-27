@@ -1,40 +1,3 @@
-module Queue: {
-  type t('t);
-  let empty: t('t);
-  let append: (t('t), 't) => t('t);
-  let toList: t('t) => list('t);
-  let toRevList: t('t) => list('t);
-  let ofList: list('t) => t('t);
-  let tryReduce:
-    (t('t), 'a, ('a, 't) => Result.t('a, 'e)) => Result.t('a, 'e);
-  let skipReduce: (t('t), 'a, ('a, 't) => Result.t('a, 'e)) => 'a;
-} = {
-  type t('t) = list('t);
-  let empty = [];
-  let append = (q, item) => [item, ...q];
-  let toList = t => List.reverse(t);
-  let toRevList = t => t;
-  let ofList = t => List.reverse(t);
-
-  let rec tryReduce = (list, initial, fn) =>
-    switch (list) {
-    | [] => Result.Ok(initial)
-    | [one, ...rest] =>
-      let%Lets.Try result = tryReduce(rest, initial, fn);
-      fn(result, one);
-    };
-
-  let rec skipReduce = (list, initial, fn) =>
-    switch (list) {
-    | [] => initial
-    | [one, ...rest] =>
-      let result = skipReduce(rest, initial, fn);
-      switch (fn(result, one)) {
-      | Result.Error(_) => result
-      | Ok(result) => result
-      };
-    };
-};
 
 type link =
   | Undo(list(string))
@@ -59,40 +22,6 @@ type change('change, 'rebase, 'selection) = {
   inner: changeInner('change, 'selection),
   revert: 'change,
   rebase: 'rebase,
-};
-
-module History: {
-  type t('change, 'rebase, 'selection);
-  let latestId: t('change, 'rebase, 'selection) => option(string);
-  let append:
-    (
-      t('change, 'rebase, 'selection),
-      list(change('change, 'rebase, 'selection))
-    ) =>
-    t('change, 'rebase, 'selection);
-  let empty: t('change, 'rebase, 'selection);
-  /** Will return them in "oldest first" order */
-  let itemsSince:
-    (t('change, 'rebase, 'selection), option(string)) =>
-    list(change('change, 'rebase, 'selection));
-} = {
-  type t('change, 'rebase, 'selection) =
-    list(change('change, 'rebase, 'selection));
-  let latestId = t => List.head(t)->Lets.Opt.map(c => c.inner.changeId);
-  let append = (t, items) => List.reverse(items) @ t;
-  let itemsSince = (t, id) =>
-    switch (id) {
-    | None => List.reverse(t)
-    | Some(id) =>
-      let rec loop = (items, collector) =>
-        switch (items) {
-        | [] => collector
-        | [one, ...rest] when one.inner.changeId == id => collector
-        | [one, ...rest] => loop(rest, [one, ...collector])
-        };
-      loop(t, []);
-    };
-  let empty = [];
 };
 
 let rec tryReduce = (list, initial, fn) =>
@@ -143,17 +72,6 @@ module F =
         },
       );
 
-  let queueReduceChanges = (changes, initial) =>
-    changes
-    ->Queue.skipReduce(
-        (initial, Queue.empty),
-        ((data, changes), change) => {
-          let%Lets.Try (data, revert, rebase) =
-            Config.apply(data, change.inner.apply);
-          Ok((data, Queue.append(changes, {...change, revert, rebase})));
-        },
-      );
-
   let processRebases = (origChanges, current, rebases) =>
     origChanges
     ->skipReduce(
@@ -182,12 +100,6 @@ module F =
 
   type thisChange =
     change(Config.change, Config.rebaseItem, Config.selection);
-  type history =
-    History.t(Config.change, Config.rebaseItem, Config.selection);
-  type server = {
-    history,
-    current: Config.data,
-  };
 
   let applyChange_ =
       (current, change: changeInner(Config.change, Config.selection))
@@ -204,32 +116,32 @@ module F =
 
   /* TODO does the server need to have a reified version of the state? Maybe, to give proper rebase things... */
   let processSyncRequest =
-      (server: server, id: option(string), changes: list(thisChange)) => {
-    let items = History.itemsSince(server.history, id);
+      (current, items, changes: list(thisChange)) => {
+    /* let items = History.itemsSince(server.history, id); */
     /* ->List.reverse; */
     Js.log2("Items since", items);
     switch (items) {
     | [] =>
       let (current, _appliedChanges) =
-        changes->reduceChanges(server.current);
-      let server = {
+        changes->reduceChanges(current);
+      /* let server = {
         history: History.append(server.history, changes),
         current,
-      };
-      (server, `Commit);
+      }; */
+      `Commit(current);
     | _ =>
       let rebases = items->List.map(change => change.rebase);
       let (current, rebasedChanges) =
-        changes->processRebases(server.current, rebases);
-      let server = {
+        changes->processRebases(current, rebases);
+      /* let server = {
         history: History.append(server.history, rebasedChanges),
         current,
-      };
+      }; */
       Js.log2("rebased", rebasedChanges);
       (
-        server,
         `Rebase((
-          items @ rebasedChanges,
+          current,
+          rebasedChanges,
           rebases,
           /* ->List.reverse */
         )),

@@ -1,11 +1,108 @@
 open SharedTypes;
 
+module History: {
+  type t('change, 'rebase, 'selection);
+  let latestId: t('change, 'rebase, 'selection) => option(string);
+  let append:
+    (
+      t('change, 'rebase, 'selection),
+      list(Sync.change('change, 'rebase, 'selection))
+    ) =>
+    t('change, 'rebase, 'selection);
+  let empty: t('change, 'rebase, 'selection);
+  /** Will return them in "oldest first" order */
+  let itemsSince:
+    (t('change, 'rebase, 'selection), option(string)) =>
+    list(Sync.change('change, 'rebase, 'selection));
+} = {
+  type t('change, 'rebase, 'selection) =
+    list(Sync.change('change, 'rebase, 'selection));
+  let latestId = t => List.head(t)->Lets.Opt.map(c => c.Sync.inner.changeId);
+  let append = (t, items) => List.reverse(items) @ t;
+  let itemsSince = (t, id) =>
+    switch (id) {
+    | None => List.reverse(t)
+    | Some(id) =>
+      let rec loop = (items, collector) =>
+        switch (items) {
+        | [] => collector
+        | [one, ...rest] when one.Sync.inner.changeId == id => collector
+        | [one, ...rest] => loop(rest, [one, ...collector])
+        };
+      loop(t, []);
+    };
+  let empty = [];
+};
+
+
+type history =
+  History.t(World.MultiChange.change, World.MultiChange.rebaseItem, World.MultiChange.selection);
+type server = {
+  history,
+  current: World.MultiChange.data,
+};
+
+let processSyncRequest = (server, id, changes) => {
+    let items = History.itemsSince(server.history, id);
+    switch (World.processSyncRequest(server.current, items, changes)) {
+      | `Commit(current) =>
+        let server = {
+          history: History.append(server.history, changes),
+          current,
+        };
+        (server, `Commit)
+      | `Rebase(current, rebasedChanges, rebases) =>
+      let server = {
+        history: History.append(server.history, rebasedChanges),
+        current,
+      };
+        (server, `Rebase(items @ rebasedChanges, rebases))
+    }
+};
+
+module Queue: {
+  type t('t);
+  let empty: t('t);
+  let append: (t('t), 't) => t('t);
+  let toList: t('t) => list('t);
+  let toRevList: t('t) => list('t);
+  let ofList: list('t) => t('t);
+  let tryReduce:
+    (t('t), 'a, ('a, 't) => Result.t('a, 'e)) => Result.t('a, 'e);
+  let skipReduce: (t('t), 'a, ('a, 't) => Result.t('a, 'e)) => 'a;
+} = {
+  type t('t) = list('t);
+  let empty = [];
+  let append = (q, item) => [item, ...q];
+  let toList = t => List.reverse(t);
+  let toRevList = t => t;
+  let ofList = t => List.reverse(t);
+
+  let rec tryReduce = (list, initial, fn) =>
+    switch (list) {
+    | [] => Result.Ok(initial)
+    | [one, ...rest] =>
+      let%Lets.Try result = tryReduce(rest, initial, fn);
+      fn(result, one);
+    };
+
+  let rec skipReduce = (list, initial, fn) =>
+    switch (list) {
+    | [] => initial
+    | [one, ...rest] =>
+      let result = skipReduce(rest, initial, fn);
+      switch (fn(result, one)) {
+      | Result.Error(_) => result
+      | Ok(result) => result
+      };
+    };
+};
 
 type world = {
   snapshot: World.MultiChange.data,
-  history: World.history,
-  syncing: Sync.Queue.t(World.thisChange),
-  unsynced: Sync.Queue.t(World.thisChange),
+  history: history,
+  syncing: Queue.t(World.thisChange),
+  unsynced: Queue.t(World.thisChange),
   current: World.MultiChange.data,
 };
 
@@ -13,9 +110,20 @@ let make = (current, history): world => {
   snapshot: current,
   history,
   current,
-  syncing: Sync.Queue.empty,
-  unsynced: Sync.Queue.empty,
+  syncing: Queue.empty,
+  unsynced: Queue.empty,
 };
+
+let queueReduceChanges = (changes, initial) =>
+  changes
+  ->Queue.skipReduce(
+      (initial, Queue.empty),
+      ((data, changes), change) => {
+        let%Lets.Try (data, revert, rebase) =
+          World.MultiChange.apply(data, change.Sync.inner.apply);
+        Ok((data, Queue.append(changes, {...change, revert, rebase})));
+      },
+    );
 
 let applyChange =
     (world: world, change: Sync.changeInner(World.MultiChange.change, World.MultiChange.selection))
@@ -27,21 +135,21 @@ let applyChange =
     revert,
     rebase,
   };
-  {...world, current, unsynced: Sync.Queue.append(world.unsynced, change)};
+  {...world, current, unsynced: Queue.append(world.unsynced, change)};
 };
 
 let commit = (world: world): world => {
   let (snapshot, unsynced) =
-    if (world.unsynced == Sync.Queue.empty) {
+    if (world.unsynced == Queue.empty) {
       (world.current, world.unsynced);
     } else {
-      world.syncing->World.queueReduceChanges(world.snapshot);
+      world.syncing->queueReduceChanges(world.snapshot);
     };
   {
     ...world,
-    history: Sync.History.append(world.history, world.syncing->Sync.Queue.toList),
+    history: History.append(world.history, world.syncing->Queue.toList),
     snapshot,
-    syncing: Sync.Queue.empty,
+    syncing: Queue.empty,
   };
 };
 
@@ -58,15 +166,15 @@ let applyRebase = (world: world, changes, rebases): world => {
   /* open Lets; */
   let (snapshot, changes) = changes->World.reduceChanges(world.snapshot);
   let (current, unsynced) =
-    world.unsynced->Sync.Queue.toList->World.processRebases(snapshot, rebases);
+    world.unsynced->Queue.toList->World.processRebases(snapshot, rebases);
   /* let%TryWrap (current, unsynced) =
       world.unsynced->queueReduceChanges(snapshot); */
   {
-    history: Sync.History.append(world.history, changes->List.reverse),
+    history: History.append(world.history, changes->List.reverse),
     snapshot,
     current,
-    syncing: Sync.Queue.empty,
-    unsynced: Sync.Queue.ofList(unsynced),
+    syncing: Queue.empty,
+    unsynced: Queue.ofList(unsynced),
   };
 };
 
@@ -83,7 +191,7 @@ let create =
     session: Session.createSession(~sessionId, ~root),
     world: make(
         {...Data.emptyData(~root), nodes: nodeMap},
-        Sync.History.empty,
+        History.empty,
       ),
   };
 };
@@ -161,8 +269,8 @@ let undo = store => {
       ~sessionId=session.sessionId,
       ~author="fixme",
       ~changeId,
-      store.world.unsynced->Sync.Queue.toRevList
-      @ store.world.history->Sync.History.itemsSince(None)->List.reverse,
+      store.world.unsynced->Queue.toRevList
+      @ store.world.history->History.itemsSince(None)->List.reverse,
     );
 
   let (session, viewEvents) =
@@ -184,7 +292,7 @@ let redo = store => {
       ~sessionId=session.sessionId,
       ~author="fixme",
       ~changeId,
-      store.world.unsynced->Sync.Queue.toRevList,
+      store.world.unsynced->Queue.toRevList,
     );
 
   let (session, viewEvents) =

@@ -4,7 +4,7 @@ module ShowServer = {
     | Normal(delta) => ReasonReact.string(Delta.getText(delta))
     | _ => ReasonReact.string("contents")
     };
-  let rec renderNode = (server: World.server, id) => {
+  let rec renderNode = (server: StoreInOne.server, id) => {
     let%Lets.OptForce node = server.current.nodes->Map.String.get(id);
     <div key={node.id}>
       {renderContents(node.contents)}
@@ -21,7 +21,7 @@ module ShowServer = {
       <div>
         <div> {renderNode(server, server.current.root)} </div>
         <div>
-          {server.history->Sync.History.itemsSince
+          {server.history->StoreInOne.History.itemsSince
           (None)->List.map
           (DebugStoreView.showChange)->List.toArray->ReasonReact.array}
         </div>
@@ -30,7 +30,7 @@ module ShowServer = {
 };
 
 type state = {
-  root: World.server,
+  root: StoreInOne.server,
   a: StoreInOne.t,
   b: StoreInOne.t,
   c: StoreInOne.t,
@@ -45,7 +45,7 @@ let component = ReasonReact.reducerComponent("RebaseTest");
 let prepareSync = world => {
   ...world,
   StoreInOne.syncing: world.StoreInOne.unsynced,
-  unsynced: Sync.Queue.empty,
+  unsynced: StoreInOne.Queue.empty,
 };
 
 
@@ -59,14 +59,14 @@ let baseWorld =
       ...Data.emptyData(~root="root"),
       nodes: Data.makeNodeMap(Fixture.large),
     },
-    Sync.History.empty,
+    StoreInOne.History.empty,
   );
 
 let make = _children => {
   ...component,
   initialState: () => {
     root: (
-      {history: baseWorld.history, current: baseWorld.current}: World.server
+      {history: baseWorld.history, current: baseWorld.current}: StoreInOne.server
     ),
     a: StoreInOne.fromWorld(~sessionId="a", ~world=baseWorld),
     b: StoreInOne.fromWorld(~sessionId="b", ~world=baseWorld),
@@ -79,11 +79,11 @@ let make = _children => {
       store.world = world;
     };
     let finishSync = (store: StoreInOne.t) => {
-      let id = Sync.History.latestId(store.world.history);
+      let id = StoreInOne.History.latestId(store.world.history);
       let unsynced = store.world.syncing;
 
       let (server, result) =
-        World.processSyncRequest(root, id, unsynced->Sync.Queue.toList);
+        StoreInOne.processSyncRequest(root, id, unsynced->StoreInOne.Queue.toList);
       Js.log2(server, result);
 
       self.send({...self.state, root: server});

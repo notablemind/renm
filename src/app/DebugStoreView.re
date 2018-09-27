@@ -68,24 +68,24 @@ let make = (~store: StoreInOne.t, _children) => {
     (
       {
         state: (
-          unsynced: Sync.Queue.t(World.thisChange),
-          syncing: Sync.Queue.t(World.thisChange),
-          history: World.history,
+          unsynced: StoreInOne.Queue.t(World.thisChange),
+          syncing: StoreInOne.Queue.t(World.thisChange),
+          history: StoreInOne.history,
         ),
       },
     ) =>
     <div>
       <div>
         <h4> {ReasonReact.string("Unsynced")} </h4>
-        {unsynced->Sync.Queue.toList->List.map(showChange)->List.toArray->ReasonReact.array}
+        {unsynced->StoreInOne.Queue.toList->List.map(showChange)->List.toArray->ReasonReact.array}
       </div>
       <div>
         <h4> {ReasonReact.string("Syncing")} </h4>
-        {syncing->Sync.Queue.toList->List.map(showChange)->List.toArray->ReasonReact.array}
+        {syncing->StoreInOne.Queue.toList->List.map(showChange)->List.toArray->ReasonReact.array}
       </div>
       <div>
         <h4> {ReasonReact.string("History")} </h4>
-        {history->Sync.History.itemsSince (None)->List.map (showChange)->List.toArray->ReasonReact.array}
+        {history->StoreInOne.History.itemsSince (None)->List.map (showChange)->List.toArray->ReasonReact.array}
       </div>
     </div>,
 };

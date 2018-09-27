@@ -56,7 +56,7 @@ let applyChange = (world: StoreInOne.world, changes) => {
     try%Lets.Try (World.applyChange_(world.current, changes)) {
     | _ => Error("Failed to apply change")
     };
-  let world = {...world, current, unsynced: Sync.Queue.append(world.unsynced, change)};
+  let world = {...world, current, unsynced: StoreInOne.Queue.append(world.unsynced, change)};
 
   Ok((world, changeEvents));
 };
@@ -67,8 +67,8 @@ let onUndo = (state, ports, sessionId) => {
       ~sessionId,
       ~author="worker",
       ~changeId=workerId ++ string_of_int(nextChangeNum()),
-      state.world.unsynced->Sync.Queue.toRevList
-      @ state.world.history->Sync.History.itemsSince(None)->List.reverse,
+      state.world.unsynced->StoreInOne.Queue.toRevList
+      @ state.world.history->StoreInOne.History.itemsSince(None)->List.reverse,
     );
 
   let%Lets.TryLog (world, events) = applyChange(state.world, change);
@@ -85,7 +85,7 @@ let onRedo = (state, ports, sessionId) => {
     ~sessionId,
     ~changeId=workerId ++ string_of_int(nextChangeNum()),
     ~author="worker",
-    state.world.unsynced->Sync.Queue.toRevList,
+    state.world.unsynced->StoreInOne.Queue.toRevList,
   );
 
   let%Lets.TryLog (world, events) = applyChange(state.world, change);
@@ -225,7 +225,7 @@ let loadFile = id => {
         ...Data.emptyData(~root="root"),
         nodes: nodeMap,
       },
-      Sync.History.empty,
+      StoreInOne.History.empty,
     );
 
   /* let nodes = Map.String.fromArray(nodeMap); */

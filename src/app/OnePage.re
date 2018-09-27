@@ -14,7 +14,7 @@ let make = _ => {
             ...Data.emptyData(~root="root"),
             nodes: Data.makeNodeMap(Fixture.large),
           },
-          Sync.History.empty,
+          StoreInOne.History.empty,
         )
       };
 
