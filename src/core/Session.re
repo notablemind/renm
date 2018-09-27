@@ -108,3 +108,14 @@ let makeChange = (~preSelection, ~postSelection, session, change, link) => {
     makeSessionInfo(~preSelection, ~postSelection, session);
   ({Sync.apply: change, changeId, sessionInfo, link}, session);
 };
+
+
+let prepareChange = (~preSelection, ~postSelection, data, session, action) => {
+  let%Lets.Try (changes, viewActions) =
+    Actions.processAction(data, action);
+  let (session, viewEvents) =
+    session->updateChangeSet(action)->applyView(viewActions);
+  let (change, session) =
+    makeChange(~preSelection, ~postSelection, session, changes, None);
+  Ok((change, session, viewEvents));
+};

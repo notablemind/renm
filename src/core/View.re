@@ -184,3 +184,8 @@ let ensureVisible = (data, view, sharedViewData) => {
     };
   {expanded: loop(view.active, sharedViewData.expanded)};
 };
+
+let selectionEvents = ((id, set, (pos, length))) => [
+  SetActive(id, Exactly(pos, length)),
+  SetSelection(set),
+];

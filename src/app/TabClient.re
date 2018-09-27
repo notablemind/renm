@@ -68,7 +68,7 @@ let make = _ => {
               actions
               ->List.forEach(action => {
                   let%Lets.TryLog (change, session, viewEvents) =
-                    Store.prepareChange(
+                    Session.prepareChange(
                       ~preSelection=
                         Session.makeSelection(state.session, preSelection),
                       ~postSelection=
@@ -140,7 +140,7 @@ let make = _ => {
                     if (change.sessionInfo.sessionId == session.sessionId) {
                       Session.applyView(
                         state.session,
-                        Store.selectionEvents(
+                        View.selectionEvents(
                           change.sessionInfo.postSelection,
                         ),
                       );

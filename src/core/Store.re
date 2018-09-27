@@ -115,16 +115,6 @@ let onChange = (store, session, events) => {
   ->ignore;
 };
 
-let prepareChange = (~preSelection, ~postSelection, data, session, action) => {
-  let%Lets.Try (changes, viewActions) =
-    Actions.processAction(data, action);
-  let (session, viewEvents) =
-    session->Session.updateChangeSet(action)->Session.applyView(viewActions);
-  let (change, session) =
-    Session.makeChange(~preSelection, ~postSelection, session, changes, None);
-  Ok((change, session, viewEvents));
-};
-
 
 let apply = (world: World.world, changes) => {
   let%Lets.Try changeEvents =
@@ -142,7 +132,7 @@ let act = (~preSelection=?, ~postSelection=?, store: t, action) => {
   let preSelection = Session.makeSelection(store.session, preSelection);
   let postSelection = Session.makeSelection(store.session, postSelection);
   let%Lets.TryLog (change, session, viewEvents) =
-    prepareChange(
+    Session.prepareChange(
       ~preSelection,
       ~postSelection,
       store.world.current,
@@ -156,11 +146,6 @@ let act = (~preSelection=?, ~postSelection=?, store: t, action) => {
 
   onChange(store, session, events @ viewEvents);
 };
-
-let selectionEvents = ((id, set, (pos, length))) => [
-  View.SetActive(id, Exactly(pos, length)),
-  View.SetSelection(set),
-];
 
 let selPos = ((_, _, pos)) => pos;
 
@@ -186,7 +171,7 @@ let undo = store => {
 
   let session = {...session, changeSet: None};
   let (session, viewEvents) =
-    Session.applyView(session, selectionEvents(preSelection));
+    Session.applyView(session, View.selectionEvents(preSelection));
 
   let (change, session) =
     Session.makeChange(
@@ -213,7 +198,7 @@ let redo = store => {
 
   let session = {...session, changeSet: None};
   let (session, viewEvents) =
-    Session.applyView(session, selectionEvents(preSelection));
+    Session.applyView(session, View.selectionEvents(preSelection));
 
   let (change, session) =
     Session.makeChange(
