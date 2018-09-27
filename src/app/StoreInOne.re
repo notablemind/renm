@@ -1,7 +1,78 @@
 open SharedTypes;
 
+
+type world = {
+  snapshot: World.MultiChange.data,
+  history: World.history,
+  syncing: Sync.Queue.t(World.thisChange),
+  unsynced: Sync.Queue.t(World.thisChange),
+  current: World.MultiChange.data,
+};
+
+let make = (current, history): world => {
+  snapshot: current,
+  history,
+  current,
+  syncing: Sync.Queue.empty,
+  unsynced: Sync.Queue.empty,
+};
+
+let applyChange =
+    (world: world, change: Sync.changeInner(World.MultiChange.change, World.MultiChange.selection))
+    : Result.t(world, World.MultiChange.error) => {
+  let%Lets.TryWrap (current, revert, rebase) =
+    World.MultiChange.apply(world.current, change.apply);
+  let change = {
+    Sync.inner: change,
+    revert,
+    rebase,
+  };
+  {...world, current, unsynced: Sync.Queue.append(world.unsynced, change)};
+};
+
+let commit = (world: world): world => {
+  let (snapshot, unsynced) =
+    if (world.unsynced == Sync.Queue.empty) {
+      (world.current, world.unsynced);
+    } else {
+      world.syncing->World.queueReduceChanges(world.snapshot);
+    };
+  {
+    ...world,
+    history: Sync.History.append(world.history, world.syncing->Sync.Queue.toList),
+    snapshot,
+    syncing: Sync.Queue.empty,
+  };
+};
+
+let rebaseChanges = (origChanges, baseChanges) =>
+  origChanges
+  ->List.map(change =>
+      baseChanges
+      ->List.reduce(change, (current, base) =>
+          World.MultiChange.rebase(current, base.Sync.rebase)
+        )
+    );
+
+let applyRebase = (world: world, changes, rebases): world => {
+  /* open Lets; */
+  let (snapshot, changes) = changes->World.reduceChanges(world.snapshot);
+  let (current, unsynced) =
+    world.unsynced->Sync.Queue.toList->World.processRebases(snapshot, rebases);
+  /* let%TryWrap (current, unsynced) =
+      world.unsynced->queueReduceChanges(snapshot); */
+  {
+    history: Sync.History.append(world.history, changes->List.reverse),
+    snapshot,
+    current,
+    syncing: Sync.Queue.empty,
+    unsynced: Sync.Queue.ofList(unsynced),
+  };
+};
+
+
 type t = {
-  mutable world: World.world,
+  mutable world: world,
   mutable session: Session.session,
 };
 
@@ -10,8 +81,7 @@ let create =
   let nodeMap = Data.makeNodeMap(nodes);
   {
     session: Session.createSession(~sessionId, ~root),
-    world:
-      World.make(
+    world: make(
         {...Data.emptyData(~root), nodes: nodeMap},
         Sync.History.empty,
       ),
@@ -26,59 +96,6 @@ let fromWorld = (~sessionId, ~world) => {
 let editNode = (store, id) => [Event.Node(id), Event.View(Node(id))];
 
 let viewNode = (store, id) => [Event.View(Node(id))];
-
-open Data;
-
-/* module ActionResults = {
-  type actionResults = {
-    changes: list(Change.change),
-    viewActions: list(View.action),
-  };
-};
-
-let blank = {ActionResults.changes: [], viewActions: []}; */
-
-/*
-
- Ok folks, here's how undo/redo works, in the presence of potentially
- collaborative stuffs.
-
- Sessions A and B
-
- A1->A2->A3->B1->A4->B2->A5->A6->A7
-
- Where A4-A7 are all part of the same changeset
-
- "Undo" in this case for session A, does the following:
- - what's the most recent change of the current session (A7)
- - get all the changes in that changeset
- - rebase up past any intermediate changes
-   - so A4 gets rebased past B2
- - squish them into one change (A8), with undoIds=[A4-A7]
-
- .... it would be really nice if the invariant that I want to maintain
- .... (that any undo changes correspond to changes of a session that are
- .... uninterrupted by other changes from this session)
-
- Now we have:
-
- A1->A2->A3->B1->A4->B2->A5->A6->A7->A8
-
- Now let's say B hits undo, making B3 as the reverse of B2
-
- A1->A2->A3->B1->A4->B2->A5->A6->A7->A8->B3
-
- A hits undo again, wanting to undo A3. it then has to rebase up past
- B1 ... but now all of the other things ahead of it *have been undone*.
-
- So the algorithm is:
- - go back through to find the most recent change(set) that hasn't
-   already been undone (because you're tracking back the ones that have
-   undos associated)
-   anddd you are tracking any things from other sessions that haven't been
-   undone already.
-
-  */
 
 let onChange = (store, session, events) => {
   Subscription.trigger(
@@ -102,12 +119,12 @@ let onChange = (store, session, events) => {
 };
 
 
-let apply = (world: World.world, changes) => {
+let apply = (world: world, changes) => {
   let%Lets.Try changeEvents =
     Change.eventsForChanges(world.current.nodes, changes.Sync.apply);
 
   let%Lets.Try world =
-    try%Lets.Try (World.applyChange(world, changes)) {
+    try%Lets.Try (applyChange(world, changes)) {
     | _ => Error("Failed to apply change")
     };
 

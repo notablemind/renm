@@ -42,9 +42,9 @@ let component = ReasonReact.reducerComponent("RebaseTest");
 
 
 
-let prepareSync = (world: World.world): World.world => {
+let prepareSync = world => {
   ...world,
-  syncing: world.unsynced,
+  StoreInOne.syncing: world.StoreInOne.unsynced,
   unsynced: Sync.Queue.empty,
 };
 
@@ -54,7 +54,7 @@ let prepareSync = (world: World.world): World.world => {
 
 
 let baseWorld =
-  World.make(
+  StoreInOne.make(
     {
       ...Data.emptyData(~root="root"),
       nodes: Data.makeNodeMap(Fixture.large),
@@ -90,9 +90,9 @@ let make = _children => {
       Js.log(server);
       let world =
         switch (result) {
-        | `Commit => World.commit(store.world)
+        | `Commit => StoreInOne.commit(store.world)
         | `Rebase(changes, rebases) =>
-          World.applyRebase(store.world, changes, rebases)
+          StoreInOne.applyRebase(store.world, changes, rebases)
         };
       let rec loop = (id, expanded) =>
         if (id == store.session.view.root || id == world.current.root) {

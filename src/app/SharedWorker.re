@@ -34,7 +34,7 @@ let messageToJson = WorkerProtocolSerde.serialize_WorkerProtocol____serverMessag
 
 type file = {
   meta: WorkerProtocol.metaData,
-  mutable world: World.world,
+  mutable world: StoreInOne.world,
   mutable cursors: Hashtbl.t(string, (string, View.Range.range)),
   db: Persistance.levelup(unit),
 };
@@ -48,7 +48,7 @@ let nextChangeNum = () => {
   changeNum^;
 };
 
-let applyChange = (world: World.world, changes) => {
+let applyChange = (world: StoreInOne.world, changes) => {
   let%Lets.Try changeEvents =
     Change.eventsForChanges(world.current.nodes, changes.Sync.apply);
 
@@ -221,7 +221,7 @@ let loadFile = id => {
   let db = Dbs.getFileDb(id);
   let%Lets.Async nodeMap = loadNodes(db);
 
-  let world = World.make({
+  let world = StoreInOne.make({
         ...Data.emptyData(~root="root"),
         nodes: nodeMap,
       },

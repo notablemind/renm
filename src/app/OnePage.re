@@ -3,13 +3,13 @@ let component = ReasonReact.reducerComponent("OnePage");
 let make = _ => {
   ...component,
   initialState: () => {
-    let world: World.world =
+    let world: StoreInOne.world =
       switch (LocalStorage.getJson("renm:store")) {
       /* Disabling "restore" for a minute */
       | Some(_)
       /* | Some(data) => data */
       | None =>
-        World.make(
+        StoreInOne.make(
           {
             ...Data.emptyData(~root="root"),
             nodes: Data.makeNodeMap(Fixture.large),

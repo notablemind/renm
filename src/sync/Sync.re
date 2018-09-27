@@ -184,24 +184,9 @@ module F =
     change(Config.change, Config.rebaseItem, Config.selection);
   type history =
     History.t(Config.change, Config.rebaseItem, Config.selection);
-  type world = {
-    snapshot: Config.data,
-    history,
-    syncing: Queue.t(thisChange),
-    unsynced: Queue.t(thisChange),
-    current: Config.data,
-  };
   type server = {
     history,
     current: Config.data,
-  };
-
-  let make = (current, history): world => {
-    snapshot: current,
-    history,
-    current,
-    syncing: Queue.empty,
-    unsynced: Queue.empty,
   };
 
   let applyChange_ =
@@ -215,19 +200,6 @@ module F =
       rebase,
     };
     (current, change);
-  };
-
-  let applyChange =
-      (world: world, change: changeInner(Config.change, Config.selection))
-      : Result.t(world, Config.error) => {
-    let%Lets.TryWrap (current, revert, rebase) =
-      Config.apply(world.current, change.apply);
-    let change = {
-      inner: change,
-      revert,
-      rebase,
-    };
-    {...world, current, unsynced: Queue.append(world.unsynced, change)};
   };
 
   /* TODO does the server need to have a reified version of the state? Maybe, to give proper rebase things... */
@@ -266,46 +238,6 @@ module F =
   };
 
   /* let commit_ =  */
-
-  let commit = (world: world): world => {
-    let (snapshot, unsynced) =
-      if (world.unsynced == Queue.empty) {
-        (world.current, world.unsynced);
-      } else {
-        world.syncing->queueReduceChanges(world.snapshot);
-      };
-    {
-      ...world,
-      history: History.append(world.history, world.syncing->Queue.toList),
-      snapshot,
-      syncing: Queue.empty,
-    };
-  };
-
-  let rebaseChanges = (origChanges, baseChanges) =>
-    origChanges
-    ->List.map(change =>
-        baseChanges
-        ->List.reduce(change, (current, base) =>
-            Config.rebase(current, base.rebase)
-          )
-      );
-
-  let applyRebase = (world: world, changes, rebases): world => {
-    /* open Lets; */
-    let (snapshot, changes) = changes->reduceChanges(world.snapshot);
-    let (current, unsynced) =
-      world.unsynced->Queue.toList->processRebases(snapshot, rebases);
-    /* let%TryWrap (current, unsynced) =
-       world.unsynced->queueReduceChanges(snapshot); */
-    {
-      history: History.append(world.history, changes->List.reverse),
-      snapshot,
-      current,
-      syncing: Queue.empty,
-      unsynced: Queue.ofList(unsynced),
-    };
-  };
 
   let rebaseMany = (one, changes) =>
     changes
@@ -448,3 +380,46 @@ module F =
   };
 
 };
+
+
+/*
+
+ Ok folks, here's how undo/redo works, in the presence of potentially
+ collaborative stuffs.
+
+ Sessions A and B
+
+ A1->A2->A3->B1->A4->B2->A5->A6->A7
+
+ Where A4-A7 are all part of the same changeset
+
+ "Undo" in this case for session A, does the following:
+ - what's the most recent change of the current session (A7)
+ - get all the changes in that changeset
+ - rebase up past any intermediate changes
+   - so A4 gets rebased past B2
+ - squish them into one change (A8), with undoIds=[A4-A7]
+
+ .... it would be really nice if the invariant that I want to maintain
+ .... (that any undo changes correspond to changes of a session that are
+ .... uninterrupted by other changes from this session)
+
+ Now we have:
+
+ A1->A2->A3->B1->A4->B2->A5->A6->A7->A8
+
+ Now let's say B hits undo, making B3 as the reverse of B2
+
+ A1->A2->A3->B1->A4->B2->A5->A6->A7->A8->B3
+
+ A hits undo again, wanting to undo A3. it then has to rebase up past
+ B1 ... but now all of the other things ahead of it *have been undone*.
+
+ So the algorithm is:
+ - go back through to find the most recent change(set) that hasn't
+   already been undone (because you're tracking back the ones that have
+   undos associated)
+   anddd you are tracking any things from other sessions that haven't been
+   undone already.
+
+  */
