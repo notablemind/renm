@@ -12,7 +12,7 @@ let make = _ => {
         World.make(
           {
             ...Data.emptyData(~root="root"),
-            nodes: Store.makeNodeMap(Fixture.large),
+            nodes: Data.makeNodeMap(Fixture.large),
           },
           Sync.History.empty,
         )
@@ -29,8 +29,8 @@ let make = _ => {
     Js.log(sharedViewData);
     Js.log(world);
 
-    let store: Store.t = {
-      Store.session: {
+    let store: StoreInOne.t = {
+      StoreInOne.session: {
         ...
           Session.createSession(
             ~sessionId=Utils.newId(),
@@ -46,5 +46,5 @@ let make = _ => {
     store;
   },
   reducer: ((), _) => ReasonReact.NoUpdate,
-  render: ({state}) => <Tree store=state->Store.clientStore />,
+  render: ({state}) => <Tree store=state->StoreInOne.clientStore />,
 };

@@ -5,14 +5,9 @@ type t = {
   mutable session: Session.session,
 };
 
-let makeNodeMap = (nodes: list(Data.Node.t('contents, 'prefix))) =>
-  List.reduce(nodes, Map.String.empty, (map, node) =>
-    Map.String.set(map, node.id, node)
-  );
-
 let create =
     (~sessionId, ~root, ~nodes: list(Data.Node.t('contents, 'prefix))) => {
-  let nodeMap = makeNodeMap(nodes);
+  let nodeMap = Data.makeNodeMap(nodes);
   {
     session: Session.createSession(~sessionId, ~root),
     world:
@@ -49,8 +44,6 @@ open Data;
 };
 
 let blank = {ActionResults.changes: [], viewActions: []}; */
-
-open Actions;
 
 /*
 
@@ -118,7 +111,7 @@ let onChange = (store, session, events) => {
 
 let apply = (world: World.world, changes) => {
   let%Lets.Try changeEvents =
-    eventsForChanges(world.current.nodes, changes.Sync.apply);
+    Change.eventsForChanges(world.current.nodes, changes.Sync.apply);
 
   let%Lets.Try world =
     try%Lets.Try (World.applyChange(world, changes)) {

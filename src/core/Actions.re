@@ -68,13 +68,3 @@ let processAction =
   | SplitAt(_) => Ok(([], []))
   | JoinUp(_, _, _) => Ok(([], []))
   };
-
-let eventsForChanges = (nodes, changes) =>
-  changes
-  ->Sync.tryReduce(
-      [],
-      (events, change) => {
-        let%Lets.TryWrap more = Change.events(nodes, change);
-        events->List.concat(more);
-      },
-    );

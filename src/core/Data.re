@@ -63,3 +63,8 @@ let emptyData = (~root) => {
 let get = (data, id) => Map.String.get(data.nodes, id);
 let getResult = (data, id) =>
   Map.String.get(data.nodes, id)->Lets.Opt.orError("No node " ++ id);
+
+let makeNodeMap = (nodes: list(Node.t('contents, 'prefix))) =>
+  List.reduce(nodes, Map.String.empty, (map, node) =>
+    Map.String.set(map, node.id, node)
+  );

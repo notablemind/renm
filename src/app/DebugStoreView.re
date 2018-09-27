@@ -40,7 +40,7 @@ let showChange = (change: World.thisChange) =>
 
 let component = ReasonReact.reducerComponent("DebugStoreView");
 
-let make = (~store: Store.t, _children) => {
+let make = (~store: StoreInOne.t, _children) => {
   ...component,
   initialState: () => (
     store.world.unsynced,
