@@ -19,14 +19,7 @@ let create =
 };
 
 let fromWorld = (~sessionId, ~world) => {
-  session: {
-    sessionId,
-    changeNum: 0,
-    changeSet: None,
-    view: View.emptyView(~root=world.current.root, ~id=0),
-    sharedViewData: View.emptySharedViewData,
-    subs: Hashtbl.create(10),
-  },
+  session: Session.createSession(~root=world.current.root, ~sessionId),
   world,
 };
 
@@ -140,40 +133,24 @@ let act = (~preSelection=?, ~postSelection=?, store: t, action) => {
   onChange(store, session, events @ viewEvents);
 };
 
-let selPos = ((_, _, pos)) => pos;
 
 let undo = store => {
   let session = store.session;
+  let (changeId, session) = Session.getChangeId(session);
+  let session = {...session, changeSet: None};
 
-  let (changes, idsAndSelections) =
-    World.getUndoChangeset(
+  let%Lets.OptConsume change =
+    World.getUndoChange(
+      ~sessionId=session.sessionId,
+      ~author="fixme",
+      ~changeId,
       store.world.unsynced->Sync.Queue.toRevList
       @ store.world.history->Sync.History.itemsSince(None)->List.reverse,
-      session.sessionId,
-    )
-    ->List.unzip;
-  let (changeIds, selections) = List.unzip(idsAndSelections);
-
-  let change = changes->World.MultiChange.mergeChanges;
-
-  let%Lets.Guard () = (change != [], ());
-
-  let (_, postSelection) = selections->List.head->Lets.Opt.force;
-  let (preSelection, _) =
-    selections->List.get(List.length(selections) - 1)->Lets.Opt.force;
-
-  let session = {...session, changeSet: None};
-  let (session, viewEvents) =
-    Session.applyView(session, View.selectionEvents(preSelection));
-
-  let (change, session) =
-    Session.makeChange(
-      ~preSelection=postSelection,
-      ~postSelection=preSelection,
-      session,
-      change,
-      Some(Undo(changeIds)),
     );
+
+  let (session, viewEvents) =
+    Session.applyView(session, View.selectionEvents(change.sessionInfo.postSelection));
+
   store.session = session;
   let%Lets.TryLog (world, events) = apply(store.world, change);
   store.world = world;
@@ -182,25 +159,20 @@ let undo = store => {
 
 let redo = store => {
   let session = store.session;
-
-  let%Lets.OptConsume (change, redoId, preSelection, postSelection) =
-    World.getRedoChange(
-      store.world.unsynced->Sync.Queue.toRevList,
-      session.sessionId,
-    );
-
+  let (changeId, session) = Session.getChangeId(session);
   let session = {...session, changeSet: None};
-  let (session, viewEvents) =
-    Session.applyView(session, View.selectionEvents(preSelection));
 
-  let (change, session) =
-    Session.makeChange(
-      ~preSelection=postSelection,
-      ~postSelection=preSelection,
-      session,
-      change,
-      Some(Redo(redoId)),
+  let%Lets.OptConsume change =
+    World.getRedoChange(
+      ~sessionId=session.sessionId,
+      ~author="fixme",
+      ~changeId,
+      store.world.unsynced->Sync.Queue.toRevList,
     );
+
+  let (session, viewEvents) =
+    Session.applyView(session, View.selectionEvents(change.sessionInfo.postSelection));
+
   store.session = session;
   let%Lets.TryLog (world, events) = apply(store.world, change);
   store.world = world;

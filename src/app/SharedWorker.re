@@ -62,35 +62,14 @@ let applyChange = (world: World.world, changes) => {
 };
 
 let onUndo = (state, ports, sessionId) => {
-  let (changes, idsAndSelections) =
-    World.getUndoChangeset(
+  let%Lets.OptConsume change =
+    World.getUndoChange(
+      ~sessionId,
+      ~author="worker",
+      ~changeId=workerId ++ string_of_int(nextChangeNum()),
       state.world.unsynced->Sync.Queue.toRevList
       @ state.world.history->Sync.History.itemsSince(None)->List.reverse,
-      sessionId,
-    )
-    ->List.unzip;
-  let (changeIds, selections) = List.unzip(idsAndSelections);
-
-  let change = changes->World.MultiChange.mergeChanges;
-
-  let%Lets.Guard () = (change != [], ());
-
-  let (_, postSelection) = selections->List.head->Lets.Opt.force;
-  let (preSelection, _) =
-    selections->List.get(List.length(selections) - 1)->Lets.Opt.force;
-
-  let change = {
-    Sync.apply: change,
-    changeId: workerId ++ string_of_int(nextChangeNum()),
-    link: Some(Undo(changeIds)),
-    sessionInfo: {
-      sessionId,
-      changeset: None,
-      author: "worker", /* TODO fix */
-      preSelection,
-      postSelection,
-    },
-  };
+    );
 
   let%Lets.TryLog (world, events) = applyChange(state.world, change);
   state.world = world;
@@ -102,24 +81,12 @@ let onUndo = (state, ports, sessionId) => {
 };
 
 let onRedo = (state, ports, sessionId) => {
-  let%Lets.OptConsume (change, redoId, preSelection, postSelection) =
-    World.getRedoChange(
-      state.world.unsynced->Sync.Queue.toRevList,
-      sessionId,
-    );
-
-  let change = {
-    Sync.apply: change,
-    changeId: workerId ++ string_of_int(nextChangeNum()),
-    link: Some(Redo(redoId)),
-    sessionInfo: {
-      sessionId,
-      changeset: None,
-      author: "worker", /* TODO fix */
-      preSelection: postSelection,
-      postSelection: preSelection,
-    },
-  };
+  let%Lets.OptConsume change = World.getRedoChange(
+    ~sessionId,
+    ~changeId=workerId ++ string_of_int(nextChangeNum()),
+    ~author="worker",
+    state.world.unsynced->Sync.Queue.toRevList,
+  );
 
   let%Lets.TryLog (world, events) = applyChange(state.world, change);
   state.world = world;

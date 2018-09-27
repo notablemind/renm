@@ -121,6 +121,7 @@ module F =
            type rebaseItem;
            type selection;
            type error;
+           let mergeChanges: list(change) => change;
            let rebase: (change, rebaseItem) => change;
            let apply:
              (data, change) => Result.t((data, change, rebaseItem), error);
@@ -394,4 +395,56 @@ module F =
       };
     loop(history, [], Set.String.empty, None);
   };
+
+
+  let getUndoChange = (~sessionId, ~changeId, ~author, changes) => {
+    let (changes, idsAndSelections) =
+      getUndoChangeset(
+        changes,
+        sessionId,
+      )->List.unzip;
+    let (changeIds, selections) = List.unzip(idsAndSelections);
+
+    let change = changes->Config.mergeChanges;
+
+    let%Lets.Opt () = changes != [] ? Some(()) : None;
+
+    let (_, postSelection) = selections->List.head->Lets.Opt.force;
+    let (preSelection, _) =
+      selections->List.get(List.length(selections) - 1)->Lets.Opt.force;
+
+    let change = {
+      apply: change,
+      changeId,
+      link: Some(Undo(changeIds)),
+      sessionInfo: {
+        sessionId,
+        changeset: None,
+        author,
+        preSelection,
+        postSelection,
+      },
+    };
+
+    Some(change)
+  };
+
+  let getRedoChange = (~sessionId, ~changeId, ~author, changes) => {
+    let%Lets.Opt (change, redoId, preSelection, postSelection) =
+      getRedoChange(changes, sessionId);
+
+    Some({
+      apply: change,
+      changeId,
+      link: Some(Redo(redoId)),
+      sessionInfo: {
+        sessionId,
+        changeset: None,
+        author,
+        preSelection: postSelection,
+        postSelection: preSelection,
+      },
+    });
+  };
+
 };

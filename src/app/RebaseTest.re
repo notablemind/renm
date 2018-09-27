@@ -57,7 +57,7 @@ let baseWorld =
   World.make(
     {
       ...Data.emptyData(~root="root"),
-      nodes: StoreInOne.Data.makeNodeMap(Fixture.large),
+      nodes: Data.makeNodeMap(Fixture.large),
     },
     Sync.History.empty,
   );
