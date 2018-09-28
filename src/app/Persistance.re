@@ -57,6 +57,15 @@ let getStream = (db, options) =>
     }
   );
 
-let getAll: levelup('a) => Js.Promise.t(array({. "key": string, "value": 'a})) = db => getStream(db, Js.Obj.empty());
+let getAll:
+  levelup('a) =>
+  Js.Promise.t(
+    array({
+      .
+      "key": string,
+      "value": 'a,
+    }),
+  ) =
+  db => getStream(db, Js.Obj.empty());
 
 
