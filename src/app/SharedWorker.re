@@ -37,6 +37,10 @@ let messageToJson = WorkerProtocolSerde.serialize_WorkerProtocol____serverMessag
 
 type file = {
   meta: WorkerProtocol.metaData,
+  /* mutable current: Change.data,
+  mutable snapshot: Change.data, */
+  /* TODO maybe keep around a cache of recent changes to be able to get undo things sooner */
+  /* mutable recentChanges */
   mutable world: StoreInOne.world,
   mutable cursors: Hashtbl.t(string, (string, View.Range.range)),
   db: Persistance.levelup(unit),

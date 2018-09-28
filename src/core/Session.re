@@ -54,7 +54,7 @@ let applyView = (session, viewActions) => {
 /** TODO test this to see if it makes sense */
 let changeSetTimeout = 500.;
 
-let updateChangeSet = (session, action) => {
+let updateChangeSet = (~changeId, session, action) => {
   let now = Js.Date.now();
   {
     ...session,
@@ -65,7 +65,7 @@ let updateChangeSet = (session, action) => {
         Some((session, now, id))
       | (_, ChangeContents(id, _)) =>
         /* Js.log3("New changeset", changeSet, now); */
-        Some((Utils.newId(), now, id))
+        Some((changeId, now, id))
       | (_, _) => None
       },
   };
@@ -85,14 +85,14 @@ let makeSelection = (session, sel) => (
   },
 );
 
-let makeSessionInfo = (~preSelection, ~postSelection, session) => {
-  let (changeId, session) = getChangeId(session);
+let makeSessionInfo = (~changeId, ~preSelection, ~postSelection, session) => {
+  /* let (changeId, session) = getChangeId(session); */
   /* let preSelection = makeSelection(session, preSelection);
      let postSelection = makeSelection(session, postSelection); */
 
   (
-    changeId,
-    session,
+    /* changeId,
+    session, */
     {
       Sync.sessionId: session.sessionId,
       changeset: session.changeSet->Lets.Opt.map(((cid, _, _)) => cid),
@@ -103,19 +103,20 @@ let makeSessionInfo = (~preSelection, ~postSelection, session) => {
   );
 };
 
-let makeChange = (~preSelection, ~postSelection, session, change, link) => {
-  let (changeId, session, sessionInfo) =
-    makeSessionInfo(~preSelection, ~postSelection, session);
-  ({Sync.apply: change, changeId, sessionInfo, link}, session);
+let makeChange = (~changeId, ~preSelection, ~postSelection, session, change, link) => {
+  let (sessionInfo) =
+    makeSessionInfo(~changeId, ~preSelection, ~postSelection, session);
+  ({Sync.apply: change, changeId, sessionInfo, link});
 };
 
 
 let prepareChange = (~preSelection, ~postSelection, data, session, action) => {
+  let (changeId, session) = getChangeId(session);
   let%Lets.Try (changes, viewActions) =
     Actions.processAction(data, action);
   let (session, viewEvents) =
-    session->updateChangeSet(action)->applyView(viewActions);
-  let (change, session) =
-    makeChange(~preSelection, ~postSelection, session, changes, None);
+    session->updateChangeSet(~changeId, action)->applyView(viewActions);
+  let (change) =
+    makeChange(~changeId, ~preSelection, ~postSelection, session, changes, None);
   Ok((change, session, viewEvents));
 };
