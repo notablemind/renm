@@ -1,11 +1,11 @@
 
-module type T = {
+/* [%interface module type T = {
   type t('item);
   type key = BigInt.t;
   let getBatch: (t('item), option(key), int) => (key, list('item));
   let append: (t('item), list('item)) => Js.Promise.t(unit);
   let init: Persistance.levelup('item) => Js.Promise.t(t('item));
-};
+}]; */
 
 type t('item) = {
   db: Persistance.levelup('item),
@@ -21,7 +21,7 @@ let init = db => {
     | [|one|] =>
       switch (BigInt.fromString(one##key)) {
       | Ok(latest) => Js.Promise.resolve({db, latest, pending: None})
-      | Error(err) => Js.Promise.reject(Js.Exn.raiseError(err))
+      | Error(err) => Js.Exn.raiseError(err)
       }
     | [||] =>
       Js.Promise.resolve({db, latest: BigInt.initial, pending: None})
@@ -34,7 +34,6 @@ let rec flush = t =>
   | None => ()
   | Some([]) => t.pending = None
   | Some(actions) =>
-    /* t.latest = latest; */
     t.pending = Some([]);
     let%Lets.Async.Consume () =
       t.db->Persistance.batch(actions->List.map(((key, item)) => {
@@ -73,7 +72,7 @@ let append = (t, items) => {
   };
 };
 
-let getBatch = (db, start, count) => {
+let getDbBatch = (db, start, count) => {
   let%Lets.Async items = db->Persistance.getStream(switch start {
     | None => {"limit": count, "gt": None}
     | Some(key) => {"limit": count, "gt": Some(BigInt.toString(key))}
@@ -100,7 +99,7 @@ let rec getFirstAfter = (items, count, key) => switch items {
 
 let getBatch = (t, start, count) => {
   switch (t.pending) {
-    | None => getBatch(t.db, start, count)
+    | None => getDbBatch(t.db, start, count)
     | Some(pending) =>
       let items = switch start {
         | None => getFirst(pending, count)
@@ -111,7 +110,7 @@ let getBatch = (t, start, count) => {
         Js.Promise.resolve((last, items->List.map(snd)))
       } else {
         let start = if (List.length(items) == 0) { start } else { None };
-        let%Lets.Async (last, dbitems) = getBatch(t.db, start, count - List.length(items));
+        let%Lets.Async (last, dbitems) = getDbBatch(t.db, start, count - List.length(items));
         Js.Promise.resolve((last, List.concat(items->List.map(snd), dbitems)))
       }
   }

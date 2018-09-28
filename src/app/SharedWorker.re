@@ -228,15 +228,13 @@ let loadFile = id => {
   let db = Dbs.getFileDb(id);
   let%Lets.Async nodeMap = loadNodes(db);
 
-  let world = StoreInOne.make({
-        ...Data.emptyData(~root="root"),
-        nodes: nodeMap,
-      },
+  let world =
+    StoreInOne.make(
+      {...Data.emptyData(~root="root"), nodes: nodeMap},
       StoreInOne.History.empty,
     );
 
-  /* let nodes = Map.String.fromArray(nodeMap); */
-  Js.Promise.resolve((db, world))
+  Js.Promise.resolve((db, world));
 };
 
 let getInitialState = () => {
