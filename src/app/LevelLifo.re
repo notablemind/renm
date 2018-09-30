@@ -9,6 +9,7 @@
 
 type t('item) = {
   db: Persistance.levelup('item),
+  mutable cache: list('item),
   mutable latest: BigInt.t,
   mutable pending: option(list((BigInt.t, 'item))),
 };
@@ -20,11 +21,11 @@ let init = db => {
   switch items {
     | [|one|] =>
       switch (BigInt.fromString(one##key)) {
-      | Ok(latest) => Js.Promise.resolve({db, latest, pending: None})
+      | Ok(latest) => Js.Promise.resolve({db, latest, pending: None, cache: []})
       | Error(err) => Js.Exn.raiseError(err)
       }
     | [||] =>
-      Js.Promise.resolve({db, latest: BigInt.initial, pending: None})
+      Js.Promise.resolve({db, latest: BigInt.initial, pending: None, cache: []})
     | _ => Js.Exn.raiseError("Expected at most 1 element")
   }
 };

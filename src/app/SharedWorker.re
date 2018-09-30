@@ -41,6 +41,15 @@ type file = {
   mutable snapshot: Change.data, */
   /* TODO maybe keep around a cache of recent changes to be able to get undo things sooner */
   /* mutable recentChanges */
+
+  /* mutable snapshot: World.MultiChange.data,
+  mutable history: StoreInOne.history,
+  mutable syncing: StoreInOne.Queue.t(World.thisChange),
+  mutable unsynced: StoreInOne.Queue.t(World.thisChange),
+  mutable current: World.MultiChange.data, */
+
+
+
   mutable world: StoreInOne.world,
   mutable cursors: Hashtbl.t(string, (string, View.Range.range)),
   db: Persistance.levelup(unit),
@@ -55,17 +64,42 @@ let nextChangeNum = () => {
   changeNum^;
 };
 
-let applyChange = (world: StoreInOne.world, changes) => {
-  let%Lets.Try changeEvents =
-    Change.eventsForChanges(world.current.nodes, changes.Sync.apply);
+let data = file => file.world.current;
 
-  let%Lets.Try (current, change) =
-    try%Lets.Try (World.applyChange_(world.current, changes)) {
+let sendChange = (~excludeSession=?, ports, change) => {
+  switch (excludeSession) {
+  | None =>
+    ports
+    ->HashMap.String.forEach((sid, port) =>
+        port->postMessage(messageToJson(WorkerProtocol.TabChange(change)))
+      )
+  | Some(sessionId) =>
+    ports
+    ->HashMap.String.forEach((sid, port) =>
+        sid != sessionId ?
+          port
+          ->postMessage(messageToJson(WorkerProtocol.TabChange(change))) :
+          ()
+      )
+  };
+};
+
+let applyChange = (file, change, ports, dontSendToSession) => {
+  let%Lets.TryLog changeEvents =
+    Change.eventsForChanges(file.world.current.nodes, change.Sync.apply);
+
+  let%Lets.TryLog (current, appliedChange) =
+    try%Lets.Try (World.applyChange_(file.world.current, change)) {
     | _ => Error("Failed to apply change")
     };
-  let world = {...world, current, unsynced: StoreInOne.Queue.append(world.unsynced, change)};
+  let world = {
+    ...file.world,
+    current,
+    unsynced: StoreInOne.Queue.append(file.world.unsynced, appliedChange),
+  };
+  file.world = world;
 
-  Ok((world, changeEvents));
+  sendChange(~excludeSession=?dontSendToSession, ports, change)
 };
 
 let onUndo = (state, ports, sessionId) => {
@@ -78,13 +112,7 @@ let onUndo = (state, ports, sessionId) => {
       @ state.world.history->StoreInOne.History.itemsSince(None)->List.reverse,
     );
 
-  let%Lets.TryLog (world, events) = applyChange(state.world, change);
-  state.world = world;
-
-  ports
-  ->HashMap.String.forEach((sid, port) =>
-      port->postMessage(messageToJson(WorkerProtocol.TabChange(change)))
-    );
+  applyChange(state, change, ports, None);
 };
 
 let onRedo = (state, ports, sessionId) => {
@@ -95,26 +123,12 @@ let onRedo = (state, ports, sessionId) => {
     state.world.unsynced->StoreInOne.Queue.toRevList,
   );
 
-  let%Lets.TryLog (world, events) = applyChange(state.world, change);
-  state.world = world;
-
-  ports
-  ->HashMap.String.forEach((sid, port) =>
-      port->postMessage(messageToJson(WorkerProtocol.TabChange(change)))
-    );
+  applyChange(state, change, ports, None);
 };
 
 let onChange = (state, ports, id, change) => {
-  let%Lets.TryLog (world, events) = applyChange(state.world, change);
-  state.world = world;
+  applyChange(state, change, ports, Some(id));
   /* TODO go through events to see what needs to be persisted */
-  ports
-  ->HashMap.String.forEach((sid, port) =>
-      if (sid != id) {
-        port->postMessage(messageToJson(WorkerProtocol.TabChange(change)));
-      }
-    );
-  /* LocalStorage.setItem("renm:store", Js.Json.stringify(Serialize.toJson(world))); */
   /* TODO debounced sync w/ server */
 };
 
@@ -269,7 +283,7 @@ addEventListener("connect", e => {
         ->postMessage(
             messageToJson(
               InitialData(
-                file.world.current,
+                file->data,
                 cursorsForSession(file.cursors, sessionId),
               ),
             ),
