@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "output": "src/app/WorkerProtocolSerde.ml",
+  "engine": "bs-json",
+  "entries": [
+    {"file": "./src/app/WorkerProtocol.re", "type": "message"},
+    {"file": "./src/app/WorkerProtocol.re", "type": "serverMessage"},
+    {"file": "./src/app/WorkerProtocol.re", "type": "metaData"},
+    {"file": "./src/World.re", "type": "MultiChange.rebaseItem"},
+    {"file": "./src/NodeType.re", "type": "t", "history": true}
+  ]
+}

@@ -266,14 +266,16 @@ and (deserialize_NodeType__Svg__t :
                                       (error))[@explicit_arity ]) ->
                                       ((Belt.Result.Error (error))
                                       [@explicit_arity ])
-                                  | ((Ok (value))[@explicit_arity ]) ->
+                                  | ((Belt.Result.Ok
+                                      (value))[@explicit_arity ]) ->
                                       (match loop rest with
                                        | ((Belt.Result.Error
                                            (error))[@explicit_arity ]) ->
                                            ((Belt.Result.Error (error))
                                            [@explicit_arity ])
-                                       | ((Ok (rest))[@explicit_arity ]) ->
-                                           ((Ok ((value :: rest)))
+                                       | ((Belt.Result.Ok
+                                           (rest))[@explicit_arity ]) ->
+                                           ((Belt.Result.Ok ((value :: rest)))
                                            [@explicit_arity ]))) in
                            loop (Belt.List.fromArray items)
                        | _ ->
@@ -381,14 +383,16 @@ and (deserialize_WorkerProtocol____serverMessage :
                                  (error))[@explicit_arity ]) ->
                                  ((Belt.Result.Error (error))
                                  [@explicit_arity ])
-                             | ((Ok (value))[@explicit_arity ]) ->
+                             | ((Belt.Result.Ok (value))[@explicit_arity ])
+                                 ->
                                  (match loop rest with
                                   | ((Belt.Result.Error
                                       (error))[@explicit_arity ]) ->
                                       ((Belt.Result.Error (error))
                                       [@explicit_arity ])
-                                  | ((Ok (rest))[@explicit_arity ]) ->
-                                      ((Ok ((value :: rest)))
+                                  | ((Belt.Result.Ok
+                                      (rest))[@explicit_arity ]) ->
+                                      ((Belt.Result.Ok ((value :: rest)))
                                       [@explicit_arity ]))) in
                       loop (Belt.List.fromArray items)
                   | _ ->
@@ -459,14 +463,16 @@ and (deserialize_WorkerProtocol____serverMessage :
                                  (error))[@explicit_arity ]) ->
                                  ((Belt.Result.Error (error))
                                  [@explicit_arity ])
-                             | ((Ok (value))[@explicit_arity ]) ->
+                             | ((Belt.Result.Ok (value))[@explicit_arity ])
+                                 ->
                                  (match loop rest with
                                   | ((Belt.Result.Error
                                       (error))[@explicit_arity ]) ->
                                       ((Belt.Result.Error (error))
                                       [@explicit_arity ])
-                                  | ((Ok (rest))[@explicit_arity ]) ->
-                                      ((Ok ((value :: rest)))
+                                  | ((Belt.Result.Ok
+                                      (rest))[@explicit_arity ]) ->
+                                      ((Belt.Result.Ok ((value :: rest)))
                                       [@explicit_arity ]))) in
                       loop (Belt.List.fromArray items)
                   | _ ->
@@ -748,14 +754,16 @@ and (deserialize_NodeType__Svg__layer :
                                       (error))[@explicit_arity ]) ->
                                       ((Belt.Result.Error (error))
                                       [@explicit_arity ])
-                                  | ((Ok (value))[@explicit_arity ]) ->
+                                  | ((Belt.Result.Ok
+                                      (value))[@explicit_arity ]) ->
                                       (match loop rest with
                                        | ((Belt.Result.Error
                                            (error))[@explicit_arity ]) ->
                                            ((Belt.Result.Error (error))
                                            [@explicit_arity ])
-                                       | ((Ok (rest))[@explicit_arity ]) ->
-                                           ((Ok ((value :: rest)))
+                                       | ((Belt.Result.Ok
+                                           (rest))[@explicit_arity ]) ->
+                                           ((Belt.Result.Ok ((value :: rest)))
                                            [@explicit_arity ]))) in
                            loop (Belt.List.fromArray items)
                        | _ ->
@@ -949,7 +957,7 @@ and deserialize_Data__Node__t :
                                                                     [@explicit_arity
                                                                     ])
                                                                     | 
-                                                                    ((Ok
+                                                                    ((Belt.Result.Ok
                                                                     (value))
                                                                     [@explicit_arity
                                                                     ]) ->
@@ -966,11 +974,11 @@ and deserialize_Data__Node__t :
                                                                     [@explicit_arity
                                                                     ])
                                                                     | 
-                                                                    ((Ok
+                                                                    ((Belt.Result.Ok
                                                                     (rest))
                                                                     [@explicit_arity
                                                                     ]) ->
-                                                                    ((Ok
+                                                                    ((Belt.Result.Ok
                                                                     ((value
                                                                     :: rest)))
                                                                     [@explicit_arity
@@ -1576,12 +1584,13 @@ and (deserialize_World__MultiChange__rebaseItem :
                  (match transformer one with
                   | ((Belt.Result.Error (error))[@explicit_arity ]) ->
                       ((Belt.Result.Error (error))[@explicit_arity ])
-                  | ((Ok (value))[@explicit_arity ]) ->
+                  | ((Belt.Result.Ok (value))[@explicit_arity ]) ->
                       (match loop rest with
                        | ((Belt.Result.Error (error))[@explicit_arity ]) ->
                            ((Belt.Result.Error (error))[@explicit_arity ])
-                       | ((Ok (rest))[@explicit_arity ]) ->
-                           ((Ok ((value :: rest)))[@explicit_arity ]))) in
+                       | ((Belt.Result.Ok (rest))[@explicit_arity ]) ->
+                           ((Belt.Result.Ok ((value :: rest)))
+                           [@explicit_arity ]))) in
            loop (Belt.List.fromArray items)
        | _ ->
            ((Belt.Result.Error
@@ -2603,14 +2612,16 @@ and (deserialize_NodeType__Svg__kind :
                                  (error))[@explicit_arity ]) ->
                                  ((Belt.Result.Error (error))
                                  [@explicit_arity ])
-                             | ((Ok (value))[@explicit_arity ]) ->
+                             | ((Belt.Result.Ok (value))[@explicit_arity ])
+                                 ->
                                  (match loop rest with
                                   | ((Belt.Result.Error
                                       (error))[@explicit_arity ]) ->
                                       ((Belt.Result.Error (error))
                                       [@explicit_arity ])
-                                  | ((Ok (rest))[@explicit_arity ]) ->
-                                      ((Ok ((value :: rest)))
+                                  | ((Belt.Result.Ok
+                                      (rest))[@explicit_arity ]) ->
+                                      ((Belt.Result.Ok ((value :: rest)))
                                       [@explicit_arity ]))) in
                       loop (Belt.List.fromArray items)
                   | _ ->
@@ -2825,76 +2836,6 @@ and (deserialize_Data__Tag__id :
                ((("epected a string")
                  [@reason.raw_literal "epected a string"])))
            [@explicit_arity ])) value
-and deserialize_Sync____change :
-  'arg0 'arg1 'arg2 .
-    (Js.Json.t -> ('arg0, string) Belt.Result.t) ->
-      (Js.Json.t -> ('arg1, string) Belt.Result.t) ->
-        (Js.Json.t -> ('arg2, string) Belt.Result.t) ->
-          Js.Json.t ->
-            (('arg0, 'arg1, 'arg2) Sync.change, string) Belt.Result.t
-  =
-  fun changeTransformer ->
-    fun rebaseTransformer ->
-      fun selectionTransformer ->
-        fun record ->
-          match Js.Json.classify record with
-          | ((JSONObject (dict))[@explicit_arity ]) ->
-              (match Js.Dict.get dict "rebase" with
-               | None ->
-                   ((Belt.Result.Error
-                       (((("No attribute ")
-                           [@reason.raw_literal "No attribute "]) ^ "rebase")))
-                   [@explicit_arity ])
-               | ((Some (json))[@explicit_arity ]) ->
-                   (match rebaseTransformer json with
-                    | ((Belt.Result.Error (error))[@explicit_arity ]) ->
-                        ((Belt.Result.Error (error))[@explicit_arity ])
-                    | ((Ok (attr_rebase))[@explicit_arity ]) ->
-                        (match Js.Dict.get dict "revert" with
-                         | None ->
-                             ((Belt.Result.Error
-                                 (((("No attribute ")
-                                     [@reason.raw_literal "No attribute "]) ^
-                                     "revert")))
-                             [@explicit_arity ])
-                         | ((Some (json))[@explicit_arity ]) ->
-                             (match changeTransformer json with
-                              | ((Belt.Result.Error
-                                  (error))[@explicit_arity ]) ->
-                                  ((Belt.Result.Error (error))
-                                  [@explicit_arity ])
-                              | ((Ok (attr_revert))[@explicit_arity ]) ->
-                                  (match Js.Dict.get dict "inner" with
-                                   | None ->
-                                       ((Belt.Result.Error
-                                           (((("No attribute ")
-                                               [@reason.raw_literal
-                                                 "No attribute "])
-                                               ^ "inner")))
-                                       [@explicit_arity ])
-                                   | ((Some (json))[@explicit_arity ]) ->
-                                       (match (deserialize_Sync____changeInner
-                                                 changeTransformer
-                                                 selectionTransformer) json
-                                        with
-                                        | ((Belt.Result.Error
-                                            (error))[@explicit_arity ]) ->
-                                            ((Belt.Result.Error (error))
-                                            [@explicit_arity ])
-                                        | ((Ok
-                                            (attr_inner))[@explicit_arity ])
-                                            ->
-                                            Belt.Result.Ok
-                                              {
-                                                inner = attr_inner;
-                                                revert = attr_revert;
-                                                rebase = attr_rebase
-                                              }))))))
-          | _ ->
-              ((Belt.Result.Error
-                  ((("Expected an object")
-                    [@reason.raw_literal "Expected an object"])))
-              [@explicit_arity ])
 and (deserialize_Change____delta :
   Js.Json.t -> (Change.delta, string) Belt.Result.t) =
   fun value -> deserialize_Delta____delta value
@@ -2925,14 +2866,16 @@ and (deserialize_Sync____link :
                                  (error))[@explicit_arity ]) ->
                                  ((Belt.Result.Error (error))
                                  [@explicit_arity ])
-                             | ((Ok (value))[@explicit_arity ]) ->
+                             | ((Belt.Result.Ok (value))[@explicit_arity ])
+                                 ->
                                  (match loop rest with
                                   | ((Belt.Result.Error
                                       (error))[@explicit_arity ]) ->
                                       ((Belt.Result.Error (error))
                                       [@explicit_arity ])
-                                  | ((Ok (rest))[@explicit_arity ]) ->
-                                      ((Ok ((value :: rest)))
+                                  | ((Belt.Result.Ok
+                                      (rest))[@explicit_arity ]) ->
+                                      ((Belt.Result.Ok ((value :: rest)))
                                       [@explicit_arity ]))) in
                       loop (Belt.List.fromArray items)
                   | _ ->
@@ -3386,12 +3329,13 @@ and (deserialize_World__MultiChange__change :
                  (match transformer one with
                   | ((Belt.Result.Error (error))[@explicit_arity ]) ->
                       ((Belt.Result.Error (error))[@explicit_arity ])
-                  | ((Ok (value))[@explicit_arity ]) ->
+                  | ((Belt.Result.Ok (value))[@explicit_arity ]) ->
                       (match loop rest with
                        | ((Belt.Result.Error (error))[@explicit_arity ]) ->
                            ((Belt.Result.Error (error))[@explicit_arity ])
-                       | ((Ok (rest))[@explicit_arity ]) ->
-                           ((Ok ((value :: rest)))[@explicit_arity ]))) in
+                       | ((Belt.Result.Ok (rest))[@explicit_arity ]) ->
+                           ((Belt.Result.Ok ((value :: rest)))
+                           [@explicit_arity ]))) in
            loop (Belt.List.fromArray items)
        | _ ->
            ((Belt.Result.Error
@@ -3491,12 +3435,6 @@ and (deserialize_Change____rebaseItem :
               | Error error -> Error error)
          | Error error -> Error error)
     | _ -> Error "Expected an array"
-and (deserialize_World____thisChange :
-  Js.Json.t -> (World.thisChange, string) Belt.Result.t) =
-  fun value ->
-    (deserialize_Sync____change deserialize_World__MultiChange__change
-       deserialize_World__MultiChange__rebaseItem
-       deserialize_World__MultiChange__selection) value
 let rec (serialize_View____cursor : View.cursor -> Js.Json.t) =
   fun record ->
     Js.Json.object_
@@ -3900,25 +3838,6 @@ and (serialize_NodeType____t : NodeType.t -> Js.Json.t) =
           serialize_NodeType____prefix)) value
 and (serialize_Data__Tag__id : Data.Tag.id -> Js.Json.t) =
   fun value -> Js.Json.string value
-and serialize_Sync____change :
-  'arg0 'arg1 'arg2 .
-    ('arg0 -> Js.Json.t) ->
-      ('arg1 -> Js.Json.t) ->
-        ('arg2 -> Js.Json.t) ->
-          ('arg0, 'arg1, 'arg2) Sync.change -> Js.Json.t
-  =
-  fun changeTransformer ->
-    fun rebaseTransformer ->
-      fun selectionTransformer ->
-        fun record ->
-          Js.Json.object_
-            (Js.Dict.fromArray
-               [|("inner",
-                   ((serialize_Sync____changeInner changeTransformer
-                       selectionTransformer) record.inner));("revert",
-                                                              (changeTransformer
-                                                                 record.revert));
-                 ("rebase", (rebaseTransformer record.rebase))|])
 and (serialize_Change____delta : Change.delta -> Js.Json.t) =
   fun value -> serialize_Delta____delta value
 and (serialize_Sync____link : Sync.link -> Js.Json.t) =
@@ -4034,8 +3953,3 @@ and (serialize_Change____rebaseItem : Change.rebaseItem -> Js.Json.t) =
         Js.Json.array
           [|(Js.Json.string "Contents");(serialize_Data__Node__id arg0);(
             serialize_Change____delta arg1)|]
-and (serialize_World____thisChange : World.thisChange -> Js.Json.t) =
-  fun value ->
-    (serialize_Sync____change serialize_World__MultiChange__change
-       serialize_World__MultiChange__rebaseItem
-       serialize_World__MultiChange__selection) value

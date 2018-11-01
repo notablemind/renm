@@ -8,6 +8,7 @@
     "pack": "webpack -w",
     "_pack": "fpack watch --development --preprocess='\\.svg$:raw-loader'  src/app/Index.bs.js --no-cache --preprocess='\\.css$:style-loader!css-loader'",
     "_pack:worker": "fpack watch --development --preprocess='\\.svg$:raw-loader' -n SharedWorker.js src/app/SharedWorker.bs.js --no-cache --preprocess='\\.css$:style-loader!css-loader'",
+    "build-types": "../../tools/reason-language-server/_build/install/default/bin/type-digger types.json",
     "clean": "bsb -clean-world",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
