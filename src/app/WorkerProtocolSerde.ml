@@ -6,10 +6,7 @@ module DeserializeRaw =
         match Js.Json.classify record with
         | ((JSONObject (dict))[@explicit_arity ]) ->
             (match Js.Dict.get dict "node" with
-             | None ->
-                 ((Belt.Result.Error
-                     (((("No attribute ")
-                         [@reason.raw_literal "No attribute "]) ^ "node")))
+             | None -> ((Belt.Result.Error (("No attribute " ^ "node")))
                  [@explicit_arity ])
              | ((Some (json))[@explicit_arity ]) ->
                  (match deserialize_Data__Node__id json with
@@ -18,10 +15,7 @@ module DeserializeRaw =
                   | ((Ok (attr_node))[@explicit_arity ]) ->
                       (match Js.Dict.get dict "range" with
                        | None ->
-                           ((Belt.Result.Error
-                               (((("No attribute ")
-                                   [@reason.raw_literal "No attribute "]) ^
-                                   "range")))
+                           ((Belt.Result.Error (("No attribute " ^ "range")))
                            [@explicit_arity ])
                        | ((Some (json))[@explicit_arity ]) ->
                            (match deserialize_View__Range__range json with
@@ -32,10 +26,7 @@ module DeserializeRaw =
                                 (match Js.Dict.get dict "color" with
                                  | None ->
                                      ((Belt.Result.Error
-                                         (((("No attribute ")
-                                             [@reason.raw_literal
-                                               "No attribute "])
-                                             ^ "color")))
+                                         (("No attribute " ^ "color")))
                                      [@explicit_arity ])
                                  | ((Some (json))[@explicit_arity ]) ->
                                      (match (fun string ->
@@ -49,9 +40,7 @@ module DeserializeRaw =
                                                    [@explicit_arity ])
                                                | _ ->
                                                    ((Error
-                                                       ((("epected a string")
-                                                         [@reason.raw_literal
-                                                           "epected a string"])))
+                                                       ("epected a string"))
                                                    [@explicit_arity ])) json
                                       with
                                       | ((Belt.Result.Error
@@ -64,10 +53,8 @@ module DeserializeRaw =
                                            with
                                            | None ->
                                                ((Belt.Result.Error
-                                                   (((("No attribute ")
-                                                       [@reason.raw_literal
-                                                         "No attribute "])
-                                                       ^ "userName")))
+                                                   (("No attribute " ^
+                                                       "userName")))
                                                [@explicit_arity ])
                                            | ((Some
                                                (json))[@explicit_arity ]) ->
@@ -86,9 +73,7 @@ module DeserializeRaw =
                                                                ])
                                                          | _ ->
                                                              ((Error
-                                                                 ((("epected a string")
-                                                                   [@reason.raw_literal
-                                                                    "epected a string"])))
+                                                                 ("epected a string"))
                                                              [@explicit_arity
                                                                ])) json
                                                 with
@@ -108,9 +93,7 @@ module DeserializeRaw =
                                                      with
                                                      | None ->
                                                          ((Belt.Result.Error
-                                                             (((("No attribute ")
-                                                                 [@reason.raw_literal
-                                                                   "No attribute "])
+                                                             (("No attribute "
                                                                  ^ "userId")))
                                                          [@explicit_arity ])
                                                      | ((Some
@@ -137,9 +120,7 @@ module DeserializeRaw =
                                                                    _ ->
                                                                     ((
                                                                     Error
-                                                                    ((("epected a string")
-                                                                    [@reason.raw_literal
-                                                                    "epected a string"])))
+                                                                    ("epected a string"))
                                                                     [@explicit_arity
                                                                     ])) json
                                                           with
@@ -170,11 +151,7 @@ module DeserializeRaw =
                                                                   node =
                                                                     attr_node
                                                                 }))))))))))
-        | _ ->
-            ((Belt.Result.Error
-                ((("Expected an object")
-                  [@reason.raw_literal "Expected an object"])))
-            [@explicit_arity ])
+        | _ -> ((Belt.Result.Error ("Expected an object"))[@explicit_arity ])
     and (deserialize_Js_date____t :
       Js.Json.t -> (Js_date.t, string) Belt.Result.t) =
       TransformHelpers.deserialize_Js_date____t
@@ -203,11 +180,7 @@ module DeserializeRaw =
                                            ((Belt.Result.Ok
                                                ((int_of_float number)))
                                            [@explicit_arity ])
-                                       | _ ->
-                                           ((Error
-                                               ((("Expected a float")
-                                                 [@reason.raw_literal
-                                                   "Expected a float"])))
+                                       | _ -> ((Error ("Expected a float"))
                                            [@explicit_arity ])) arg1
                               with
                               | Belt.Result.Ok arg1 ->
@@ -221,20 +194,14 @@ module DeserializeRaw =
                                                     ((int_of_float number)))
                                                 [@explicit_arity ])
                                             | _ ->
-                                                ((Error
-                                                    ((("Expected a float")
-                                                      [@reason.raw_literal
-                                                        "Expected a float"])))
+                                                ((Error ("Expected a float"))
                                                 [@explicit_arity ])) arg0
                                    with
                                    | Belt.Result.Ok arg0 ->
                                        Belt.Result.Ok (arg0, arg1)
                                    | Error error -> Error error)
                               | Error error -> Error error)
-                         | _ ->
-                             ((Belt.Result.Error
-                                 ((("Expected array")
-                                   [@reason.raw_literal "Expected array"])))
+                         | _ -> ((Belt.Result.Error ("Expected array"))
                              [@explicit_arity ])) arg2
                 with
                 | Belt.Result.Ok arg2 ->
@@ -246,11 +213,7 @@ module DeserializeRaw =
                                        (string))[@explicit_arity ]) ->
                                        ((Belt.Result.Ok (string))
                                        [@explicit_arity ])
-                                   | _ ->
-                                       ((Error
-                                           ((("epected a string")
-                                             [@reason.raw_literal
-                                               "epected a string"])))
+                                   | _ -> ((Error ("epected a string"))
                                        [@explicit_arity ])) arg0
                           with
                           | Belt.Result.Ok arg0 ->
@@ -258,21 +221,15 @@ module DeserializeRaw =
                           | Error error -> Error error)
                      | Error error -> Error error)
                 | Error error -> Error error)
-           | _ ->
-               ((Belt.Result.Error
-                   ((("Expected array")
-                     [@reason.raw_literal "Expected array"])))
-               [@explicit_arity ])) value
+           | _ -> ((Belt.Result.Error ("Expected array"))[@explicit_arity ]))
+          value
     and (deserialize_NodeType__Svg__t :
       Js.Json.t -> (NodeType.Svg.t, string) Belt.Result.t) =
       fun record ->
         match Js.Json.classify record with
         | ((JSONObject (dict))[@explicit_arity ]) ->
             (match Js.Dict.get dict "layers" with
-             | None ->
-                 ((Belt.Result.Error
-                     (((("No attribute ")
-                         [@reason.raw_literal "No attribute "]) ^ "layers")))
+             | None -> ((Belt.Result.Error (("No attribute " ^ "layers")))
                  [@explicit_arity ])
              | ((Some (json))[@explicit_arity ]) ->
                  (match (fun list ->
@@ -303,11 +260,7 @@ module DeserializeRaw =
                                                    ((value :: rest)))
                                                [@explicit_arity ]))) in
                                loop (Belt.List.fromArray items)
-                           | _ ->
-                               ((Belt.Result.Error
-                                   ((("expected an array")
-                                     [@reason.raw_literal
-                                       "expected an array"])))
+                           | _ -> ((Belt.Result.Error ("expected an array"))
                                [@explicit_arity ])) json
                   with
                   | ((Belt.Result.Error (error))[@explicit_arity ]) ->
@@ -315,10 +268,7 @@ module DeserializeRaw =
                   | ((Ok (attr_layers))[@explicit_arity ]) ->
                       (match Js.Dict.get dict "size" with
                        | None ->
-                           ((Belt.Result.Error
-                               (((("No attribute ")
-                                   [@reason.raw_literal "No attribute "]) ^
-                                   "size")))
+                           ((Belt.Result.Error (("No attribute " ^ "size")))
                            [@explicit_arity ])
                        | ((Some (json))[@explicit_arity ]) ->
                            (match (fun json ->
@@ -340,9 +290,7 @@ module DeserializeRaw =
                                                        [@explicit_arity ])
                                                    | _ ->
                                                        ((Error
-                                                           ((("Expected a float")
-                                                             [@reason.raw_literal
-                                                               "Expected a float"])))
+                                                           ("Expected a float"))
                                                        [@explicit_arity ]))
                                                   arg1
                                           with
@@ -363,9 +311,7 @@ module DeserializeRaw =
                                                               ])
                                                         | _ ->
                                                             ((Error
-                                                                ((("Expected a float")
-                                                                  [@reason.raw_literal
-                                                                    "Expected a float"])))
+                                                                ("Expected a float"))
                                                             [@explicit_arity
                                                               ])) arg0
                                                with
@@ -376,9 +322,7 @@ module DeserializeRaw =
                                           | Error error -> Error error)
                                      | _ ->
                                          ((Belt.Result.Error
-                                             ((("Expected array")
-                                               [@reason.raw_literal
-                                                 "Expected array"])))
+                                             ("Expected array"))
                                          [@explicit_arity ])) json
                             with
                             | ((Belt.Result.Error (error))[@explicit_arity ])
@@ -387,11 +331,7 @@ module DeserializeRaw =
                             | ((Ok (attr_size))[@explicit_arity ]) ->
                                 Belt.Result.Ok
                                   { size = attr_size; layers = attr_layers }))))
-        | _ ->
-            ((Belt.Result.Error
-                ((("Expected an object")
-                  [@reason.raw_literal "Expected an object"])))
-            [@explicit_arity ])
+        | _ -> ((Belt.Result.Error ("Expected an object"))[@explicit_arity ])
     and (deserialize_WorkerProtocol____serverMessage :
       Js.Json.t -> (WorkerProtocol.serverMessage, string) Belt.Result.t) =
       fun constructor ->
@@ -430,10 +370,7 @@ module DeserializeRaw =
                                           ((Belt.Result.Ok ((value :: rest)))
                                           [@explicit_arity ]))) in
                           loop (Belt.List.fromArray items)
-                      | _ ->
-                          ((Belt.Result.Error
-                              ((("expected an array")
-                                [@reason.raw_literal "expected an array"])))
+                      | _ -> ((Belt.Result.Error ("expected an array"))
                           [@explicit_arity ])) arg1
              with
              | Belt.Result.Ok arg1 ->
@@ -476,10 +413,7 @@ module DeserializeRaw =
                               | ((Ok (value))[@explicit_arity ]) ->
                                   ((Ok ((Belt.List.toArray value)))
                                   [@explicit_arity ]))
-                         | _ ->
-                             ((Belt.Result.Error
-                                 ((("expected an array")
-                                   [@reason.raw_literal "expected an array"])))
+                         | _ -> ((Belt.Result.Error ("expected an array"))
                              [@explicit_arity ])) deserialize_NodeType____t)
                      arg0
              with
@@ -514,10 +448,7 @@ module DeserializeRaw =
                                           ((Belt.Result.Ok ((value :: rest)))
                                           [@explicit_arity ]))) in
                           loop (Belt.List.fromArray items)
-                      | _ ->
-                          ((Belt.Result.Error
-                              ((("expected an array")
-                                [@reason.raw_literal "expected an array"])))
+                      | _ -> ((Belt.Result.Error ("expected an array"))
                           [@explicit_arity ])) arg0
              with
              | Belt.Result.Ok arg0 ->
@@ -532,10 +463,7 @@ module DeserializeRaw =
         | ((JSONObject (dict))[@explicit_arity ]) ->
             (match Js.Dict.get dict "handleAfter" with
              | None ->
-                 ((Belt.Result.Error
-                     (((("No attribute ")
-                         [@reason.raw_literal "No attribute "]) ^
-                         "handleAfter")))
+                 ((Belt.Result.Error (("No attribute " ^ "handleAfter")))
                  [@explicit_arity ])
              | ((Some (json))[@explicit_arity ]) ->
                  (match ((fun transformer ->
@@ -566,10 +494,7 @@ module DeserializeRaw =
                                                 -> ((Belt.Result.Ok (number))
                                                 [@explicit_arity ])
                                             | _ ->
-                                                ((Error
-                                                    ((("Expected a float")
-                                                      [@reason.raw_literal
-                                                        "Expected a float"])))
+                                                ((Error ("Expected a float"))
                                                 [@explicit_arity ])) arg1
                                    with
                                    | Belt.Result.Ok arg1 ->
@@ -586,9 +511,7 @@ module DeserializeRaw =
                                                      [@explicit_arity ])
                                                  | _ ->
                                                      ((Error
-                                                         ((("Expected a float")
-                                                           [@reason.raw_literal
-                                                             "Expected a float"])))
+                                                         ("Expected a float"))
                                                      [@explicit_arity ]))
                                                 arg0
                                         with
@@ -596,11 +519,7 @@ module DeserializeRaw =
                                             Belt.Result.Ok (arg0, arg1)
                                         | Error error -> Error error)
                                    | Error error -> Error error)
-                              | _ ->
-                                  ((Belt.Result.Error
-                                      ((("Expected array")
-                                        [@reason.raw_literal
-                                          "Expected array"])))
+                              | _ -> ((Belt.Result.Error ("Expected array"))
                                   [@explicit_arity ]))) json
                   with
                   | ((Belt.Result.Error (error))[@explicit_arity ]) ->
@@ -609,9 +528,7 @@ module DeserializeRaw =
                       (match Js.Dict.get dict "handleBefore" with
                        | None ->
                            ((Belt.Result.Error
-                               (((("No attribute ")
-                                   [@reason.raw_literal "No attribute "]) ^
-                                   "handleBefore")))
+                               (("No attribute " ^ "handleBefore")))
                            [@explicit_arity ])
                        | ((Some (json))[@explicit_arity ]) ->
                            (match ((fun transformer ->
@@ -653,9 +570,7 @@ module DeserializeRaw =
                                                           [@explicit_arity ])
                                                       | _ ->
                                                           ((Error
-                                                              ((("Expected a float")
-                                                                [@reason.raw_literal
-                                                                  "Expected a float"])))
+                                                              ("Expected a float"))
                                                           [@explicit_arity ]))
                                                      arg1
                                              with
@@ -675,9 +590,7 @@ module DeserializeRaw =
                                                                  ])
                                                            | _ ->
                                                                ((Error
-                                                                   ((("Expected a float")
-                                                                    [@reason.raw_literal
-                                                                    "Expected a float"])))
+                                                                   ("Expected a float"))
                                                                [@explicit_arity
                                                                  ])) arg0
                                                   with
@@ -689,9 +602,7 @@ module DeserializeRaw =
                                              | Error error -> Error error)
                                         | _ ->
                                             ((Belt.Result.Error
-                                                ((("Expected array")
-                                                  [@reason.raw_literal
-                                                    "Expected array"])))
+                                                ("Expected array"))
                                             [@explicit_arity ]))) json
                             with
                             | ((Belt.Result.Error (error))[@explicit_arity ])
@@ -701,10 +612,7 @@ module DeserializeRaw =
                                 (match Js.Dict.get dict "pos" with
                                  | None ->
                                      ((Belt.Result.Error
-                                         (((("No attribute ")
-                                             [@reason.raw_literal
-                                               "No attribute "])
-                                             ^ "pos")))
+                                         (("No attribute " ^ "pos")))
                                      [@explicit_arity ])
                                  | ((Some (json))[@explicit_arity ]) ->
                                      (match (fun json ->
@@ -729,9 +637,7 @@ module DeserializeRaw =
                                                                    ])
                                                              | _ ->
                                                                  ((Error
-                                                                    ((("Expected a float")
-                                                                    [@reason.raw_literal
-                                                                    "Expected a float"])))
+                                                                    ("Expected a float"))
                                                                  [@explicit_arity
                                                                    ])) arg1
                                                     with
@@ -751,9 +657,7 @@ module DeserializeRaw =
                                                                     ])
                                                                   | _ ->
                                                                     ((Error
-                                                                    ((("Expected a float")
-                                                                    [@reason.raw_literal
-                                                                    "Expected a float"])))
+                                                                    ("Expected a float"))
                                                                     [@explicit_arity
                                                                     ])) arg0
                                                          with
@@ -767,9 +671,7 @@ module DeserializeRaw =
                                                         Error error)
                                                | _ ->
                                                    ((Belt.Result.Error
-                                                       ((("Expected array")
-                                                         [@reason.raw_literal
-                                                           "Expected array"])))
+                                                       ("Expected array"))
                                                    [@explicit_arity ])) json
                                       with
                                       | ((Belt.Result.Error
@@ -785,21 +687,14 @@ module DeserializeRaw =
                                                 attr_handleBefore;
                                               handleAfter = attr_handleAfter
                                             }))))))
-        | _ ->
-            ((Belt.Result.Error
-                ((("Expected an object")
-                  [@reason.raw_literal "Expected an object"])))
-            [@explicit_arity ])
+        | _ -> ((Belt.Result.Error ("Expected an object"))[@explicit_arity ])
     and (deserialize_NodeType__Svg__layer :
       Js.Json.t -> (NodeType.Svg.layer, string) Belt.Result.t) =
       fun record ->
         match Js.Json.classify record with
         | ((JSONObject (dict))[@explicit_arity ]) ->
             (match Js.Dict.get dict "shapes" with
-             | None ->
-                 ((Belt.Result.Error
-                     (((("No attribute ")
-                         [@reason.raw_literal "No attribute "]) ^ "shapes")))
+             | None -> ((Belt.Result.Error (("No attribute " ^ "shapes")))
                  [@explicit_arity ])
              | ((Some (json))[@explicit_arity ]) ->
                  (match (fun list ->
@@ -830,11 +725,7 @@ module DeserializeRaw =
                                                    ((value :: rest)))
                                                [@explicit_arity ]))) in
                                loop (Belt.List.fromArray items)
-                           | _ ->
-                               ((Belt.Result.Error
-                                   ((("expected an array")
-                                     [@reason.raw_literal
-                                       "expected an array"])))
+                           | _ -> ((Belt.Result.Error ("expected an array"))
                                [@explicit_arity ])) json
                   with
                   | ((Belt.Result.Error (error))[@explicit_arity ]) ->
@@ -842,10 +733,7 @@ module DeserializeRaw =
                   | ((Ok (attr_shapes))[@explicit_arity ]) ->
                       (match Js.Dict.get dict "name" with
                        | None ->
-                           ((Belt.Result.Error
-                               (((("No attribute ")
-                                   [@reason.raw_literal "No attribute "]) ^
-                                   "name")))
+                           ((Belt.Result.Error (("No attribute " ^ "name")))
                            [@explicit_arity ])
                        | ((Some (json))[@explicit_arity ]) ->
                            (match (fun string ->
@@ -854,11 +742,7 @@ module DeserializeRaw =
                                          (string))[@explicit_arity ]) ->
                                          ((Belt.Result.Ok (string))
                                          [@explicit_arity ])
-                                     | _ ->
-                                         ((Error
-                                             ((("epected a string")
-                                               [@reason.raw_literal
-                                                 "epected a string"])))
+                                     | _ -> ((Error ("epected a string"))
                                          [@explicit_arity ])) json
                             with
                             | ((Belt.Result.Error (error))[@explicit_arity ])
@@ -868,10 +752,7 @@ module DeserializeRaw =
                                 (match Js.Dict.get dict "id" with
                                  | None ->
                                      ((Belt.Result.Error
-                                         (((("No attribute ")
-                                             [@reason.raw_literal
-                                               "No attribute "])
-                                             ^ "id")))
+                                         (("No attribute " ^ "id")))
                                      [@explicit_arity ])
                                  | ((Some (json))[@explicit_arity ]) ->
                                      (match (fun string ->
@@ -885,9 +766,7 @@ module DeserializeRaw =
                                                    [@explicit_arity ])
                                                | _ ->
                                                    ((Error
-                                                       ((("epected a string")
-                                                         [@reason.raw_literal
-                                                           "epected a string"])))
+                                                       ("epected a string"))
                                                    [@explicit_arity ])) json
                                       with
                                       | ((Belt.Result.Error
@@ -901,11 +780,7 @@ module DeserializeRaw =
                                               name = attr_name;
                                               shapes = attr_shapes
                                             }))))))
-        | _ ->
-            ((Belt.Result.Error
-                ((("Expected an object")
-                  [@reason.raw_literal "Expected an object"])))
-            [@explicit_arity ])
+        | _ -> ((Belt.Result.Error ("Expected an object"))[@explicit_arity ])
     and deserialize_Data__Node__t :
       'arg0 'arg1 .
         (Js.Json.t -> ('arg0, string) Belt.Result.t) ->
@@ -919,10 +794,7 @@ module DeserializeRaw =
             | ((JSONObject (dict))[@explicit_arity ]) ->
                 (match Js.Dict.get dict "prefix" with
                  | None ->
-                     ((Belt.Result.Error
-                         (((("No attribute ")
-                             [@reason.raw_literal "No attribute "]) ^
-                             "prefix")))
+                     ((Belt.Result.Error (("No attribute " ^ "prefix")))
                      [@explicit_arity ])
                  | ((Some (json))[@explicit_arity ]) ->
                      (match prefixTransformer json with
@@ -932,9 +804,7 @@ module DeserializeRaw =
                           (match Js.Dict.get dict "tags" with
                            | None ->
                                ((Belt.Result.Error
-                                   (((("No attribute ")
-                                       [@reason.raw_literal "No attribute "])
-                                       ^ "tags")))
+                                   (("No attribute " ^ "tags")))
                                [@explicit_arity ])
                            | ((Some (json))[@explicit_arity ]) ->
                                (match deserialize_Belt_SetString____t json
@@ -947,10 +817,7 @@ module DeserializeRaw =
                                     (match Js.Dict.get dict "contents" with
                                      | None ->
                                          ((Belt.Result.Error
-                                             (((("No attribute ")
-                                                 [@reason.raw_literal
-                                                   "No attribute "])
-                                                 ^ "contents")))
+                                             (("No attribute " ^ "contents")))
                                          [@explicit_arity ])
                                      | ((Some (json))[@explicit_arity ]) ->
                                          (match contentsTransformer json with
@@ -967,10 +834,8 @@ module DeserializeRaw =
                                                with
                                                | None ->
                                                    ((Belt.Result.Error
-                                                       (((("No attribute ")
-                                                           [@reason.raw_literal
-                                                             "No attribute "])
-                                                           ^ "children")))
+                                                       (("No attribute " ^
+                                                           "children")))
                                                    [@explicit_arity ])
                                                | ((Some
                                                    (json))[@explicit_arity ])
@@ -1004,9 +869,7 @@ module DeserializeRaw =
                                                                    _ ->
                                                                     ((
                                                                     Error
-                                                                    ((("epected a string")
-                                                                    [@reason.raw_literal
-                                                                    "epected a string"])))
+                                                                    ("epected a string"))
                                                                     [@explicit_arity
                                                                     ]) in
                                                                  let rec loop
@@ -1068,9 +931,7 @@ module DeserializeRaw =
                                                                     items)
                                                              | _ ->
                                                                  ((Belt.Result.Error
-                                                                    ((("expected an array")
-                                                                    [@reason.raw_literal
-                                                                    "expected an array"])))
+                                                                    ("expected an array"))
                                                                  [@explicit_arity
                                                                    ])) json
                                                     with
@@ -1091,9 +952,7 @@ module DeserializeRaw =
                                                          with
                                                          | None ->
                                                              ((Belt.Result.Error
-                                                                 (((("No attribute ")
-                                                                    [@reason.raw_literal
-                                                                    "No attribute "])
+                                                                 (("No attribute "
                                                                     ^
                                                                     "childrenModified")))
                                                              [@explicit_arity
@@ -1128,9 +987,7 @@ module DeserializeRaw =
                                                                    None ->
                                                                     ((
                                                                     Belt.Result.Error
-                                                                    (((("No attribute ")
-                                                                    [@reason.raw_literal
-                                                                    "No attribute "])
+                                                                    (("No attribute "
                                                                     ^
                                                                     "modified")))
                                                                     [@explicit_arity
@@ -1166,9 +1023,7 @@ module DeserializeRaw =
                                                                     | 
                                                                     None ->
                                                                     ((Belt.Result.Error
-                                                                    (((("No attribute ")
-                                                                    [@reason.raw_literal
-                                                                    "No attribute "])
+                                                                    (("No attribute "
                                                                     ^
                                                                     "trashed")))
                                                                     [@explicit_arity
@@ -1248,9 +1103,7 @@ module DeserializeRaw =
                                                                     | 
                                                                     None ->
                                                                     ((Belt.Result.Error
-                                                                    (((("No attribute ")
-                                                                    [@reason.raw_literal
-                                                                    "No attribute "])
+                                                                    (("No attribute "
                                                                     ^
                                                                     "completed")))
                                                                     [@explicit_arity
@@ -1284,9 +1137,7 @@ module DeserializeRaw =
                                                                     | 
                                                                     _ ->
                                                                     ((Belt.Result.Error
-                                                                    ((("Expected a bool")
-                                                                    [@reason.raw_literal
-                                                                    "Expected a bool"])))
+                                                                    ("Expected a bool"))
                                                                     [@explicit_arity
                                                                     ])) json
                                                                     with
@@ -1312,9 +1163,7 @@ module DeserializeRaw =
                                                                     | 
                                                                     None ->
                                                                     ((Belt.Result.Error
-                                                                    (((("No attribute ")
-                                                                    [@reason.raw_literal
-                                                                    "No attribute "])
+                                                                    (("No attribute "
                                                                     ^
                                                                     "created")))
                                                                     [@explicit_arity
@@ -1350,9 +1199,7 @@ module DeserializeRaw =
                                                                     | 
                                                                     None ->
                                                                     ((Belt.Result.Error
-                                                                    (((("No attribute ")
-                                                                    [@reason.raw_literal
-                                                                    "No attribute "])
+                                                                    (("No attribute "
                                                                     ^
                                                                     "author")))
                                                                     [@explicit_arity
@@ -1381,9 +1228,7 @@ module DeserializeRaw =
                                                                     | 
                                                                     _ ->
                                                                     ((Error
-                                                                    ((("epected a string")
-                                                                    [@reason.raw_literal
-                                                                    "epected a string"])))
+                                                                    ("epected a string"))
                                                                     [@explicit_arity
                                                                     ])) json
                                                                     with
@@ -1409,9 +1254,7 @@ module DeserializeRaw =
                                                                     | 
                                                                     None ->
                                                                     ((Belt.Result.Error
-                                                                    (((("No attribute ")
-                                                                    [@reason.raw_literal
-                                                                    "No attribute "])
+                                                                    (("No attribute "
                                                                     ^
                                                                     "parent")))
                                                                     [@explicit_arity
@@ -1446,9 +1289,7 @@ module DeserializeRaw =
                                                                     | 
                                                                     None ->
                                                                     ((Belt.Result.Error
-                                                                    (((("No attribute ")
-                                                                    [@reason.raw_literal
-                                                                    "No attribute "])
+                                                                    (("No attribute "
                                                                     ^ "id")))
                                                                     [@explicit_arity
                                                                     ])
@@ -1507,10 +1348,7 @@ module DeserializeRaw =
                                                                     prefix =
                                                                     attr_prefix
                                                                     }))))))))))))))))))))))))
-            | _ ->
-                ((Belt.Result.Error
-                    ((("Expected an object")
-                      [@reason.raw_literal "Expected an object"])))
+            | _ -> ((Belt.Result.Error ("Expected an object"))
                 [@explicit_arity ])
     and deserialize_Sync____changeInner :
       'arg0 'arg1 .
@@ -1526,10 +1364,7 @@ module DeserializeRaw =
             | ((JSONObject (dict))[@explicit_arity ]) ->
                 (match Js.Dict.get dict "sessionInfo" with
                  | None ->
-                     ((Belt.Result.Error
-                         (((("No attribute ")
-                             [@reason.raw_literal "No attribute "]) ^
-                             "sessionInfo")))
+                     ((Belt.Result.Error (("No attribute " ^ "sessionInfo")))
                      [@explicit_arity ])
                  | ((Some (json))[@explicit_arity ]) ->
                      (match (deserialize_Sync____sessionInfo
@@ -1541,9 +1376,7 @@ module DeserializeRaw =
                           (match Js.Dict.get dict "apply" with
                            | None ->
                                ((Belt.Result.Error
-                                   (((("No attribute ")
-                                       [@reason.raw_literal "No attribute "])
-                                       ^ "apply")))
+                                   (("No attribute " ^ "apply")))
                                [@explicit_arity ])
                            | ((Some (json))[@explicit_arity ]) ->
                                (match changeTransformer json with
@@ -1555,10 +1388,7 @@ module DeserializeRaw =
                                     (match Js.Dict.get dict "link" with
                                      | None ->
                                          ((Belt.Result.Error
-                                             (((("No attribute ")
-                                                 [@reason.raw_literal
-                                                   "No attribute "])
-                                                 ^ "link")))
+                                             (("No attribute " ^ "link")))
                                          [@explicit_arity ])
                                      | ((Some (json))[@explicit_arity ]) ->
                                          (match ((fun transformer ->
@@ -1611,10 +1441,8 @@ module DeserializeRaw =
                                                with
                                                | None ->
                                                    ((Belt.Result.Error
-                                                       (((("No attribute ")
-                                                           [@reason.raw_literal
-                                                             "No attribute "])
-                                                           ^ "changeId")))
+                                                       (("No attribute " ^
+                                                           "changeId")))
                                                    [@explicit_arity ])
                                                | ((Some
                                                    (json))[@explicit_arity ])
@@ -1634,9 +1462,7 @@ module DeserializeRaw =
                                                                    ])
                                                              | _ ->
                                                                  ((Error
-                                                                    ((("epected a string")
-                                                                    [@reason.raw_literal
-                                                                    "epected a string"])))
+                                                                    ("epected a string"))
                                                                  [@explicit_arity
                                                                    ])) json
                                                     with
@@ -1661,10 +1487,7 @@ module DeserializeRaw =
                                                             sessionInfo =
                                                               attr_sessionInfo
                                                           }))))))))
-            | _ ->
-                ((Belt.Result.Error
-                    ((("Expected an object")
-                      [@reason.raw_literal "Expected an object"])))
+            | _ -> ((Belt.Result.Error ("Expected an object"))
                 [@explicit_arity ])
     and (deserialize_World__MultiChange__rebaseItem :
       Js.Json.t -> (World.MultiChange.rebaseItem, string) Belt.Result.t) =
@@ -1689,10 +1512,7 @@ module DeserializeRaw =
                                ((Belt.Result.Ok ((value :: rest)))
                                [@explicit_arity ]))) in
                loop (Belt.List.fromArray items)
-           | _ ->
-               ((Belt.Result.Error
-                   ((("expected an array")
-                     [@reason.raw_literal "expected an array"])))
+           | _ -> ((Belt.Result.Error ("expected an array"))
                [@explicit_arity ])) value
     and deserialize_Data____data :
       'arg0 'arg1 .
@@ -1706,10 +1526,7 @@ module DeserializeRaw =
             match Js.Json.classify record with
             | ((JSONObject (dict))[@explicit_arity ]) ->
                 (match Js.Dict.get dict "root" with
-                 | None ->
-                     ((Belt.Result.Error
-                         (((("No attribute ")
-                             [@reason.raw_literal "No attribute "]) ^ "root")))
+                 | None -> ((Belt.Result.Error (("No attribute " ^ "root")))
                      [@explicit_arity ])
                  | ((Some (json))[@explicit_arity ]) ->
                      (match deserialize_Data__Node__id json with
@@ -1719,9 +1536,7 @@ module DeserializeRaw =
                           (match Js.Dict.get dict "tags" with
                            | None ->
                                ((Belt.Result.Error
-                                   (((("No attribute ")
-                                       [@reason.raw_literal "No attribute "])
-                                       ^ "tags")))
+                                   (("No attribute " ^ "tags")))
                                [@explicit_arity ])
                            | ((Some (json))[@explicit_arity ]) ->
                                (match (deserialize_Belt_MapString____t
@@ -1735,10 +1550,7 @@ module DeserializeRaw =
                                     (match Js.Dict.get dict "nodes" with
                                      | None ->
                                          ((Belt.Result.Error
-                                             (((("No attribute ")
-                                                 [@reason.raw_literal
-                                                   "No attribute "])
-                                                 ^ "nodes")))
+                                             (("No attribute " ^ "nodes")))
                                          [@explicit_arity ])
                                      | ((Some (json))[@explicit_arity ]) ->
                                          (match (deserialize_Belt_MapString____t
@@ -1760,10 +1572,7 @@ module DeserializeRaw =
                                                   tags = attr_tags;
                                                   root = attr_root
                                                 }))))))
-            | _ ->
-                ((Belt.Result.Error
-                    ((("Expected an object")
-                      [@reason.raw_literal "Expected an object"])))
+            | _ -> ((Belt.Result.Error ("Expected an object"))
                 [@explicit_arity ])
     and (deserialize_World__MultiChange__data :
       Js.Json.t -> (World.MultiChange.data, string) Belt.Result.t) =
@@ -1775,20 +1584,14 @@ module DeserializeRaw =
         | ((JSONObject (dict))[@explicit_arity ]) ->
             (match Js.Dict.get dict "lastSyncTime" with
              | None ->
-                 ((Belt.Result.Error
-                     (((("No attribute ")
-                         [@reason.raw_literal "No attribute "]) ^
-                         "lastSyncTime")))
+                 ((Belt.Result.Error (("No attribute " ^ "lastSyncTime")))
                  [@explicit_arity ])
              | ((Some (json))[@explicit_arity ]) ->
                  (match (fun number ->
                            match Js.Json.classify number with
                            | ((JSONNumber (number))[@explicit_arity ]) ->
                                ((Belt.Result.Ok (number))[@explicit_arity ])
-                           | _ ->
-                               ((Error
-                                   ((("Expected a float")
-                                     [@reason.raw_literal "Expected a float"])))
+                           | _ -> ((Error ("Expected a float"))
                                [@explicit_arity ])) json
                   with
                   | ((Belt.Result.Error (error))[@explicit_arity ]) ->
@@ -1797,9 +1600,7 @@ module DeserializeRaw =
                       (match Js.Dict.get dict "owningUserName" with
                        | None ->
                            ((Belt.Result.Error
-                               (((("No attribute ")
-                                   [@reason.raw_literal "No attribute "]) ^
-                                   "owningUserName")))
+                               (("No attribute " ^ "owningUserName")))
                            [@explicit_arity ])
                        | ((Some (json))[@explicit_arity ]) ->
                            (match (fun string ->
@@ -1808,11 +1609,7 @@ module DeserializeRaw =
                                          (string))[@explicit_arity ]) ->
                                          ((Belt.Result.Ok (string))
                                          [@explicit_arity ])
-                                     | _ ->
-                                         ((Error
-                                             ((("epected a string")
-                                               [@reason.raw_literal
-                                                 "epected a string"])))
+                                     | _ -> ((Error ("epected a string"))
                                          [@explicit_arity ])) json
                             with
                             | ((Belt.Result.Error (error))[@explicit_arity ])
@@ -1823,10 +1620,7 @@ module DeserializeRaw =
                                 (match Js.Dict.get dict "googleFileId" with
                                  | None ->
                                      ((Belt.Result.Error
-                                         (((("No attribute ")
-                                             [@reason.raw_literal
-                                               "No attribute "])
-                                             ^ "googleFileId")))
+                                         (("No attribute " ^ "googleFileId")))
                                      [@explicit_arity ])
                                  | ((Some (json))[@explicit_arity ]) ->
                                      (match (fun string ->
@@ -1840,9 +1634,7 @@ module DeserializeRaw =
                                                    [@explicit_arity ])
                                                | _ ->
                                                    ((Error
-                                                       ((("epected a string")
-                                                         [@reason.raw_literal
-                                                           "epected a string"])))
+                                                       ("epected a string"))
                                                    [@explicit_arity ])) json
                                       with
                                       | ((Belt.Result.Error
@@ -1862,11 +1654,7 @@ module DeserializeRaw =
                                               lastSyncTime =
                                                 attr_lastSyncTime
                                             }))))))
-        | _ ->
-            ((Belt.Result.Error
-                ((("Expected an object")
-                  [@reason.raw_literal "Expected an object"])))
-            [@explicit_arity ])
+        | _ -> ((Belt.Result.Error ("Expected an object"))[@explicit_arity ])
     and (deserialize_NodeType____prefix :
       Js.Json.t -> (NodeType.prefix, string) Belt.Result.t) =
       fun constructor ->
@@ -1879,10 +1667,7 @@ module DeserializeRaw =
                           [@explicit_arity ])
                       | JSONFalse -> ((Belt.Result.Ok (false))
                           [@explicit_arity ])
-                      | _ ->
-                          ((Belt.Result.Error
-                              ((("Expected a bool")
-                                [@reason.raw_literal "Expected a bool"])))
+                      | _ -> ((Belt.Result.Error ("Expected a bool"))
                           [@explicit_arity ])) arg0
              with
              | Belt.Result.Ok arg0 ->
@@ -1895,11 +1680,8 @@ module DeserializeRaw =
                       | ((JSONNumber (number))[@explicit_arity ]) ->
                           ((Belt.Result.Ok ((int_of_float number)))
                           [@explicit_arity ])
-                      | _ ->
-                          ((Error
-                              ((("Expected a float")
-                                [@reason.raw_literal "Expected a float"])))
-                          [@explicit_arity ])) arg0
+                      | _ -> ((Error ("Expected a float"))[@explicit_arity ]))
+                     arg0
              with
              | Belt.Result.Ok arg0 ->
                  Belt.Result.Ok (Rating (arg0) : NodeType.prefix)
@@ -1911,11 +1693,8 @@ module DeserializeRaw =
                       | ((JSONNumber (number))[@explicit_arity ]) ->
                           ((Belt.Result.Ok ((int_of_float number)))
                           [@explicit_arity ])
-                      | _ ->
-                          ((Error
-                              ((("Expected a float")
-                                [@reason.raw_literal "Expected a float"])))
-                          [@explicit_arity ])) arg0
+                      | _ -> ((Error ("Expected a float"))[@explicit_arity ]))
+                     arg0
              with
              | Belt.Result.Ok arg0 ->
                  Belt.Result.Ok (Sentiment (arg0) : NodeType.prefix)
@@ -1930,10 +1709,7 @@ module DeserializeRaw =
         match Js.Json.classify record with
         | ((JSONObject (dict))[@explicit_arity ]) ->
             (match Js.Dict.get dict "kind" with
-             | None ->
-                 ((Belt.Result.Error
-                     (((("No attribute ")
-                         [@reason.raw_literal "No attribute "]) ^ "kind")))
+             | None -> ((Belt.Result.Error (("No attribute " ^ "kind")))
                  [@explicit_arity ])
              | ((Some (json))[@explicit_arity ]) ->
                  (match deserialize_NodeType__Svg__kind json with
@@ -1942,10 +1718,7 @@ module DeserializeRaw =
                   | ((Ok (attr_kind))[@explicit_arity ]) ->
                       (match Js.Dict.get dict "stroke" with
                        | None ->
-                           ((Belt.Result.Error
-                               (((("No attribute ")
-                                   [@reason.raw_literal "No attribute "]) ^
-                                   "stroke")))
+                           ((Belt.Result.Error (("No attribute " ^ "stroke")))
                            [@explicit_arity ])
                        | ((Some (json))[@explicit_arity ]) ->
                            (match ((fun transformer ->
@@ -1987,9 +1760,7 @@ module DeserializeRaw =
                                                           [@explicit_arity ])
                                                       | _ ->
                                                           ((Error
-                                                              ((("Expected a float")
-                                                                [@reason.raw_literal
-                                                                  "Expected a float"])))
+                                                              ("Expected a float"))
                                                           [@explicit_arity ]))
                                                      arg1
                                              with
@@ -2009,9 +1780,7 @@ module DeserializeRaw =
                                                                  ])
                                                            | _ ->
                                                                ((Error
-                                                                   ((("epected a string")
-                                                                    [@reason.raw_literal
-                                                                    "epected a string"])))
+                                                                   ("epected a string"))
                                                                [@explicit_arity
                                                                  ])) arg0
                                                   with
@@ -2023,9 +1792,7 @@ module DeserializeRaw =
                                              | Error error -> Error error)
                                         | _ ->
                                             ((Belt.Result.Error
-                                                ((("Expected array")
-                                                  [@reason.raw_literal
-                                                    "Expected array"])))
+                                                ("Expected array"))
                                             [@explicit_arity ]))) json
                             with
                             | ((Belt.Result.Error (error))[@explicit_arity ])
@@ -2035,10 +1802,7 @@ module DeserializeRaw =
                                 (match Js.Dict.get dict "fill" with
                                  | None ->
                                      ((Belt.Result.Error
-                                         (((("No attribute ")
-                                             [@reason.raw_literal
-                                               "No attribute "])
-                                             ^ "fill")))
+                                         (("No attribute " ^ "fill")))
                                      [@explicit_arity ])
                                  | ((Some (json))[@explicit_arity ]) ->
                                      (match ((fun transformer ->
@@ -2083,9 +1847,7 @@ module DeserializeRaw =
                                                       [@explicit_arity ])
                                                   | _ ->
                                                       ((Error
-                                                          ((("epected a string")
-                                                            [@reason.raw_literal
-                                                              "epected a string"])))
+                                                          ("epected a string"))
                                                       [@explicit_arity ])))
                                               json
                                       with
@@ -2098,10 +1860,7 @@ module DeserializeRaw =
                                           (match Js.Dict.get dict "pos" with
                                            | None ->
                                                ((Belt.Result.Error
-                                                   (((("No attribute ")
-                                                       [@reason.raw_literal
-                                                         "No attribute "])
-                                                       ^ "pos")))
+                                                   (("No attribute " ^ "pos")))
                                                [@explicit_arity ])
                                            | ((Some
                                                (json))[@explicit_arity ]) ->
@@ -2132,9 +1891,7 @@ module DeserializeRaw =
                                                                     | 
                                                                     _ ->
                                                                     ((Error
-                                                                    ((("Expected a float")
-                                                                    [@reason.raw_literal
-                                                                    "Expected a float"])))
+                                                                    ("Expected a float"))
                                                                     [@explicit_arity
                                                                     ])) arg1
                                                               with
@@ -2159,9 +1916,7 @@ module DeserializeRaw =
                                                                     | 
                                                                     _ ->
                                                                     ((Error
-                                                                    ((("Expected a float")
-                                                                    [@reason.raw_literal
-                                                                    "Expected a float"])))
+                                                                    ("Expected a float"))
                                                                     [@explicit_arity
                                                                     ])) arg0
                                                                    with
@@ -2181,9 +1936,7 @@ module DeserializeRaw =
                                                                   Error error)
                                                          | _ ->
                                                              ((Belt.Result.Error
-                                                                 ((("Expected array")
-                                                                   [@reason.raw_literal
-                                                                    "Expected array"])))
+                                                                 ("Expected array"))
                                                              [@explicit_arity
                                                                ])) json
                                                 with
@@ -2203,9 +1956,7 @@ module DeserializeRaw =
                                                      with
                                                      | None ->
                                                          ((Belt.Result.Error
-                                                             (((("No attribute ")
-                                                                 [@reason.raw_literal
-                                                                   "No attribute "])
+                                                             (("No attribute "
                                                                  ^ "rotation")))
                                                          [@explicit_arity ])
                                                      | ((Some
@@ -2232,9 +1983,7 @@ module DeserializeRaw =
                                                                    _ ->
                                                                     ((
                                                                     Error
-                                                                    ((("Expected a float")
-                                                                    [@reason.raw_literal
-                                                                    "Expected a float"])))
+                                                                    ("Expected a float"))
                                                                     [@explicit_arity
                                                                     ])) json
                                                           with
@@ -2259,9 +2008,7 @@ module DeserializeRaw =
                                                                | None ->
                                                                    ((
                                                                    Belt.Result.Error
-                                                                    (((("No attribute ")
-                                                                    [@reason.raw_literal
-                                                                    "No attribute "])
+                                                                    (("No attribute "
                                                                     ^ "id")))
                                                                    [@explicit_arity
                                                                     ])
@@ -2289,9 +2036,7 @@ module DeserializeRaw =
                                                                     | 
                                                                     _ ->
                                                                     ((Error
-                                                                    ((("epected a string")
-                                                                    [@reason.raw_literal
-                                                                    "epected a string"])))
+                                                                    ("epected a string"))
                                                                     [@explicit_arity
                                                                     ])) json
                                                                     with
@@ -2325,11 +2070,7 @@ module DeserializeRaw =
                                                                     kind =
                                                                     attr_kind
                                                                     }))))))))))))
-        | _ ->
-            ((Belt.Result.Error
-                ((("Expected an object")
-                  [@reason.raw_literal "Expected an object"])))
-            [@explicit_arity ])
+        | _ -> ((Belt.Result.Error ("Expected an object"))[@explicit_arity ])
     and (deserialize_Delta____delta :
       Js.Json.t -> (Delta.delta, string) Belt.Result.t) =
       TransformHelpers.deserialize_Delta____delta
@@ -2348,10 +2089,7 @@ module DeserializeRaw =
         match Js.Json.classify record with
         | ((JSONObject (dict))[@explicit_arity ]) ->
             (match Js.Dict.get dict "sync" with
-             | None ->
-                 ((Belt.Result.Error
-                     (((("No attribute ")
-                         [@reason.raw_literal "No attribute "]) ^ "sync")))
+             | None -> ((Belt.Result.Error (("No attribute " ^ "sync")))
                  [@explicit_arity ])
              | ((Some (json))[@explicit_arity ]) ->
                  (match ((fun transformer ->
@@ -2378,9 +2116,7 @@ module DeserializeRaw =
                       (match Js.Dict.get dict "lastModified" with
                        | None ->
                            ((Belt.Result.Error
-                               (((("No attribute ")
-                                   [@reason.raw_literal "No attribute "]) ^
-                                   "lastModified")))
+                               (("No attribute " ^ "lastModified")))
                            [@explicit_arity ])
                        | ((Some (json))[@explicit_arity ]) ->
                            (match (fun number ->
@@ -2389,11 +2125,7 @@ module DeserializeRaw =
                                          (number))[@explicit_arity ]) ->
                                          ((Belt.Result.Ok (number))
                                          [@explicit_arity ])
-                                     | _ ->
-                                         ((Error
-                                             ((("Expected a float")
-                                               [@reason.raw_literal
-                                                 "Expected a float"])))
+                                     | _ -> ((Error ("Expected a float"))
                                          [@explicit_arity ])) json
                             with
                             | ((Belt.Result.Error (error))[@explicit_arity ])
@@ -2403,10 +2135,7 @@ module DeserializeRaw =
                                 (match Js.Dict.get dict "lastOpened" with
                                  | None ->
                                      ((Belt.Result.Error
-                                         (((("No attribute ")
-                                             [@reason.raw_literal
-                                               "No attribute "])
-                                             ^ "lastOpened")))
+                                         (("No attribute " ^ "lastOpened")))
                                      [@explicit_arity ])
                                  | ((Some (json))[@explicit_arity ]) ->
                                      (match (fun number ->
@@ -2420,9 +2149,7 @@ module DeserializeRaw =
                                                    [@explicit_arity ])
                                                | _ ->
                                                    ((Error
-                                                       ((("Expected a float")
-                                                         [@reason.raw_literal
-                                                           "Expected a float"])))
+                                                       ("Expected a float"))
                                                    [@explicit_arity ])) json
                                       with
                                       | ((Belt.Result.Error
@@ -2437,10 +2164,8 @@ module DeserializeRaw =
                                            with
                                            | None ->
                                                ((Belt.Result.Error
-                                                   (((("No attribute ")
-                                                       [@reason.raw_literal
-                                                         "No attribute "])
-                                                       ^ "created")))
+                                                   (("No attribute " ^
+                                                       "created")))
                                                [@explicit_arity ])
                                            | ((Some
                                                (json))[@explicit_arity ]) ->
@@ -2459,9 +2184,7 @@ module DeserializeRaw =
                                                                ])
                                                          | _ ->
                                                              ((Error
-                                                                 ((("Expected a float")
-                                                                   [@reason.raw_literal
-                                                                    "Expected a float"])))
+                                                                 ("Expected a float"))
                                                              [@explicit_arity
                                                                ])) json
                                                 with
@@ -2481,9 +2204,7 @@ module DeserializeRaw =
                                                      with
                                                      | None ->
                                                          ((Belt.Result.Error
-                                                             (((("No attribute ")
-                                                                 [@reason.raw_literal
-                                                                   "No attribute "])
+                                                             (("No attribute "
                                                                  ^
                                                                  "nodeCount")))
                                                          [@explicit_arity ])
@@ -2512,9 +2233,7 @@ module DeserializeRaw =
                                                                    _ ->
                                                                     ((
                                                                     Error
-                                                                    ((("Expected a float")
-                                                                    [@reason.raw_literal
-                                                                    "Expected a float"])))
+                                                                    ("Expected a float"))
                                                                     [@explicit_arity
                                                                     ])) json
                                                           with
@@ -2540,9 +2259,7 @@ module DeserializeRaw =
                                                                | None ->
                                                                    ((
                                                                    Belt.Result.Error
-                                                                    (((("No attribute ")
-                                                                    [@reason.raw_literal
-                                                                    "No attribute "])
+                                                                    (("No attribute "
                                                                     ^ "title")))
                                                                    [@explicit_arity
                                                                     ])
@@ -2570,9 +2287,7 @@ module DeserializeRaw =
                                                                     | 
                                                                     _ ->
                                                                     ((Error
-                                                                    ((("epected a string")
-                                                                    [@reason.raw_literal
-                                                                    "epected a string"])))
+                                                                    ("epected a string"))
                                                                     [@explicit_arity
                                                                     ])) json
                                                                     with
@@ -2597,9 +2312,7 @@ module DeserializeRaw =
                                                                     | 
                                                                     None ->
                                                                     ((Belt.Result.Error
-                                                                    (((("No attribute ")
-                                                                    [@reason.raw_literal
-                                                                    "No attribute "])
+                                                                    (("No attribute "
                                                                     ^ "id")))
                                                                     [@explicit_arity
                                                                     ])
@@ -2627,9 +2340,7 @@ module DeserializeRaw =
                                                                     | 
                                                                     _ ->
                                                                     ((Error
-                                                                    ((("epected a string")
-                                                                    [@reason.raw_literal
-                                                                    "epected a string"])))
+                                                                    ("epected a string"))
                                                                     [@explicit_arity
                                                                     ])) json
                                                                     with
@@ -2667,11 +2378,7 @@ module DeserializeRaw =
                                                                     sync =
                                                                     attr_sync
                                                                     }))))))))))))))
-        | _ ->
-            ((Belt.Result.Error
-                ((("Expected an object")
-                  [@reason.raw_literal "Expected an object"])))
-            [@explicit_arity ])
+        | _ -> ((Belt.Result.Error ("Expected an object"))[@explicit_arity ])
     and (deserialize_NodeType____contents :
       Js.Json.t -> (NodeType.contents, string) Belt.Result.t) =
       fun constructor ->
@@ -2688,21 +2395,15 @@ module DeserializeRaw =
                       match Js.Json.classify string with
                       | ((JSONString (string))[@explicit_arity ]) ->
                           ((Belt.Result.Ok (string))[@explicit_arity ])
-                      | _ ->
-                          ((Error
-                              ((("epected a string")
-                                [@reason.raw_literal "epected a string"])))
-                          [@explicit_arity ])) arg1
+                      | _ -> ((Error ("epected a string"))[@explicit_arity ]))
+                     arg1
              with
              | Belt.Result.Ok arg1 ->
                  (match (fun string ->
                            match Js.Json.classify string with
                            | ((JSONString (string))[@explicit_arity ]) ->
                                ((Belt.Result.Ok (string))[@explicit_arity ])
-                           | _ ->
-                               ((Error
-                                   ((("epected a string")
-                                     [@reason.raw_literal "epected a string"])))
+                           | _ -> ((Error ("epected a string"))
                                [@explicit_arity ])) arg0
                   with
                   | Belt.Result.Ok arg0 ->
@@ -2715,11 +2416,8 @@ module DeserializeRaw =
                       match Js.Json.classify string with
                       | ((JSONString (string))[@explicit_arity ]) ->
                           ((Belt.Result.Ok (string))[@explicit_arity ])
-                      | _ ->
-                          ((Error
-                              ((("epected a string")
-                                [@reason.raw_literal "epected a string"])))
-                          [@explicit_arity ])) arg0
+                      | _ -> ((Error ("epected a string"))[@explicit_arity ]))
+                     arg0
              with
              | Belt.Result.Ok arg0 ->
                  Belt.Result.Ok (Tweet (arg0) : NodeType.contents)
@@ -2730,11 +2428,8 @@ module DeserializeRaw =
                       match Js.Json.classify string with
                       | ((JSONString (string))[@explicit_arity ]) ->
                           ((Belt.Result.Ok (string))[@explicit_arity ])
-                      | _ ->
-                          ((Error
-                              ((("epected a string")
-                                [@reason.raw_literal "epected a string"])))
-                          [@explicit_arity ])) arg0
+                      | _ -> ((Error ("epected a string"))[@explicit_arity ]))
+                     arg0
              with
              | Belt.Result.Ok arg0 ->
                  Belt.Result.Ok (Youtube (arg0) : NodeType.contents)
@@ -2753,11 +2448,7 @@ module DeserializeRaw =
            match Js.Json.classify number with
            | ((JSONNumber (number))[@explicit_arity ]) ->
                ((Belt.Result.Ok (number))[@explicit_arity ])
-           | _ ->
-               ((Error
-                   ((("Expected a float")
-                     [@reason.raw_literal "Expected a float"])))
-               [@explicit_arity ])) value
+           | _ -> ((Error ("Expected a float"))[@explicit_arity ])) value
     and (deserialize_NodeType__Svg__kind :
       Js.Json.t -> (NodeType.Svg.kind, string) Belt.Result.t) =
       fun constructor ->
@@ -2789,10 +2480,7 @@ module DeserializeRaw =
                                           ((Belt.Result.Ok ((value :: rest)))
                                           [@explicit_arity ]))) in
                           loop (Belt.List.fromArray items)
-                      | _ ->
-                          ((Belt.Result.Error
-                              ((("expected an array")
-                                [@reason.raw_literal "expected an array"])))
+                      | _ -> ((Belt.Result.Error ("expected an array"))
                           [@explicit_arity ])) arg0
              with
              | Belt.Result.Ok arg0 ->
@@ -2804,21 +2492,15 @@ module DeserializeRaw =
                       match Js.Json.classify number with
                       | ((JSONNumber (number))[@explicit_arity ]) ->
                           ((Belt.Result.Ok (number))[@explicit_arity ])
-                      | _ ->
-                          ((Error
-                              ((("Expected a float")
-                                [@reason.raw_literal "Expected a float"])))
-                          [@explicit_arity ])) arg2
+                      | _ -> ((Error ("Expected a float"))[@explicit_arity ]))
+                     arg2
              with
              | Belt.Result.Ok arg2 ->
                  (match (fun number ->
                            match Js.Json.classify number with
                            | ((JSONNumber (number))[@explicit_arity ]) ->
                                ((Belt.Result.Ok (number))[@explicit_arity ])
-                           | _ ->
-                               ((Error
-                                   ((("Expected a float")
-                                     [@reason.raw_literal "Expected a float"])))
+                           | _ -> ((Error ("Expected a float"))
                                [@explicit_arity ])) arg1
                   with
                   | Belt.Result.Ok arg1 ->
@@ -2827,11 +2509,7 @@ module DeserializeRaw =
                                 | ((JSONNumber (number))[@explicit_arity ])
                                     -> ((Belt.Result.Ok (number))
                                     [@explicit_arity ])
-                                | _ ->
-                                    ((Error
-                                        ((("Expected a float")
-                                          [@reason.raw_literal
-                                            "Expected a float"])))
+                                | _ -> ((Error ("Expected a float"))
                                     [@explicit_arity ])) arg0
                        with
                        | Belt.Result.Ok arg0 ->
@@ -2846,21 +2524,15 @@ module DeserializeRaw =
                       match Js.Json.classify number with
                       | ((JSONNumber (number))[@explicit_arity ]) ->
                           ((Belt.Result.Ok (number))[@explicit_arity ])
-                      | _ ->
-                          ((Error
-                              ((("Expected a float")
-                                [@reason.raw_literal "Expected a float"])))
-                          [@explicit_arity ])) arg1
+                      | _ -> ((Error ("Expected a float"))[@explicit_arity ]))
+                     arg1
              with
              | Belt.Result.Ok arg1 ->
                  (match (fun number ->
                            match Js.Json.classify number with
                            | ((JSONNumber (number))[@explicit_arity ]) ->
                                ((Belt.Result.Ok (number))[@explicit_arity ])
-                           | _ ->
-                               ((Error
-                                   ((("Expected a float")
-                                     [@reason.raw_literal "Expected a float"])))
+                           | _ -> ((Error ("Expected a float"))
                                [@explicit_arity ])) arg0
                   with
                   | Belt.Result.Ok arg0 ->
@@ -2874,21 +2546,15 @@ module DeserializeRaw =
                       match Js.Json.classify number with
                       | ((JSONNumber (number))[@explicit_arity ]) ->
                           ((Belt.Result.Ok (number))[@explicit_arity ])
-                      | _ ->
-                          ((Error
-                              ((("Expected a float")
-                                [@reason.raw_literal "Expected a float"])))
-                          [@explicit_arity ])) arg1
+                      | _ -> ((Error ("Expected a float"))[@explicit_arity ]))
+                     arg1
              with
              | Belt.Result.Ok arg1 ->
                  (match (fun number ->
                            match Js.Json.classify number with
                            | ((JSONNumber (number))[@explicit_arity ]) ->
                                ((Belt.Result.Ok (number))[@explicit_arity ])
-                           | _ ->
-                               ((Error
-                                   ((("Expected a float")
-                                     [@reason.raw_literal "Expected a float"])))
+                           | _ -> ((Error ("Expected a float"))
                                [@explicit_arity ])) arg0
                   with
                   | Belt.Result.Ok arg0 ->
@@ -2901,11 +2567,8 @@ module DeserializeRaw =
                       match Js.Json.classify string with
                       | ((JSONString (string))[@explicit_arity ]) ->
                           ((Belt.Result.Ok (string))[@explicit_arity ])
-                      | _ ->
-                          ((Error
-                              ((("epected a string")
-                                [@reason.raw_literal "epected a string"])))
-                          [@explicit_arity ])) arg0
+                      | _ -> ((Error ("epected a string"))[@explicit_arity ]))
+                     arg0
              with
              | Belt.Result.Ok arg0 ->
                  Belt.Result.Ok (Text (arg0) : NodeType.Svg.kind)
@@ -2924,11 +2587,8 @@ module DeserializeRaw =
                       match Js.Json.classify string with
                       | ((JSONString (string))[@explicit_arity ]) ->
                           ((Belt.Result.Ok (string))[@explicit_arity ])
-                      | _ ->
-                          ((Error
-                              ((("epected a string")
-                                [@reason.raw_literal "epected a string"])))
-                          [@explicit_arity ])) arg0
+                      | _ -> ((Error ("epected a string"))[@explicit_arity ]))
+                     arg0
              with
              | Belt.Result.Ok arg0 ->
                  Belt.Result.Ok (Init (arg0) : WorkerProtocol.message)
@@ -2971,11 +2631,7 @@ module DeserializeRaw =
            match Js.Json.classify string with
            | ((JSONString (string))[@explicit_arity ]) ->
                ((Belt.Result.Ok (string))[@explicit_arity ])
-           | _ ->
-               ((Error
-                   ((("epected a string")
-                     [@reason.raw_literal "epected a string"])))
-               [@explicit_arity ])) value
+           | _ -> ((Error ("epected a string"))[@explicit_arity ])) value
     and (deserialize_NodeType____t :
       Js.Json.t -> (NodeType.t, string) Belt.Result.t) =
       fun value ->
@@ -2999,11 +2655,7 @@ module DeserializeRaw =
            match Js.Json.classify string with
            | ((JSONString (string))[@explicit_arity ]) ->
                ((Belt.Result.Ok (string))[@explicit_arity ])
-           | _ ->
-               ((Error
-                   ((("epected a string")
-                     [@reason.raw_literal "epected a string"])))
-               [@explicit_arity ])) value
+           | _ -> ((Error ("epected a string"))[@explicit_arity ])) value
     and (deserialize_Change____delta :
       Js.Json.t -> (Change.delta, string) Belt.Result.t) =
       fun value -> deserialize_Delta____delta value
@@ -3020,11 +2672,7 @@ module DeserializeRaw =
                             match Js.Json.classify string with
                             | ((JSONString (string))[@explicit_arity ]) ->
                                 ((Belt.Result.Ok (string))[@explicit_arity ])
-                            | _ ->
-                                ((Error
-                                    ((("epected a string")
-                                      [@reason.raw_literal
-                                        "epected a string"])))
+                            | _ -> ((Error ("epected a string"))
                                 [@explicit_arity ]) in
                           let rec loop items =
                             match items with
@@ -3047,10 +2695,7 @@ module DeserializeRaw =
                                           ((Belt.Result.Ok ((value :: rest)))
                                           [@explicit_arity ]))) in
                           loop (Belt.List.fromArray items)
-                      | _ ->
-                          ((Belt.Result.Error
-                              ((("expected an array")
-                                [@reason.raw_literal "expected an array"])))
+                      | _ -> ((Belt.Result.Error ("expected an array"))
                           [@explicit_arity ])) arg0
              with
              | Belt.Result.Ok arg0 ->
@@ -3062,11 +2707,8 @@ module DeserializeRaw =
                       match Js.Json.classify string with
                       | ((JSONString (string))[@explicit_arity ]) ->
                           ((Belt.Result.Ok (string))[@explicit_arity ])
-                      | _ ->
-                          ((Error
-                              ((("epected a string")
-                                [@reason.raw_literal "epected a string"])))
-                          [@explicit_arity ])) arg0
+                      | _ -> ((Error ("epected a string"))[@explicit_arity ]))
+                     arg0
              with
              | Belt.Result.Ok arg0 ->
                  Belt.Result.Ok (Redo (arg0) : Sync.link)
@@ -3078,10 +2720,7 @@ module DeserializeRaw =
         match Js.Json.classify record with
         | ((JSONObject (dict))[@explicit_arity ]) ->
             (match Js.Dict.get dict "modified" with
-             | None ->
-                 ((Belt.Result.Error
-                     (((("No attribute ")
-                         [@reason.raw_literal "No attribute "]) ^ "modified")))
+             | None -> ((Belt.Result.Error (("No attribute " ^ "modified")))
                  [@explicit_arity ])
              | ((Some (json))[@explicit_arity ]) ->
                  (match deserialize_Data____date json with
@@ -3091,9 +2730,7 @@ module DeserializeRaw =
                       (match Js.Dict.get dict "created" with
                        | None ->
                            ((Belt.Result.Error
-                               (((("No attribute ")
-                                   [@reason.raw_literal "No attribute "]) ^
-                                   "created")))
+                               (("No attribute " ^ "created")))
                            [@explicit_arity ])
                        | ((Some (json))[@explicit_arity ]) ->
                            (match deserialize_Data____date json with
@@ -3104,10 +2741,7 @@ module DeserializeRaw =
                                 (match Js.Dict.get dict "color" with
                                  | None ->
                                      ((Belt.Result.Error
-                                         (((("No attribute ")
-                                             [@reason.raw_literal
-                                               "No attribute "])
-                                             ^ "color")))
+                                         (("No attribute " ^ "color")))
                                      [@explicit_arity ])
                                  | ((Some (json))[@explicit_arity ]) ->
                                      (match (fun string ->
@@ -3121,9 +2755,7 @@ module DeserializeRaw =
                                                    [@explicit_arity ])
                                                | _ ->
                                                    ((Error
-                                                       ((("epected a string")
-                                                         [@reason.raw_literal
-                                                           "epected a string"])))
+                                                       ("epected a string"))
                                                    [@explicit_arity ])) json
                                       with
                                       | ((Belt.Result.Error
@@ -3135,10 +2767,7 @@ module DeserializeRaw =
                                           (match Js.Dict.get dict "name" with
                                            | None ->
                                                ((Belt.Result.Error
-                                                   (((("No attribute ")
-                                                       [@reason.raw_literal
-                                                         "No attribute "])
-                                                       ^ "name")))
+                                                   (("No attribute " ^ "name")))
                                                [@explicit_arity ])
                                            | ((Some
                                                (json))[@explicit_arity ]) ->
@@ -3157,9 +2786,7 @@ module DeserializeRaw =
                                                                ])
                                                          | _ ->
                                                              ((Error
-                                                                 ((("epected a string")
-                                                                   [@reason.raw_literal
-                                                                    "epected a string"])))
+                                                                 ("epected a string"))
                                                              [@explicit_arity
                                                                ])) json
                                                 with
@@ -3179,9 +2806,7 @@ module DeserializeRaw =
                                                      with
                                                      | None ->
                                                          ((Belt.Result.Error
-                                                             (((("No attribute ")
-                                                                 [@reason.raw_literal
-                                                                   "No attribute "])
+                                                             (("No attribute "
                                                                  ^ "id")))
                                                          [@explicit_arity ])
                                                      | ((Some
@@ -3218,11 +2843,7 @@ module DeserializeRaw =
                                                                   modified =
                                                                     attr_modified
                                                                 }))))))))))
-        | _ ->
-            ((Belt.Result.Error
-                ((("Expected an object")
-                  [@reason.raw_literal "Expected an object"])))
-            [@explicit_arity ])
+        | _ -> ((Belt.Result.Error ("Expected an object"))[@explicit_arity ])
     and (deserialize_Change____data :
       Js.Json.t -> (Change.data, string) Belt.Result.t) =
       fun value ->
@@ -3273,10 +2894,7 @@ module DeserializeRaw =
                            | ((JSONNumber (number))[@explicit_arity ]) ->
                                ((Belt.Result.Ok ((int_of_float number)))
                                [@explicit_arity ])
-                           | _ ->
-                               ((Error
-                                   ((("Expected a float")
-                                     [@reason.raw_literal "Expected a float"])))
+                           | _ -> ((Error ("Expected a float"))
                                [@explicit_arity ])) arg0
                   with
                   | Belt.Result.Ok arg0 ->
@@ -3292,10 +2910,7 @@ module DeserializeRaw =
                            | ((JSONNumber (number))[@explicit_arity ]) ->
                                ((Belt.Result.Ok ((int_of_float number)))
                                [@explicit_arity ])
-                           | _ ->
-                               ((Error
-                                   ((("Expected a float")
-                                     [@reason.raw_literal "Expected a float"])))
+                           | _ -> ((Error ("Expected a float"))
                                [@explicit_arity ])) arg1
                   with
                   | Belt.Result.Ok arg1 ->
@@ -3337,10 +2952,7 @@ module DeserializeRaw =
           match Js.Json.classify record with
           | ((JSONObject (dict))[@explicit_arity ]) ->
               (match Js.Dict.get dict "author" with
-               | None ->
-                   ((Belt.Result.Error
-                       (((("No attribute ")
-                           [@reason.raw_literal "No attribute "]) ^ "author")))
+               | None -> ((Belt.Result.Error (("No attribute " ^ "author")))
                    [@explicit_arity ])
                | ((Some (json))[@explicit_arity ]) ->
                    (match (fun string ->
@@ -3348,11 +2960,7 @@ module DeserializeRaw =
                              | ((JSONString (string))[@explicit_arity ]) ->
                                  ((Belt.Result.Ok (string))
                                  [@explicit_arity ])
-                             | _ ->
-                                 ((Error
-                                     ((("epected a string")
-                                       [@reason.raw_literal
-                                         "epected a string"])))
+                             | _ -> ((Error ("epected a string"))
                                  [@explicit_arity ])) json
                     with
                     | ((Belt.Result.Error (error))[@explicit_arity ]) ->
@@ -3361,9 +2969,7 @@ module DeserializeRaw =
                         (match Js.Dict.get dict "changeset" with
                          | None ->
                              ((Belt.Result.Error
-                                 (((("No attribute ")
-                                     [@reason.raw_literal "No attribute "]) ^
-                                     "changeset")))
+                                 (("No attribute " ^ "changeset")))
                              [@explicit_arity ])
                          | ((Some (json))[@explicit_arity ]) ->
                              (match ((fun transformer ->
@@ -3394,10 +3000,7 @@ module DeserializeRaw =
                                               ((Belt.Result.Ok (string))
                                               [@explicit_arity ])
                                           | _ ->
-                                              ((Error
-                                                  ((("epected a string")
-                                                    [@reason.raw_literal
-                                                      "epected a string"])))
+                                              ((Error ("epected a string"))
                                               [@explicit_arity ]))) json
                               with
                               | ((Belt.Result.Error
@@ -3408,10 +3011,7 @@ module DeserializeRaw =
                                   (match Js.Dict.get dict "sessionId" with
                                    | None ->
                                        ((Belt.Result.Error
-                                           (((("No attribute ")
-                                               [@reason.raw_literal
-                                                 "No attribute "])
-                                               ^ "sessionId")))
+                                           (("No attribute " ^ "sessionId")))
                                        [@explicit_arity ])
                                    | ((Some (json))[@explicit_arity ]) ->
                                        (match (fun string ->
@@ -3427,9 +3027,7 @@ module DeserializeRaw =
                                                      [@explicit_arity ])
                                                  | _ ->
                                                      ((Error
-                                                         ((("epected a string")
-                                                           [@reason.raw_literal
-                                                             "epected a string"])))
+                                                         ("epected a string"))
                                                      [@explicit_arity ]))
                                                 json
                                         with
@@ -3446,10 +3044,8 @@ module DeserializeRaw =
                                              with
                                              | None ->
                                                  ((Belt.Result.Error
-                                                     (((("No attribute ")
-                                                         [@reason.raw_literal
-                                                           "No attribute "])
-                                                         ^ "postSelection")))
+                                                     (("No attribute " ^
+                                                         "postSelection")))
                                                  [@explicit_arity ])
                                              | ((Some
                                                  (json))[@explicit_arity ])
@@ -3472,9 +3068,7 @@ module DeserializeRaw =
                                                        with
                                                        | None ->
                                                            ((Belt.Result.Error
-                                                               (((("No attribute ")
-                                                                   [@reason.raw_literal
-                                                                    "No attribute "])
+                                                               (("No attribute "
                                                                    ^
                                                                    "preSelection")))
                                                            [@explicit_arity ])
@@ -3516,10 +3110,7 @@ module DeserializeRaw =
                                                                     author =
                                                                     attr_author
                                                                   }))))))))))
-          | _ ->
-              ((Belt.Result.Error
-                  ((("Expected an object")
-                    [@reason.raw_literal "Expected an object"])))
+          | _ -> ((Belt.Result.Error ("Expected an object"))
               [@explicit_arity ])
     and (deserialize_World__MultiChange__change :
       Js.Json.t -> (World.MultiChange.change, string) Belt.Result.t) =
@@ -3544,10 +3135,7 @@ module DeserializeRaw =
                                ((Belt.Result.Ok ((value :: rest)))
                                [@explicit_arity ]))) in
                loop (Belt.List.fromArray items)
-           | _ ->
-               ((Belt.Result.Error
-                   ((("expected an array")
-                     [@reason.raw_literal "expected an array"])))
+           | _ -> ((Belt.Result.Error ("expected an array"))
                [@explicit_arity ])) value
     and (deserialize_Change____rebaseItem :
       Js.Json.t -> (Change.rebaseItem, string) Belt.Result.t) =
@@ -3563,11 +3151,8 @@ module DeserializeRaw =
                       | ((JSONNumber (number))[@explicit_arity ]) ->
                           ((Belt.Result.Ok ((int_of_float number)))
                           [@explicit_arity ])
-                      | _ ->
-                          ((Error
-                              ((("Expected a float")
-                                [@reason.raw_literal "Expected a float"])))
-                          [@explicit_arity ])) arg1
+                      | _ -> ((Error ("Expected a float"))[@explicit_arity ]))
+                     arg1
              with
              | Belt.Result.Ok arg1 ->
                  (match deserialize_Data__Node__id arg0 with
@@ -3583,11 +3168,8 @@ module DeserializeRaw =
                       | ((JSONNumber (number))[@explicit_arity ]) ->
                           ((Belt.Result.Ok ((int_of_float number)))
                           [@explicit_arity ])
-                      | _ ->
-                          ((Error
-                              ((("Expected a float")
-                                [@reason.raw_literal "Expected a float"])))
-                          [@explicit_arity ])) arg1
+                      | _ -> ((Error ("Expected a float"))[@explicit_arity ]))
+                     arg1
              with
              | Belt.Result.Ok arg1 ->
                  (match deserialize_Data__Node__id arg0 with
@@ -3603,11 +3185,8 @@ module DeserializeRaw =
                       | ((JSONNumber (number))[@explicit_arity ]) ->
                           ((Belt.Result.Ok ((int_of_float number)))
                           [@explicit_arity ])
-                      | _ ->
-                          ((Error
-                              ((("Expected a float")
-                                [@reason.raw_literal "Expected a float"])))
-                          [@explicit_arity ])) arg3
+                      | _ -> ((Error ("Expected a float"))[@explicit_arity ]))
+                     arg3
              with
              | Belt.Result.Ok arg3 ->
                  (match deserialize_Data__Node__id arg2 with
@@ -3618,11 +3197,7 @@ module DeserializeRaw =
                                     ->
                                     ((Belt.Result.Ok ((int_of_float number)))
                                     [@explicit_arity ])
-                                | _ ->
-                                    ((Error
-                                        ((("Expected a float")
-                                          [@reason.raw_literal
-                                            "Expected a float"])))
+                                | _ -> ((Error ("Expected a float"))
                                     [@explicit_arity ])) arg1
                        with
                        | Belt.Result.Ok arg1 ->
