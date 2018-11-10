@@ -22,7 +22,6 @@ module MultiChange = {
         Ok((data, reverts, [rebase, ...rebases]));
       };
     loop(data, changes, []);
-    /* changes->Sync.tryReduce(data, Change.apply(~notify=?notify)) */
   };
 };
 
