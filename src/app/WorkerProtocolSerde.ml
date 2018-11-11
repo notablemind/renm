@@ -1,3 +1,156 @@
+module V1_Locked =
+  struct
+    type _View__cursor =
+      {
+      userId: string ;
+      userName: string ;
+      color: string ;
+      range: View.Range.range ;
+      node: Data.Node.id }
+    and _Js_date__t
+    and _WorkerProtocol__changeInner =
+      (World.MultiChange.change, World.MultiChange.selection)
+        Sync.changeInner
+    and _Quill__range = View.Range.range
+    and _World__MultiChange__selection =
+      (string * Belt_SetString.t * (int * int))
+    and _NodeType__Svg__t =
+      {
+      size: (int * int) ;
+      layers: NodeType.Svg.layer list }
+    and _WorkerProtocol__serverMessage =
+      | TabChange of WorkerProtocol.changeInner 
+      | InitialData of WorkerProtocol.data * View.cursor list 
+      | Rebase of NodeType.t array 
+      | RemoteCursors of View.cursor list 
+    and _NodeType__Svg__point =
+      {
+      pos: (float * float) ;
+      handleBefore: (float * float) option ;
+      handleAfter: (float * float) option }
+    and _NodeType__Svg__layer =
+      {
+      id: string ;
+      name: string ;
+      shapes: NodeType.Svg.shape list }
+    and ('contents, 'prefix) _Data__Node__t =
+      {
+      id: Data.Node.id ;
+      parent: Data.Node.id ;
+      author: string ;
+      created: Data.date ;
+      completed: bool ;
+      trashed: Data.date option ;
+      modified: Data.date ;
+      childrenModified: Data.date ;
+      children: string list ;
+      contents: 'contents ;
+      tags: Belt_SetString.t ;
+      prefix: 'prefix }
+    and ('change, 'selection) _Sync__changeInner =
+      {
+      changeId: string ;
+      link: Sync.link option ;
+      apply: 'change ;
+      sessionInfo: 'selection Sync.sessionInfo }
+    and _World__MultiChange__rebaseItem = Change.rebaseItem list
+    and ('contents, 'prefix) _Data__data =
+      {
+      nodes: ('contents, 'prefix) Data.Node.t Belt_MapString.t ;
+      tags: Data.Tag.t Belt_MapString.t ;
+      root: Data.Node.id }
+    and _World__MultiChange__data = Change.data
+    and _WorkerProtocol__sync =
+      {
+      googleFileId: string ;
+      owningUserName: string ;
+      lastSyncTime: float }
+    and _NodeType__prefix =
+      | Todo of bool 
+      | Rating of int 
+      | Sentiment of int 
+      | Attribution 
+    and _NodeType__Svg__shape =
+      {
+      id: string ;
+      rotation: float ;
+      pos: (float * float) ;
+      fill: string option ;
+      stroke: (string * float) option ;
+      kind: NodeType.Svg.kind }
+    and _Delta__delta
+    and _Belt_SetString__t
+    and _View__Range__range
+    and _WorkerProtocol__data = World.MultiChange.data
+    and _WorkerProtocol__metaData =
+      {
+      id: string ;
+      title: string ;
+      nodeCount: int ;
+      created: float ;
+      lastOpened: float ;
+      lastModified: float ;
+      sync: WorkerProtocol.sync option }
+    and _NodeType__contents =
+      | Normal of Delta.delta 
+      | Code of string * string 
+      | Tweet of string 
+      | Youtube of string 
+      | Diagram of NodeType.Svg.t 
+    and _Data__date = float
+    and _NodeType__Svg__kind =
+      | Path of NodeType.Svg.point list 
+      | Rect of float * float * float 
+      | Ellipse of float * float 
+      | Line of float * float 
+      | Text of string 
+    and _WorkerProtocol__message =
+      | Close 
+      | Init of string 
+      | Change of WorkerProtocol.changeInner 
+      | UndoRequest 
+      | RedoRequest 
+      | SelectionChanged of Data.Node.id * Quill.range 
+    and 'value _Belt_MapString__t
+    and _Data__Node__id = string
+    and _NodeType__t =
+      (NodeType.contents, NodeType.prefix option) Data.Node.t
+    and _Data__Tag__id = string
+    and _Change__delta = Delta.delta
+    and _Sync__link =
+      | Undo of string list 
+      | Redo of string 
+    and _Data__Tag__t =
+      {
+      id: Data.Tag.id ;
+      name: string ;
+      color: string ;
+      created: Data.date ;
+      modified: Data.date }
+    and _Change__data = (NodeType.contents, NodeType.prefix option) Data.data
+    and _Change__change =
+      | Trash of Data.Node.id * Js_date.t 
+      | UnTrash of Data.Node.id 
+      | RemoveNode of Data.Node.id 
+      | AddNode of int * NodeType.t 
+      | MoveNode of Data.Node.id * int * Data.Node.id 
+      | ChangeContents of Data.Node.id * Change.delta 
+      | SetContents of Data.Node.id * NodeType.contents 
+    and 'selection _Sync__sessionInfo =
+      {
+      preSelection: 'selection ;
+      postSelection: 'selection ;
+      sessionId: string ;
+      changeset: string option ;
+      author: string }
+    and _World__MultiChange__change = Change.change list
+    and _Change__rebaseItem =
+      | Nothing 
+      | RemoveChild of Data.Node.id * int 
+      | AddChild of Data.Node.id * int 
+      | MoveChild of Data.Node.id * int * Data.Node.id * int 
+      | Contents of Data.Node.id * Change.delta 
+  end
 module DeserializeRaw =
   struct
     let rec (deserialize_View____cursor :
