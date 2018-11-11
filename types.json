@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "output": "src/app/WorkerProtocolSerde.ml",
   "engine": "bs-json",
   "entries": [
