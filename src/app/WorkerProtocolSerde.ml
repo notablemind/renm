@@ -128,7 +128,6 @@ module V1_Locked =
       | Change of _WorkerProtocol__changeInner 
       | UndoRequest 
       | RedoRequest 
-      | Things 
       | SelectionChanged of _Data__Node__id * _Quill__range 
     and _WorkerProtocol__metaData = WorkerProtocol.metaData =
       {
@@ -2756,9 +2755,6 @@ module DeserializeRaw =
         | JSONArray [|tag|] when
             (Js.Json.JSONString "RedoRequest") = (Js.Json.classify tag) ->
             Belt.Result.Ok (RedoRequest : WorkerProtocol.message)
-        | JSONArray [|tag|] when
-            (Js.Json.JSONString "Things") = (Js.Json.classify tag) ->
-            Belt.Result.Ok (Things : WorkerProtocol.message)
         | JSONArray [|tag;arg0;arg1|] when
             (Js.Json.JSONString "SelectionChanged") = (Js.Json.classify tag)
             ->
@@ -3805,7 +3801,6 @@ module SerializeRaw =
                                              arg0)|]
         | UndoRequest -> Js.Json.array [|(Js.Json.string "UndoRequest")|]
         | RedoRequest -> Js.Json.array [|(Js.Json.string "RedoRequest")|]
-        | Things -> Js.Json.array [|(Js.Json.string "Things")|]
         | SelectionChanged (arg0, arg1) ->
             Js.Json.array
               [|(Js.Json.string "SelectionChanged");(serialize_Data__Node__id

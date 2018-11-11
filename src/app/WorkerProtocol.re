@@ -8,7 +8,6 @@ type message =
   | Change(changeInner)
   | UndoRequest
   | RedoRequest
-  | Things
   | SelectionChanged(Data.Node.id, Quill.range);
 
 type serverMessage =
