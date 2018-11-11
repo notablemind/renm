@@ -8,5 +8,5 @@
     "**/.DS_Store": true
   },
   // "reason_language_server.location": "../../tools/reason-language-server/lib/bs/native/bin.native"
-  "reason_language_server.location": "../../tools/reason-language-server/_build/default/bin/Bin.exe"
+  "reason_language_server.location": "../../tools/reason-language-server/_esy/default/build/default/bin/Bin.exe"
 }

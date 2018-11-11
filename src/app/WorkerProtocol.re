@@ -31,3 +31,7 @@ type metaData = {
   lastModified: float,
   sync: option(sync),
 };
+
+type m = int;
+let n: int = 5;
+let z: m = n;
