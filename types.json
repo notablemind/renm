@@ -1,12 +1,13 @@
 {
-  "version": 2,
+  "version": 1,
   "output": "src/app/WorkerProtocolSerde.ml",
-  "engine": "bs-json",
+  "engine": ["Bs_json"],
   "entries": [
-    {"file": "./src/app/WorkerProtocol.re", "type": "message"},
-    {"file": "./src/app/WorkerProtocol.re", "type": "serverMessage"},
-    {"file": "./src/app/WorkerProtocol.re", "type": "metaData"},
-    {"file": "./src/World.re", "type": "MultiChange.rebaseItem"},
-    {"file": "./src/NodeType.re", "type": "t", "history": true}
-  ]
+    {"file": "./src/app/WorkerProtocol.re", "type_": "message"},
+    {"file": "./src/app/WorkerProtocol.re", "type_": "serverMessage"},
+    {"file": "./src/app/WorkerProtocol.re", "type_": "metaData"},
+    {"file": "./src/World.re", "type_": "MultiChange.rebaseItem"},
+    {"file": "./src/NodeType.re", "type_": "t", "history": true}
+  ],
+  "custom": []
 }

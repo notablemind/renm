@@ -3901,5 +3901,20 @@ module SerializeRaw =
                        ((fun int -> Js.Json.number (float_of_int int))) arg1)|]))
                  arg2)|]) value
   end
+let serializeMessage = SerializeRaw.serialize_WorkerProtocol____message
+and deserializeMessage = DeserializeRaw.deserialize_WorkerProtocol____message
+let serializeServerMessage =
+  SerializeRaw.serialize_WorkerProtocol____serverMessage
+and deserializeServerMessage =
+  DeserializeRaw.deserialize_WorkerProtocol____serverMessage
+let serializeMetaData = SerializeRaw.serialize_WorkerProtocol____metaData
+and deserializeMetaData =
+  DeserializeRaw.deserialize_WorkerProtocol____metaData
+let serializeMultiChange_rebaseItem =
+  SerializeRaw.serialize_World__MultiChange__rebaseItem
+and deserializeMultiChange_rebaseItem =
+  DeserializeRaw.deserialize_World__MultiChange__rebaseItem
+let serializeT = SerializeRaw.serialize_NodeType____t
+and deserializeT = DeserializeRaw.deserialize_NodeType____t
 include SerializeRaw
 include DeserializeRaw

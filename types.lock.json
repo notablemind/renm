@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "pastVersions": {},
+  "pastVersions": [],
   "current": [
     [
       [
@@ -2220,11 +2220,6 @@
               ],
             [
               "RedoRequest",
-              [],
-              null
-              ],
-            [
-              "Things",
               [],
               null
               ],
