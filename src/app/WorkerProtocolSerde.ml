@@ -3202,8 +3202,8 @@ module Version1 =
                        ((fun int -> Js.Json.number (float_of_int int))) arg1)|]))
                  arg2)|]) value
   end
-module Current = Version1
 let currentVersion = 1
+module Current = Version1
 let parseVersion json =
   match Js.Json.classify json with
   | ((JSONObject (dict))[@explicit_arity ]) ->
