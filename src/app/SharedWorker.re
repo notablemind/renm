@@ -84,6 +84,36 @@ let sendChange = (~excludeSession=?, ports, change) => {
   };
 };
 
+let unique = items => {
+  let seen = Hashtbl.create(10);
+  items->List.keep(item => {
+    if (Hashtbl.mem(seen, item)) {
+      false
+    } else {
+      Hashtbl.add(seen, item, ());
+      true
+    }
+  })
+};
+
+let persistChangedNodes = (file, changeEvents) => {
+  let changedIds = changeEvents->List.keepMap(evt => switch evt {
+    | SharedTypes.Event.Node(id) => Some(id)
+    | _ => None
+  }) -> unique->List.toArray;
+  let%Lets.Async.Consume () = file.db->Dbs.getNodesDb->Persistance.batch(
+    changedIds->Array.keepMap(id => {
+      let%Lets.Opt node = file.world.current->Data.get(id);
+      Some(Persistance.batchPut({
+      "key": id,
+      "type": "put",
+      "value": node
+    }))
+    }
+    )
+  )
+};
+
 let applyChange = (file, change, ports, dontSendToSession) => {
   let%Lets.TryLog changeEvents =
     Change.eventsForChanges(file.world.current.nodes, change.Sync.apply);
@@ -99,7 +129,8 @@ let applyChange = (file, change, ports, dontSendToSession) => {
   };
   file.world = world;
 
-  sendChange(~excludeSession=?dontSendToSession, ports, change)
+  sendChange(~excludeSession=?dontSendToSession, ports, change);
+  persistChangedNodes(file, changeEvents);
 };
 
 let onUndo = (state, ports, sessionId) => {
