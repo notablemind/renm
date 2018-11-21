@@ -12,8 +12,8 @@ external onmessage: (port, {. "data": Js.Json.t} => unit) => unit = "";
 /** Use this to shut down the shared worker. The clients can then reload to restart the sharedworker. */
 [@bs.val] external close: unit => unit = "";
 
-let parseMessage = WorkerProtocolSerde.deserialize_WorkerProtocol____message;
-let messageToJson = WorkerProtocolSerde.serialize_WorkerProtocol____serverMessage;
+let parseMessage = WorkerProtocolSerde.deserializeMessage;
+let messageToJson = WorkerProtocolSerde.serializeServerMessage;
 
 /* TODO I could also allow `sync` to be a postgres database or something
  * that would probably be much more efficient.

@@ -1,13 +1,14 @@
 {
   "version": 1,
+  "$schemaVersion": 1,
   "output": "src/app/WorkerProtocolSerde.ml",
-  "engine": ["Bs_json"],
+  "engine": "Js.Json",
   "entries": [
-    {"file": "./src/app/WorkerProtocol.re", "type_": "message"},
-    {"file": "./src/app/WorkerProtocol.re", "type_": "serverMessage"},
-    {"file": "./src/app/WorkerProtocol.re", "type_": "metaData"},
-    {"file": "./src/World.re", "type_": "MultiChange.rebaseItem"},
-    {"file": "./src/NodeType.re", "type_": "t", "history": true}
+    {"file": "./src/app/WorkerProtocol.re", "type": "message"},
+    {"file": "./src/app/WorkerProtocol.re", "type": "serverMessage"},
+    {"file": "./src/app/WorkerProtocol.re", "type": "metaData"},
+    {"file": "./src/World.re", "type": "MultiChange.rebaseItem", "publicName": "rebaseItem"},
+    {"file": "./src/NodeType.re", "type": "t"}
   ],
   "custom": []
 }

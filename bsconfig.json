@@ -4,7 +4,7 @@
     "react-jsx": 2
   },
   "bsc-flags": ["-open Belt", "-bs-g"],
-  "ppx-flags": ["../../tools/let-anything/lib/bs/native/let_anything.native"],
+  "ppx-flags": ["let-anything/ppx"],
   "sources": [{
     "dir" : "src",
     "subdirs" : true

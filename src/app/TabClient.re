@@ -1,5 +1,5 @@
-let messageToJson = WorkerProtocolSerde.serialize_WorkerProtocol____message;
-let messageFromJson = WorkerProtocolSerde.deserialize_WorkerProtocol____serverMessage;
+let messageToJson = WorkerProtocolSerde.serializeMessage;
+let messageFromJson = WorkerProtocolSerde.deserializeServerMessage;
 
 type sharedWorker;
 type port;

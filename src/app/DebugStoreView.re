@@ -10,7 +10,7 @@ let showChange = (change: World.thisChange) =>
     {
       str(
         Js.Json.stringify(
-          WorkerProtocolSerde.serialize_World__MultiChange__change(
+          WorkerProtocolSerde.Current.serialize_World__MultiChange__change(
             change.inner.apply,
           ),
         )
@@ -20,7 +20,7 @@ let showChange = (change: World.thisChange) =>
     {
       str(
         Js.Json.stringify(
-          WorkerProtocolSerde.serialize_World__MultiChange__change(
+          WorkerProtocolSerde.Current.serialize_World__MultiChange__change(
             change.revert,
           ),
         )
@@ -30,7 +30,7 @@ let showChange = (change: World.thisChange) =>
     {
       str(
         Js.Json.stringify(
-          WorkerProtocolSerde.serialize_World__MultiChange__rebaseItem(
+          WorkerProtocolSerde.Current.serialize_World__MultiChange__rebaseItem(
             change.rebase,
           ),
         ),
