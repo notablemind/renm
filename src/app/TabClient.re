@@ -69,14 +69,17 @@ let handleActions = (~state, ~port, ~preSelection, ~postSelection, actions) => {
       );
     });
   if (prevSession.sharedViewData != state.session.sharedViewData) {
-    saveSharedViewData(~fileId="", state.session.sharedViewData);
+    saveSharedViewData(~fileId=state.session.metaData.id, state.session.sharedViewData);
   };
 };
 
 
 let handleMessage = (~state, ~port, ~message: WorkerProtocol.serverMessage) =>
   switch (message) {
-  | InitialData(_) => ()
+  | LoadFile(_) => ()
+  | AllFiles(_) => ()
+  | MetaDataUpdate(_) => ()
+
   | TabChange(change) =>
     /* TODO need to make sure that selections are updated correctly... */
     let%Lets.TryLog events =
@@ -141,12 +144,12 @@ let handleMessage = (~state, ~port, ~message: WorkerProtocol.serverMessage) =>
   };
 
 
-let initStore = (~sessionId, ~port, data, cursors) => {
+let initStore = (~metaData, ~sessionId, ~port, data, cursors) => {
   let session =
-    Session.createSession(~sessionId, ~root=data.Data.root);
+    Session.createSession(~metaData, ~sessionId, ~root=data.Data.root);
   let session = {
     ...session,
-    sharedViewData: switch (loadSharedViewData(~fileId="")) {
+    sharedViewData: switch (loadSharedViewData(~fileId=metaData.id)) {
       | None => session.sharedViewData
       | Some(d) => d
     },
@@ -172,7 +175,7 @@ let initStore = (~sessionId, ~port, data, cursors) => {
       let (session, events) =
         Session.actView_(state.session, action);
       if (session.sharedViewData != state.session.sharedViewData) {
-        saveSharedViewData(session.sharedViewData);
+        saveSharedViewData(~fileId=metaData.id, session.sharedViewData);
       };
       state.session = session;
       Subscription.trigger(session.subs, events);
@@ -201,13 +204,13 @@ let setupWorker = onSetup => {
   port->start;
   let sessionId = Utils.newId();
   window->addUnloadEvent(() => port->postMessage(messageToJson(Close)));
-  port->postMessage(messageToJson(Init(sessionId)));
+  port->postMessage(messageToJson(Init(sessionId, None)));
   port
   ->onmessage(evt => {
       /* Js.log2("Got message", evt); */
       switch (messageFromJson(evt##data)) {
-      | Ok(InitialData(data, cursors)) =>
-        let clientStore = initStore(~sessionId, ~port, data, cursors);
+      | Ok(LoadFile(metaData, data, cursors)) =>
+        let clientStore = initStore(~metaData, ~sessionId, ~port, data, cursors);
         onSetup(clientStore);
       | _ => ()
       };

@@ -2298,12 +2298,38 @@
                 "Variant",
                 [
                   [
-                    "Close",
-                    [],
+                    "Init",
+                    [
+                      [
+                        "Reference",
+                        [
+                          "Builtin",
+                          "string"
+                        ],
+                        []
+                      ],
+                      [
+                        "Reference",
+                        [
+                          "Builtin",
+                          "option"
+                        ],
+                        [
+                          [
+                            "Reference",
+                            [
+                              "Builtin",
+                              "string"
+                            ],
+                            []
+                          ]
+                        ]
+                      ]
+                    ],
                     null
                   ],
                   [
-                    "Init",
+                    "Open",
                     [
                       [
                         "Reference",
@@ -2314,6 +2340,11 @@
                         []
                       ]
                     ],
+                    null
+                  ],
+                  [
+                    "Close",
+                    [],
                     null
                   ],
                   [
@@ -2328,6 +2359,20 @@
                             [],
                             "changeInner"
                           ]
+                        ],
+                        []
+                      ]
+                    ],
+                    null
+                  ],
+                  [
+                    "ChangeTitle",
+                    [
+                      [
+                        "Reference",
+                        [
+                          "Builtin",
+                          "string"
                         ],
                         []
                       ]
@@ -2492,6 +2537,83 @@
           [
             "WorkerProtocol",
             [],
+            "remote"
+          ],
+          [
+            [],
+            {
+              "name": "remote",
+              "variables": [],
+              "body": [
+                "Variant",
+                [
+                  [
+                    "Google",
+                    [
+                      [
+                        "Reference",
+                        [
+                          "Builtin",
+                          "string"
+                        ],
+                        []
+                      ],
+                      [
+                        "Reference",
+                        [
+                          "Builtin",
+                          "string"
+                        ],
+                        []
+                      ]
+                    ],
+                    null
+                  ],
+                  [
+                    "Gist",
+                    [
+                      [
+                        "Reference",
+                        [
+                          "Builtin",
+                          "string"
+                        ],
+                        []
+                      ],
+                      [
+                        "Reference",
+                        [
+                          "Builtin",
+                          "string"
+                        ],
+                        []
+                      ]
+                    ],
+                    null
+                  ],
+                  [
+                    "LocalDisk",
+                    [
+                      [
+                        "Reference",
+                        [
+                          "Builtin",
+                          "string"
+                        ],
+                        []
+                      ]
+                    ],
+                    null
+                  ]
+                ]
+              ]
+            }
+          ]
+        ],
+        [
+          [
+            "WorkerProtocol",
+            [],
             "serverMessage"
           ],
           [
@@ -2503,7 +2625,7 @@
                 "Variant",
                 [
                   [
-                    "TabChange",
+                    "LoadFile",
                     [
                       [
                         "Reference",
@@ -2512,17 +2634,11 @@
                           [
                             "WorkerProtocol",
                             [],
-                            "changeInner"
+                            "metaData"
                           ]
                         ],
                         []
-                      ]
-                    ],
-                    null
-                  ],
-                  [
-                    "InitialData",
-                    [
+                      ],
                       [
                         "Reference",
                         [
@@ -2555,6 +2671,69 @@
                             []
                           ]
                         ]
+                      ]
+                    ],
+                    null
+                  ],
+                  [
+                    "AllFiles",
+                    [
+                      [
+                        "Reference",
+                        [
+                          "Builtin",
+                          "list"
+                        ],
+                        [
+                          [
+                            "Reference",
+                            [
+                              "Public",
+                              [
+                                "WorkerProtocol",
+                                [],
+                                "metaData"
+                              ]
+                            ],
+                            []
+                          ]
+                        ]
+                      ]
+                    ],
+                    null
+                  ],
+                  [
+                    "TabChange",
+                    [
+                      [
+                        "Reference",
+                        [
+                          "Public",
+                          [
+                            "WorkerProtocol",
+                            [],
+                            "changeInner"
+                          ]
+                        ],
+                        []
+                      ]
+                    ],
+                    null
+                  ],
+                  [
+                    "MetaDataUpdate",
+                    [
+                      [
+                        "Reference",
+                        [
+                          "Public",
+                          [
+                            "WorkerProtocol",
+                            [],
+                            "metaData"
+                          ]
+                        ],
+                        []
                       ]
                     ],
                     null
@@ -2633,23 +2812,16 @@
                 "Record",
                 [
                   [
-                    "googleFileId",
+                    "remote",
                     [
                       "Reference",
                       [
-                        "Builtin",
-                        "string"
-                      ],
-                      []
-                    ]
-                  ],
-                  [
-                    "owningUserName",
-                    [
-                      "Reference",
-                      [
-                        "Builtin",
-                        "string"
+                        "Public",
+                        [
+                          "WorkerProtocol",
+                          [],
+                          "remote"
+                        ]
                       ],
                       []
                     ]

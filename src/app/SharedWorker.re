@@ -306,14 +306,15 @@ addEventListener("connect", e => {
       Js.log2("Got message", evt);
       switch (parseMessage(evt##data)) {
       | Ok(Close) => ()
-      | Ok(Init(sessionId)) =>
+      | Ok(Init(sessionId, fileId)) =>
         let%Lets.Async.Consume file = initialPromise;
         ports->HashMap.String.set(sessionId, port);
         port->onmessage(handleMessage(file, ports, sessionId));
         port
         ->postMessage(
             messageToJson(
-              InitialData(
+              LoadFile(
+                file.meta,
                 file->data,
                 cursorsForSession(file.cursors, sessionId),
               ),

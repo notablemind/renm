@@ -126,9 +126,11 @@ module Version1 =
         _Sync__changeInner
     and _WorkerProtocol__data = _World__MultiChange__data
     and _WorkerProtocol__message = WorkerProtocol.message =
+      | Init of string * string option 
+      | Open of string 
       | Close 
-      | Init of string 
       | Change of _WorkerProtocol__changeInner 
+      | ChangeTitle of string 
       | UndoRequest 
       | RedoRequest 
       | SelectionChanged of _Data__Node__id * _Quill__range 
@@ -141,15 +143,21 @@ module Version1 =
       lastOpened: float ;
       lastModified: float ;
       sync: _WorkerProtocol__sync option }
+    and _WorkerProtocol__remote = WorkerProtocol.remote =
+      | Google of string * string 
+      | Gist of string * string 
+      | LocalDisk of string 
     and _WorkerProtocol__serverMessage = WorkerProtocol.serverMessage =
+      | LoadFile of _WorkerProtocol__metaData * _WorkerProtocol__data *
+      _View__cursor list 
+      | AllFiles of _WorkerProtocol__metaData list 
       | TabChange of _WorkerProtocol__changeInner 
-      | InitialData of _WorkerProtocol__data * _View__cursor list 
+      | MetaDataUpdate of _WorkerProtocol__metaData 
       | Rebase of _NodeType__t array 
       | RemoteCursors of _View__cursor list 
     and _WorkerProtocol__sync = WorkerProtocol.sync =
       {
-      googleFileId: string ;
-      owningUserName: string ;
+      remote: _WorkerProtocol__remote ;
       lastSyncTime: float }
     and _World__MultiChange__change = _Change__change list
     and _World__MultiChange__data = _Change__data
@@ -2157,12 +2165,47 @@ module Version1 =
       Js.Json.t -> (_WorkerProtocol__message, string list) Belt.Result.t) =
       fun constructor ->
         match Js.Json.classify constructor with
-        | JSONArray [|tag|] when
-            ((Js.Json.JSONString ("Close"))[@explicit_arity ]) =
-              (Js.Json.classify tag)
-            -> Belt.Result.Ok (Close : _WorkerProtocol__message)
-        | JSONArray [|tag;arg0|] when
+        | JSONArray [|tag;arg0;arg1|] when
             ((Js.Json.JSONString ("Init"))[@explicit_arity ]) =
+              (Js.Json.classify tag)
+            ->
+            (match ((fun transformer ->
+                       fun option ->
+                         match Js.Json.classify option with
+                         | JSONNull -> ((Belt.Result.Ok (None))
+                             [@explicit_arity ])
+                         | _ ->
+                             (match transformer option with
+                              | ((Belt.Result.Error
+                                  (error))[@explicit_arity ]) ->
+                                  ((Belt.Result.Error
+                                      (("optional value" :: error)))
+                                  [@explicit_arity ])
+                              | ((Ok (value))[@explicit_arity ]) ->
+                                  ((Ok (((Some (value))[@explicit_arity ])))
+                                  [@explicit_arity ])))
+                      (fun string ->
+                         match Js.Json.classify string with
+                         | ((JSONString (string))[@explicit_arity ]) ->
+                             ((Belt.Result.Ok (string))[@explicit_arity ])
+                         | _ -> ((Error (["expected a string"]))
+                             [@explicit_arity ]))) arg1
+             with
+             | Belt.Result.Ok arg1 ->
+                 (match (fun string ->
+                           match Js.Json.classify string with
+                           | ((JSONString (string))[@explicit_arity ]) ->
+                               ((Belt.Result.Ok (string))[@explicit_arity ])
+                           | _ -> ((Error (["expected a string"]))
+                               [@explicit_arity ])) arg0
+                  with
+                  | Belt.Result.Ok arg0 ->
+                      Belt.Result.Ok
+                        (Init (arg0, arg1) : _WorkerProtocol__message)
+                  | Error error -> Error ("constructor argument 0" :: error))
+             | Error error -> Error ("constructor argument 1" :: error))
+        | JSONArray [|tag;arg0|] when
+            ((Js.Json.JSONString ("Open"))[@explicit_arity ]) =
               (Js.Json.classify tag)
             ->
             (match (fun string ->
@@ -2173,8 +2216,12 @@ module Version1 =
                           [@explicit_arity ])) arg0
              with
              | Belt.Result.Ok arg0 ->
-                 Belt.Result.Ok (Init (arg0) : _WorkerProtocol__message)
+                 Belt.Result.Ok (Open (arg0) : _WorkerProtocol__message)
              | Error error -> Error ("constructor argument 0" :: error))
+        | JSONArray [|tag|] when
+            ((Js.Json.JSONString ("Close"))[@explicit_arity ]) =
+              (Js.Json.classify tag)
+            -> Belt.Result.Ok (Close : _WorkerProtocol__message)
         | JSONArray [|tag;arg0|] when
             ((Js.Json.JSONString ("Change"))[@explicit_arity ]) =
               (Js.Json.classify tag)
@@ -2182,6 +2229,21 @@ module Version1 =
             (match deserialize_WorkerProtocol____changeInner arg0 with
              | Belt.Result.Ok arg0 ->
                  Belt.Result.Ok (Change (arg0) : _WorkerProtocol__message)
+             | Error error -> Error ("constructor argument 0" :: error))
+        | JSONArray [|tag;arg0|] when
+            ((Js.Json.JSONString ("ChangeTitle"))[@explicit_arity ]) =
+              (Js.Json.classify tag)
+            ->
+            (match (fun string ->
+                      match Js.Json.classify string with
+                      | ((JSONString (string))[@explicit_arity ]) ->
+                          ((Belt.Result.Ok (string))[@explicit_arity ])
+                      | _ -> ((Error (["expected a string"]))
+                          [@explicit_arity ])) arg0
+             with
+             | Belt.Result.Ok arg0 ->
+                 Belt.Result.Ok
+                   (ChangeTitle (arg0) : _WorkerProtocol__message)
              | Error error -> Error ("constructor argument 0" :: error))
         | JSONArray [|tag|] when
             ((Js.Json.JSONString ("UndoRequest"))[@explicit_arity ]) =
@@ -2363,23 +2425,82 @@ module Version1 =
                   | ((Ok (data))[@explicit_arity ]) -> inner data))
         | _ -> ((Belt.Result.Error (["Expected an object"]))
             [@explicit_arity ])
+    and (deserialize_WorkerProtocol____remote :
+      Js.Json.t -> (_WorkerProtocol__remote, string list) Belt.Result.t) =
+      fun constructor ->
+        match Js.Json.classify constructor with
+        | JSONArray [|tag;arg0;arg1|] when
+            ((Js.Json.JSONString ("Google"))[@explicit_arity ]) =
+              (Js.Json.classify tag)
+            ->
+            (match (fun string ->
+                      match Js.Json.classify string with
+                      | ((JSONString (string))[@explicit_arity ]) ->
+                          ((Belt.Result.Ok (string))[@explicit_arity ])
+                      | _ -> ((Error (["expected a string"]))
+                          [@explicit_arity ])) arg1
+             with
+             | Belt.Result.Ok arg1 ->
+                 (match (fun string ->
+                           match Js.Json.classify string with
+                           | ((JSONString (string))[@explicit_arity ]) ->
+                               ((Belt.Result.Ok (string))[@explicit_arity ])
+                           | _ -> ((Error (["expected a string"]))
+                               [@explicit_arity ])) arg0
+                  with
+                  | Belt.Result.Ok arg0 ->
+                      Belt.Result.Ok
+                        (Google (arg0, arg1) : _WorkerProtocol__remote)
+                  | Error error -> Error ("constructor argument 0" :: error))
+             | Error error -> Error ("constructor argument 1" :: error))
+        | JSONArray [|tag;arg0;arg1|] when
+            ((Js.Json.JSONString ("Gist"))[@explicit_arity ]) =
+              (Js.Json.classify tag)
+            ->
+            (match (fun string ->
+                      match Js.Json.classify string with
+                      | ((JSONString (string))[@explicit_arity ]) ->
+                          ((Belt.Result.Ok (string))[@explicit_arity ])
+                      | _ -> ((Error (["expected a string"]))
+                          [@explicit_arity ])) arg1
+             with
+             | Belt.Result.Ok arg1 ->
+                 (match (fun string ->
+                           match Js.Json.classify string with
+                           | ((JSONString (string))[@explicit_arity ]) ->
+                               ((Belt.Result.Ok (string))[@explicit_arity ])
+                           | _ -> ((Error (["expected a string"]))
+                               [@explicit_arity ])) arg0
+                  with
+                  | Belt.Result.Ok arg0 ->
+                      Belt.Result.Ok
+                        (Gist (arg0, arg1) : _WorkerProtocol__remote)
+                  | Error error -> Error ("constructor argument 0" :: error))
+             | Error error -> Error ("constructor argument 1" :: error))
+        | JSONArray [|tag;arg0|] when
+            ((Js.Json.JSONString ("LocalDisk"))[@explicit_arity ]) =
+              (Js.Json.classify tag)
+            ->
+            (match (fun string ->
+                      match Js.Json.classify string with
+                      | ((JSONString (string))[@explicit_arity ]) ->
+                          ((Belt.Result.Ok (string))[@explicit_arity ])
+                      | _ -> ((Error (["expected a string"]))
+                          [@explicit_arity ])) arg0
+             with
+             | Belt.Result.Ok arg0 ->
+                 Belt.Result.Ok (LocalDisk (arg0) : _WorkerProtocol__remote)
+             | Error error -> Error ("constructor argument 0" :: error))
+        | _ -> ((Belt.Result.Error (["Expected an array"]))
+            [@explicit_arity ])
     and (deserialize_WorkerProtocol____serverMessage :
       Js.Json.t ->
         (_WorkerProtocol__serverMessage, string list) Belt.Result.t)
       =
       fun constructor ->
         match Js.Json.classify constructor with
-        | JSONArray [|tag;arg0|] when
-            ((Js.Json.JSONString ("TabChange"))[@explicit_arity ]) =
-              (Js.Json.classify tag)
-            ->
-            (match deserialize_WorkerProtocol____changeInner arg0 with
-             | Belt.Result.Ok arg0 ->
-                 Belt.Result.Ok
-                   (TabChange (arg0) : _WorkerProtocol__serverMessage)
-             | Error error -> Error ("constructor argument 0" :: error))
-        | JSONArray [|tag;arg0;arg1|] when
-            ((Js.Json.JSONString ("InitialData"))[@explicit_arity ]) =
+        | JSONArray [|tag;arg0;arg1;arg2|] when
+            ((Js.Json.JSONString ("LoadFile"))[@explicit_arity ]) =
               (Js.Json.classify tag)
             ->
             (match (fun list ->
@@ -2410,15 +2531,76 @@ module Version1 =
                                           [@explicit_arity ]))) in
                           loop 0 (Belt.List.fromArray items)
                       | _ -> ((Belt.Result.Error (["expected an array"]))
-                          [@explicit_arity ])) arg1
+                          [@explicit_arity ])) arg2
              with
-             | Belt.Result.Ok arg1 ->
-                 (match deserialize_WorkerProtocol____data arg0 with
-                  | Belt.Result.Ok arg0 ->
-                      Belt.Result.Ok
-                        (InitialData (arg0, arg1) : _WorkerProtocol__serverMessage)
-                  | Error error -> Error ("constructor argument 0" :: error))
-             | Error error -> Error ("constructor argument 1" :: error))
+             | Belt.Result.Ok arg2 ->
+                 (match deserialize_WorkerProtocol____data arg1 with
+                  | Belt.Result.Ok arg1 ->
+                      (match deserialize_WorkerProtocol____metaData arg0 with
+                       | Belt.Result.Ok arg0 ->
+                           Belt.Result.Ok
+                             (LoadFile (arg0, arg1, arg2) : _WorkerProtocol__serverMessage)
+                       | Error error ->
+                           Error ("constructor argument 0" :: error))
+                  | Error error -> Error ("constructor argument 1" :: error))
+             | Error error -> Error ("constructor argument 2" :: error))
+        | JSONArray [|tag;arg0|] when
+            ((Js.Json.JSONString ("AllFiles"))[@explicit_arity ]) =
+              (Js.Json.classify tag)
+            ->
+            (match (fun list ->
+                      match Js.Json.classify list with
+                      | ((JSONArray (items))[@explicit_arity ]) ->
+                          let transformer =
+                            deserialize_WorkerProtocol____metaData in
+                          let rec loop i items =
+                            match items with
+                            | [] -> ((Belt.Result.Ok ([]))[@explicit_arity ])
+                            | one::rest ->
+                                (match transformer one with
+                                 | ((Belt.Result.Error
+                                     (error))[@explicit_arity ]) ->
+                                     ((Belt.Result.Error
+                                         ((("list element " ^
+                                              (string_of_int i)) :: error)))
+                                     [@explicit_arity ])
+                                 | ((Belt.Result.Ok
+                                     (value))[@explicit_arity ]) ->
+                                     (match loop (i + 1) rest with
+                                      | ((Belt.Result.Error
+                                          (error))[@explicit_arity ]) ->
+                                          ((Belt.Result.Error (error))
+                                          [@explicit_arity ])
+                                      | ((Belt.Result.Ok
+                                          (rest))[@explicit_arity ]) ->
+                                          ((Belt.Result.Ok ((value :: rest)))
+                                          [@explicit_arity ]))) in
+                          loop 0 (Belt.List.fromArray items)
+                      | _ -> ((Belt.Result.Error (["expected an array"]))
+                          [@explicit_arity ])) arg0
+             with
+             | Belt.Result.Ok arg0 ->
+                 Belt.Result.Ok
+                   (AllFiles (arg0) : _WorkerProtocol__serverMessage)
+             | Error error -> Error ("constructor argument 0" :: error))
+        | JSONArray [|tag;arg0|] when
+            ((Js.Json.JSONString ("TabChange"))[@explicit_arity ]) =
+              (Js.Json.classify tag)
+            ->
+            (match deserialize_WorkerProtocol____changeInner arg0 with
+             | Belt.Result.Ok arg0 ->
+                 Belt.Result.Ok
+                   (TabChange (arg0) : _WorkerProtocol__serverMessage)
+             | Error error -> Error ("constructor argument 0" :: error))
+        | JSONArray [|tag;arg0|] when
+            ((Js.Json.JSONString ("MetaDataUpdate"))[@explicit_arity ]) =
+              (Js.Json.classify tag)
+            ->
+            (match deserialize_WorkerProtocol____metaData arg0 with
+             | Belt.Result.Ok arg0 ->
+                 Belt.Result.Ok
+                   (MetaDataUpdate (arg0) : _WorkerProtocol__serverMessage)
+             | Error error -> Error ("constructor argument 0" :: error))
         | JSONArray [|tag;arg0|] when
             ((Js.Json.JSONString ("Rebase"))[@explicit_arity ]) =
               (Js.Json.classify tag)
@@ -2511,47 +2693,16 @@ module Version1 =
         match Js.Json.classify record with
         | ((JSONObject (dict))[@explicit_arity ]) ->
             let inner attr_lastSyncTime =
-              let inner attr_owningUserName =
-                let inner attr_googleFileId =
-                  Belt.Result.Ok
-                    {
-                      googleFileId = attr_googleFileId;
-                      owningUserName = attr_owningUserName;
-                      lastSyncTime = attr_lastSyncTime
-                    } in
-                match Js.Dict.get dict "googleFileId" with
-                | None ->
-                    ((Belt.Result.Error (["No attribute googleFileId"]))
-                    [@explicit_arity ])
-                | ((Some (json))[@explicit_arity ]) ->
-                    (match (fun string ->
-                              match Js.Json.classify string with
-                              | ((JSONString (string))[@explicit_arity ]) ->
-                                  ((Belt.Result.Ok (string))
-                                  [@explicit_arity ])
-                              | _ -> ((Error (["expected a string"]))
-                                  [@explicit_arity ])) json
-                     with
-                     | ((Belt.Result.Error (error))[@explicit_arity ]) ->
-                         ((Belt.Result.Error
-                             (("attribute googleFileId" :: error)))
-                         [@explicit_arity ])
-                     | ((Ok (data))[@explicit_arity ]) -> inner data) in
-              match Js.Dict.get dict "owningUserName" with
-              | None ->
-                  ((Belt.Result.Error (["No attribute owningUserName"]))
+              let inner attr_remote =
+                Belt.Result.Ok
+                  { remote = attr_remote; lastSyncTime = attr_lastSyncTime } in
+              match Js.Dict.get dict "remote" with
+              | None -> ((Belt.Result.Error (["No attribute remote"]))
                   [@explicit_arity ])
               | ((Some (json))[@explicit_arity ]) ->
-                  (match (fun string ->
-                            match Js.Json.classify string with
-                            | ((JSONString (string))[@explicit_arity ]) ->
-                                ((Belt.Result.Ok (string))[@explicit_arity ])
-                            | _ -> ((Error (["expected a string"]))
-                                [@explicit_arity ])) json
-                   with
+                  (match deserialize_WorkerProtocol____remote json with
                    | ((Belt.Result.Error (error))[@explicit_arity ]) ->
-                       ((Belt.Result.Error
-                           (("attribute owningUserName" :: error)))
+                       ((Belt.Result.Error (("attribute remote" :: error)))
                        [@explicit_arity ])
                    | ((Ok (data))[@explicit_arity ]) -> inner data) in
             (match Js.Dict.get dict "lastSyncTime" with
@@ -3120,13 +3271,34 @@ module Version1 =
       _WorkerProtocol__message -> Js.Json.t) =
       fun constructor ->
         match constructor with
+        | Init (arg0, arg1) ->
+            Js.Json.array
+              [|(Js.Json.string "Init");(Js.Json.string arg0);((((fun
+                                                                    transformer
+                                                                    ->
+                                                                    function
+                                                                    | 
+                                                                    ((Some
+                                                                    (inner))
+                                                                    [@explicit_arity
+                                                                    ]) ->
+                                                                    transformer
+                                                                    inner
+                                                                    | 
+                                                                    None ->
+                                                                    Js.Json.null))
+                                                                  Js.Json.string)
+                                                                 arg1)|]
+        | Open arg0 ->
+            Js.Json.array [|(Js.Json.string "Open");(Js.Json.string arg0)|]
         | Close -> Js.Json.array [|(Js.Json.string "Close")|]
-        | Init arg0 ->
-            Js.Json.array [|(Js.Json.string "Init");(Js.Json.string arg0)|]
         | Change arg0 ->
             Js.Json.array
               [|(Js.Json.string "Change");(serialize_WorkerProtocol____changeInner
                                              arg0)|]
+        | ChangeTitle arg0 ->
+            Js.Json.array
+              [|(Js.Json.string "ChangeTitle");(Js.Json.string arg0)|]
         | UndoRequest -> Js.Json.array [|(Js.Json.string "UndoRequest")|]
         | RedoRequest -> Js.Json.array [|(Js.Json.string "RedoRequest")|]
         | SelectionChanged (arg0, arg1) ->
@@ -3157,24 +3329,52 @@ module Version1 =
                            transformer inner
                        | None -> Js.Json.null))
                      serialize_WorkerProtocol____sync) record.sync))|])
+    and (serialize_WorkerProtocol____remote :
+      _WorkerProtocol__remote -> Js.Json.t) =
+      fun constructor ->
+        match constructor with
+        | Google (arg0, arg1) ->
+            Js.Json.array
+              [|(Js.Json.string "Google");(Js.Json.string arg0);(Js.Json.string
+                                                                   arg1)|]
+        | Gist (arg0, arg1) ->
+            Js.Json.array
+              [|(Js.Json.string "Gist");(Js.Json.string arg0);(Js.Json.string
+                                                                 arg1)|]
+        | LocalDisk arg0 ->
+            Js.Json.array
+              [|(Js.Json.string "LocalDisk");(Js.Json.string arg0)|]
     and (serialize_WorkerProtocol____serverMessage :
       _WorkerProtocol__serverMessage -> Js.Json.t) =
       fun constructor ->
         match constructor with
+        | LoadFile (arg0, arg1, arg2) ->
+            Js.Json.array
+              [|(Js.Json.string "LoadFile");(serialize_WorkerProtocol____metaData
+                                               arg0);(serialize_WorkerProtocol____data
+                                                        arg1);(((fun list ->
+                                                                   Js.Json.array
+                                                                    (Belt.List.toArray
+                                                                    (Belt.List.map
+                                                                    list
+                                                                    serialize_View____cursor))))
+                                                                 arg2)|]
+        | AllFiles arg0 ->
+            Js.Json.array
+              [|(Js.Json.string "AllFiles");(((fun list ->
+                                                 Js.Json.array
+                                                   (Belt.List.toArray
+                                                      (Belt.List.map list
+                                                         serialize_WorkerProtocol____metaData))))
+                                               arg0)|]
         | TabChange arg0 ->
             Js.Json.array
               [|(Js.Json.string "TabChange");(serialize_WorkerProtocol____changeInner
                                                 arg0)|]
-        | InitialData (arg0, arg1) ->
+        | MetaDataUpdate arg0 ->
             Js.Json.array
-              [|(Js.Json.string "InitialData");(serialize_WorkerProtocol____data
-                                                  arg0);(((fun list ->
-                                                             Js.Json.array
-                                                               (Belt.List.toArray
-                                                                  (Belt.List.map
-                                                                    list
-                                                                    serialize_View____cursor))))
-                                                           arg1)|]
+              [|(Js.Json.string "MetaDataUpdate");(serialize_WorkerProtocol____metaData
+                                                     arg0)|]
         | Rebase arg0 ->
             Js.Json.array
               [|(Js.Json.string "Rebase");((((fun transformer ->
@@ -3197,8 +3397,7 @@ module Version1 =
       fun record ->
         Js.Json.object_
           (Js.Dict.fromArray
-             [|("googleFileId", (Js.Json.string record.googleFileId));
-               ("owningUserName", (Js.Json.string record.owningUserName));
+             [|("remote", (serialize_WorkerProtocol____remote record.remote));
                ("lastSyncTime", (Js.Json.number record.lastSyncTime))|])
     and (serialize_World__MultiChange__change :
       _World__MultiChange__change -> Js.Json.t) =

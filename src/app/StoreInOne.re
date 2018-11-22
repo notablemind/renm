@@ -185,10 +185,10 @@ type t = {
 };
 
 let create =
-    (~sessionId, ~root, ~nodes: list(Data.Node.t('contents, 'prefix))) => {
+    (~metaData, ~sessionId, ~root, ~nodes: list(Data.Node.t('contents, 'prefix))) => {
   let nodeMap = Data.makeNodeMap(nodes);
   {
-    session: Session.createSession(~sessionId, ~root),
+    session: Session.createSession(~metaData, ~sessionId, ~root),
     world: make(
         {...Data.emptyData(~root), nodes: nodeMap},
         History.empty,
@@ -196,8 +196,8 @@ let create =
   };
 };
 
-let fromWorld = (~sessionId, ~world) => {
-  session: Session.createSession(~root=world.current.root, ~sessionId),
+let fromWorld = (~metaData, ~sessionId, ~world) => {
+  session: Session.createSession(~metaData, ~root=world.current.root, ~sessionId),
   world,
 };
 

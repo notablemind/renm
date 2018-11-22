@@ -1,6 +1,12 @@
 open SharedTypes;
 
+/**
+Sessions persist across file opens. Each client instance (e.g. tab) gets its own session,
+which lives for the life of the tab.
+*/
+
 type session = {
+  metaData: WorkerProtocol.metaData,
   sessionId: string,
   changeNum: int,
   changeSet: option((string, float, string)),
@@ -14,7 +20,8 @@ let subscribe = (store, id, fn) => {
   Subscription.subscribe(store.subs, evts, fn);
 };
 
-let createSession = (~sessionId, ~root) => {
+let createSession = (~metaData, ~sessionId, ~root) => {
+  metaData,
   sessionId,
   changeNum: 0,
   changeSet: None,

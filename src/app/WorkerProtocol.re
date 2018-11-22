@@ -23,10 +23,21 @@ type metaData = {
   sync: option(sync),
 };
 
+let blankMetaData = () => {
+  id: "blank",
+  title: "Blank",
+  nodeCount: 0,
+  created: 0.,
+  lastOpened: 0.,
+  lastModified: 0.,
+  sync: None
+};
+
 type message =
-  | Close
   /* sessionId, fileId to open */
   | Init(string, option(string))
+  | Open(string)
+  | Close
   | Change(changeInner)
   | ChangeTitle(string)
   | UndoRequest
@@ -34,9 +45,10 @@ type message =
   | SelectionChanged(Data.Node.id, Quill.range);
 
 type serverMessage =
+  /* metadata, current file data, cursors */
+  | LoadFile(metaData, data, list(View.cursor))
+  | AllFiles(list(metaData))
   | TabChange(changeInner)
-  /* fileId, all files metadata, current file data, cursors */
-  | InitialData(string, list(metaData), data, list(View.cursor))
   | MetaDataUpdate(metaData)
   | Rebase(array(NodeType.t))
   | RemoteCursors(list(View.cursor));
