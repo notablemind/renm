@@ -74,6 +74,73 @@ let handleActions = (~state, ~port, ~preSelection, ~postSelection, actions) => {
 };
 
 
+let handleMessage = (~state, ~port, ~message: WorkerProtocol.serverMessage) =>
+  switch (message) {
+  | InitialData(_) => ()
+  | TabChange(change) =>
+    /* TODO need to make sure that selections are updated correctly... */
+    let%Lets.TryLog events =
+      Change.eventsForChanges(state.data.nodes, change.Sync.apply);
+    let%Lets.TryLog (data, _, _) =
+      World.MultiChange.apply(state.data, change.apply);
+
+    state.data = data;
+    state.session = {
+      ...state.session,
+      sharedViewData:
+        View.ensureVisible(
+          data,
+          state.session.view,
+          state.session.sharedViewData,
+        ),
+    };
+
+    let (session, viewEvents) =
+      if (change.sessionInfo.sessionId == state.session.sessionId) {
+        Session.applyView(
+          state.session,
+          View.selectionEvents(change.sessionInfo.postSelection),
+        );
+      } else {
+        (state.session, []);
+      };
+    state.session = session;
+
+    Subscription.trigger(
+      session.Session.subs,
+      [SharedTypes.Event.Update, ...events @ viewEvents],
+    );
+  | Rebase(nodeList) =>
+    let nodes =
+      nodeList
+      ->Array.reduce(state.data.nodes, (nodes, node) =>
+          nodes->Belt.Map.String.set(node.id, node)
+        );
+    state.data = {...state.data, nodes};
+    Subscription.trigger(
+      state.session.subs,
+      nodeList
+      ->Array.map(node => SharedTypes.Event.Node(node.id))
+      ->List.fromArray,
+    );
+  | RemoteCursors(cursors) =>
+    let oldCursors = state.session.view.remoteCursors;
+    state.session = {
+      ...state.session,
+      view: {
+        ...state.session.view,
+        remoteCursors: cursors,
+      },
+    };
+    Subscription.trigger(
+      state.session.subs,
+      cursors->List.map(cursor => SharedTypes.Event.View(Node(cursor.node)))
+      @ oldCursors
+        ->List.map(cursor => SharedTypes.Event.View(Node(cursor.node))),
+    );
+  };
+
+
 let initStore = (~sessionId, ~port, data, cursors) => {
   let session =
     Session.createSession(~sessionId, ~root=data.Data.root);
@@ -117,82 +184,7 @@ let initStore = (~sessionId, ~port, data, cursors) => {
   ->onmessage(evt =>
       switch (messageFromJson(evt##data)) {
       | Ok(message) =>
-        switch (message) {
-        | InitialData(_) => ()
-        /* | Ok(Redo(change)) */
-        /* | Ok(Undo(change)) */
-        | TabChange(change) =>
-          /* TODO need to make sure that selections are updated correctly... */
-          let%Lets.TryLog events =
-            Change.eventsForChanges(
-              state.data.nodes,
-              change.Sync.apply,
-            );
-          let%Lets.TryLog (data, _, _) =
-            World.MultiChange.apply(state.data, change.apply);
-
-          state.data = data;
-          state.session = {
-            ...state.session,
-            sharedViewData:
-              View.ensureVisible(
-                data,
-                state.session.view,
-                state.session.sharedViewData,
-              ),
-          };
-
-          let (session, viewEvents) =
-            if (change.sessionInfo.sessionId == session.sessionId) {
-              Session.applyView(
-                state.session,
-                View.selectionEvents(
-                  change.sessionInfo.postSelection,
-                ),
-              );
-            } else {
-              (session, []);
-            };
-          state.session = session;
-
-          Subscription.trigger(
-            session.Session.subs,
-            [SharedTypes.Event.Update, ...events @ viewEvents],
-          );
-        | Rebase(nodeList) =>
-          let nodes =
-            nodeList
-            ->Array.reduce(state.data.nodes, (nodes, node) =>
-                nodes->Belt.Map.String.set(node.id, node)
-              );
-          state.data = {...state.data, nodes};
-          Subscription.trigger(
-            session.subs,
-            nodeList
-            ->Array.map(node => SharedTypes.Event.Node(node.id))
-            ->List.fromArray,
-          );
-        | RemoteCursors(cursors) =>
-          let oldCursors = state.session.view.remoteCursors;
-          state.session = {
-            ...state.session,
-            view: {
-              ...state.session.view,
-              remoteCursors: cursors,
-            },
-          };
-          Subscription.trigger(
-            session.subs,
-            cursors
-            ->List.map(cursor =>
-                SharedTypes.Event.View(Node(cursor.node))
-              )
-            @ oldCursors
-              ->List.map(cursor =>
-                  SharedTypes.Event.View(Node(cursor.node))
-                ),
-          );
-        }
+        handleMessage(~port, ~state, ~message)
       | Error(message) =>
         Js.log3("Invalid message received", message, evt##data)
       }
