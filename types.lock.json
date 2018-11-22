@@ -20,6 +20,11 @@
           "name": "metaData"
         },
         {
+          "moduleName": "View",
+          "modulePath": [],
+          "name": "sharedViewData"
+        },
+        {
           "moduleName": "World",
           "modulePath": ["MultiChange"],
           "name": "rebaseItem"
@@ -2136,6 +2141,40 @@
                           "Data",
                           ["Node"],
                           "id"
+                        ]
+                      ],
+                      []
+                    ]
+                  ]
+                ]
+              ]
+            }
+          ]
+        ],
+        [
+          [
+            "View",
+            [],
+            "sharedViewData"
+          ],
+          [
+            [],
+            {
+              "name": "sharedViewData",
+              "variables": [],
+              "body": [
+                "Record",
+                [
+                  [
+                    "expanded",
+                    [
+                      "Reference",
+                      [
+                        "Public",
+                        [
+                          "Belt_SetString",
+                          [],
+                          "t"
                         ]
                       ],
                       []

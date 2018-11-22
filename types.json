@@ -7,6 +7,7 @@
     {"file": "./src/app/WorkerProtocol.re", "type": "message"},
     {"file": "./src/app/WorkerProtocol.re", "type": "serverMessage"},
     {"file": "./src/app/WorkerProtocol.re", "type": "metaData"},
+    {"file": "./src/core/View.re", "type": "sharedViewData"},
     {"file": "./src/World.re", "type": "MultiChange.rebaseItem", "publicName": "rebaseItem"},
     {"file": "./src/NodeType.re", "type": "t"}
   ],

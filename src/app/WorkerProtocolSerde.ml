@@ -117,6 +117,9 @@ module Version1 =
       color: string ;
       range: _View__Range__range ;
       node: _Data__Node__id }
+    and _View__sharedViewData = View.sharedViewData =
+      {
+      expanded: _Belt_SetString__t }
     and _View__Range__range = View.Range.range
     and _WorkerProtocol__changeInner =
       (_World__MultiChange__change, _World__MultiChange__selection)
@@ -2119,6 +2122,24 @@ module Version1 =
                   | ((Ok (data))[@explicit_arity ]) -> inner data))
         | _ -> ((Belt.Result.Error (["Expected an object"]))
             [@explicit_arity ])
+    and (deserialize_View____sharedViewData :
+      Js.Json.t -> (_View__sharedViewData, string list) Belt.Result.t) =
+      fun record ->
+        match Js.Json.classify record with
+        | ((JSONObject (dict))[@explicit_arity ]) ->
+            let inner attr_expanded =
+              Belt.Result.Ok { expanded = attr_expanded } in
+            (match Js.Dict.get dict "expanded" with
+             | None -> ((Belt.Result.Error (["No attribute expanded"]))
+                 [@explicit_arity ])
+             | ((Some (json))[@explicit_arity ]) ->
+                 (match deserialize_Belt_SetString____t json with
+                  | ((Belt.Result.Error (error))[@explicit_arity ]) ->
+                      ((Belt.Result.Error (("attribute expanded" :: error)))
+                      [@explicit_arity ])
+                  | ((Ok (data))[@explicit_arity ]) -> inner data))
+        | _ -> ((Belt.Result.Error (["Expected an object"]))
+            [@explicit_arity ])
     and (deserialize_View__Range__range :
       Js.Json.t -> (_View__Range__range, string list) Belt.Result.t) =
       TransformHelpers.deserialize_View__Range__range
@@ -3079,6 +3100,12 @@ module Version1 =
                                                           (serialize_View__Range__range
                                                              record.range));
                ("node", (serialize_Data__Node__id record.node))|])
+    and (serialize_View____sharedViewData :
+      _View__sharedViewData -> Js.Json.t) =
+      fun record ->
+        Js.Json.object_
+          (Js.Dict.fromArray
+             [|("expanded", (serialize_Belt_SetString____t record.expanded))|])
     and (serialize_View__Range__range : _View__Range__range -> Js.Json.t) =
       TransformHelpers.serialize_View__Range__range
     and (serialize_WorkerProtocol____changeInner :
@@ -3283,6 +3310,25 @@ and deserializeMetaData data =
       (match version with
        | 1 ->
            (match Version1.deserialize_WorkerProtocol____metaData data with
+            | ((Belt.Result.Error (error))[@explicit_arity ]) ->
+                ((Belt.Result.Error (error))[@explicit_arity ])
+            | ((Ok (data))[@explicit_arity ]) -> ((Belt.Result.Ok (data))
+                [@explicit_arity ]))
+       | _ ->
+           ((Belt.Result.Error
+               (["Unexpected version " ^ (string_of_int version)]))
+           [@explicit_arity ]))
+let serializeSharedViewData data =
+  wrapWithVersion currentVersion
+    (Version1.serialize_View____sharedViewData data)
+and deserializeSharedViewData data =
+  match parseVersion data with
+  | ((Belt.Result.Error (err))[@explicit_arity ]) ->
+      ((Belt.Result.Error ([err]))[@explicit_arity ])
+  | ((Ok (version, data))[@implicit_arity ]) ->
+      (match version with
+       | 1 ->
+           (match Version1.deserialize_View____sharedViewData data with
             | ((Belt.Result.Error (error))[@explicit_arity ]) ->
                 ((Belt.Result.Error (error))[@explicit_arity ])
             | ((Ok (data))[@explicit_arity ]) -> ((Belt.Result.Ok (data))
