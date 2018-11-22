@@ -19,13 +19,13 @@ external addUnloadEvent:
   (window, [@bs.as "beforeunload"] _, unit => unit) => unit =
   "addEventListener";
 
-let saveSharedViewData = data => {
+let saveSharedViewData = (~fileId, data) => {
   let json = WorkerProtocolSerde.serializeSharedViewData(data);
-  LocalStorage.setItem("nm:shared-view-data", Js.Json.stringify(json));
+  LocalStorage.setItem("nm:shared-view-data:" ++ fileId, Js.Json.stringify(json));
 };
 
-let loadSharedViewData = () => {
-  let%Lets.Opt raw = LocalStorage.getJson("nm:shared-view-data");
+let loadSharedViewData = (~fileId) => {
+  let%Lets.Opt raw = LocalStorage.getJson("nm:shared-view-data:" ++ fileId);
   switch (WorkerProtocolSerde.deserializeSharedViewData(raw)) {
     | Ok(v) => Some(v)
     | Error(m) => {
@@ -69,7 +69,7 @@ let handleActions = (~state, ~port, ~preSelection, ~postSelection, actions) => {
       );
     });
   if (prevSession.sharedViewData != state.session.sharedViewData) {
-    saveSharedViewData(state.session.sharedViewData);
+    saveSharedViewData(~fileId="", state.session.sharedViewData);
   };
 };
 
@@ -146,7 +146,7 @@ let initStore = (~sessionId, ~port, data, cursors) => {
     Session.createSession(~sessionId, ~root=data.Data.root);
   let session = {
     ...session,
-    sharedViewData: switch (loadSharedViewData()) {
+    sharedViewData: switch (loadSharedViewData(~fileId="")) {
       | None => session.sharedViewData
       | Some(d) => d
     },
@@ -194,7 +194,7 @@ let initStore = (~sessionId, ~port, data, cursors) => {
 };
 
 
-let run = (onSetup) => {
+let setupWorker = onSetup => {
   let worker = sharedWorker("/bundle/SharedWorker.js");
   worker->onerror(err => Js.log(err));
   let port = worker->port;
@@ -202,8 +202,9 @@ let run = (onSetup) => {
   let sessionId = Utils.newId();
   window->addUnloadEvent(() => port->postMessage(messageToJson(Close)));
   port->postMessage(messageToJson(Init(sessionId)));
-  port->onmessage(evt => {
-      Js.log2("Got message", evt);
+  port
+  ->onmessage(evt => {
+      /* Js.log2("Got message", evt); */
       switch (messageFromJson(evt##data)) {
       | Ok(InitialData(data, cursors)) =>
         let clientStore = initStore(~sessionId, ~port, data, cursors);
@@ -211,7 +212,6 @@ let run = (onSetup) => {
       | _ => ()
       };
     });
-
 };
 
 
@@ -228,7 +228,7 @@ let make = _ => {
   initialState: () => None,
   reducer: (action, _) => ReasonReact.Update(Some(action)),
   didMount: self => {
-    run(store => self.send(store))
+    setupWorker(store => self.send(store))
   },
   render: ({state}) =>
     switch (state) {

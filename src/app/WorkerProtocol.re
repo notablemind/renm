@@ -2,23 +2,14 @@ type data = World.MultiChange.data;
 type changeInner =
   Sync.changeInner(World.MultiChange.change, World.MultiChange.selection);
 
-type message =
-  | Close
-  | Init(string)
-  | Change(changeInner)
-  | UndoRequest
-  | RedoRequest
-  | SelectionChanged(Data.Node.id, Quill.range);
-
-type serverMessage =
-  | TabChange(changeInner)
-  | InitialData(data, list(View.cursor))
-  | Rebase(array(NodeType.t))
-  | RemoteCursors(list(View.cursor));
+type remote =
+  /* username, fileid */
+  | Google(string, string)
+  | Gist(string, string)
+  | LocalDisk(string)
 
 type sync = {
-  googleFileId: string,
-  owningUserName: string,
+  remote,
   lastSyncTime: float,
 };
 
@@ -32,6 +23,20 @@ type metaData = {
   sync: option(sync),
 };
 
-type m = int;
-let n: int = 5;
-let z: m = n;
+type message =
+  | Close
+  /* sessionId, fileId to open */
+  | Init(string, option(string))
+  | Change(changeInner)
+  | ChangeTitle(string)
+  | UndoRequest
+  | RedoRequest
+  | SelectionChanged(Data.Node.id, Quill.range);
+
+type serverMessage =
+  | TabChange(changeInner)
+  /* fileId, all files metadata, current file data, cursors */
+  | InitialData(string, list(metaData), data, list(View.cursor))
+  | MetaDataUpdate(metaData)
+  | Rebase(array(NodeType.t))
+  | RemoteCursors(list(View.cursor));
