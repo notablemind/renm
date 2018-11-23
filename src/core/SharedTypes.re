@@ -10,6 +10,7 @@ module Event = {
   type t =
     | View(View.event)
     | Node(Data.Node.id)
+    | MetaData(string)
     | Update
     | Root;
 };

@@ -218,24 +218,3 @@ let setupWorker = onSetup => {
 };
 
 
-
-
-
-
-
-
-let component = ReasonReact.reducerComponent("OnePage");
-
-let make = _ => {
-  ...component,
-  initialState: () => None,
-  reducer: (action, _) => ReasonReact.Update(Some(action)),
-  didMount: self => {
-    setupWorker(store => self.send(store))
-  },
-  render: ({state}) =>
-    switch (state) {
-    | None => <div> {ReasonReact.string("Connecting...")} </div>
-    | Some(store) => <Tree store />
-    },
-};

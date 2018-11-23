@@ -213,6 +213,8 @@ let handleMessage = (state, ports, sessionId, evt) =>
       Js.log2(nodeId, range);
       Hashtbl.replace(state.cursors, sessionId, (nodeId, range));
       sendCursors(state.cursors, ports, sessionId);
+    | Open(_)
+    | ChangeTitle(_)
     | Init(_) => ()
     }
   | Error(message) =>

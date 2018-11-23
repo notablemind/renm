@@ -6,6 +6,6 @@
 switch (location##search) {
   | "?rebase" => ReactDOMRe.renderToElementWithId(<RebaseTest />, "root");
   | "?single" => ReactDOMRe.renderToElementWithId(<OnePage />, "root");
-  | _ => ReactDOMRe.renderToElementWithId(<TabClient />, "root");
+  | _ => ReactDOMRe.renderToElementWithId(<DocScreen setupWorker=TabClient.setupWorker />, "root");
 };
 

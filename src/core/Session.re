@@ -20,6 +20,10 @@ let subscribe = (store, id, fn) => {
   Subscription.subscribe(store.subs, evts, fn);
 };
 
+let subscribeToMetadata = (session, fn) => {
+  Subscription.subscribe(session.subs, [Event.MetaData(session.metaData.id)], fn)
+};
+
 let createSession = (~metaData, ~sessionId, ~root) => {
   metaData,
   sessionId,

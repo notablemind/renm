@@ -23,7 +23,8 @@
   "namespace": false,
   "bs-dependencies": [
     "reason-react",
-    "bs-css"
+    "bs-css",
+    "bs-webapi"
   ],
   "refmt": 3
 }
