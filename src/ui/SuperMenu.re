@@ -55,13 +55,20 @@ module Styles = {
     borderStyle(`none),
     backgroundColor(white),
     padding2(~v=px(10), ~h=px(10)),
-    fontSize(em(1.2)),
     cursor(`pointer),
     textAlign(`left),
     fontFamily("sans-serif"),
     hover([
       backgroundColor(hex("eee"))
     ])
+  ]);
+  let itemName = style([
+    fontSize(em(1.2)),
+    marginRight(px(10))
+  ]);
+  let description = style([
+    fontSize(em(1.)),
+    color(hex("aaa"))
   ])
 };
 
@@ -112,9 +119,10 @@ let make = (~getResults, ~onClose, _) => {
             send(SetText(evt->ReactEvent.Form.nativeEvent##target##value))
           }}
         />
-        {state.results->Array.map(({title, action}) => {
+        {state.results->Array.mapWithIndex((i, {title, action, description}) => {
           <div
             role="button"
+            key={string_of_int(i)}
             className=Styles.item
             onClick={evt => {
               evt->ReactEvent.Mouse.stopPropagation;
@@ -122,7 +130,12 @@ let make = (~getResults, ~onClose, _) => {
               onClose();
             }}
           >
-            {ReasonReact.string(title)}
+            <span className=Styles.itemName>
+              {ReasonReact.string(title)}
+            </span>
+            <span className=Styles.description>
+              {ReasonReact.string(description)}
+            </span>
           </div>
         })->ReasonReact.array}
       </div>
