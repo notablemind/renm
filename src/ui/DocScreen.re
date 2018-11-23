@@ -57,6 +57,16 @@ let keyEvt = evt => {
   )
 };
 
+let getCommands = (store, text) => {
+  [|
+    {
+      SuperMenu.title: "New File",
+      description: "Create a new file",
+      action: () => Js.log("Hi")
+    }
+  |]->Array.keep(item => SuperMenu.fuzzysearch(text, item.title) || SuperMenu.fuzzysearch(text, item.description))
+};
+
 let make = (~setupWorker, _) => {
   ...component,
   initialState: () => {store: None, superMenu: false},
@@ -89,13 +99,7 @@ let make = (~setupWorker, _) => {
       <Tree store />
       {state.superMenu
       ? <SuperMenu
-        getResults={text => [|
-          {
-            SuperMenu.title: "New File",
-            description: "Create a new file",
-            action: () => Js.log("Hi")
-          }
-        |]}
+        getResults={getCommands(store)}
         onClose={() => send(HideSuperMenu)}
       />
       : ReasonReact.null}

@@ -1,4 +1,5 @@
 
+[@bs.module] external fuzzysearch: (string, string) => bool = "";
 
 type option = {
   title: string,
@@ -36,7 +37,6 @@ module Styles = {
   ]);
   let container = style([
     backgroundColor(white),
-    /* padding(px(10)), */
     width(px(600)),
     borderRadius(px(5)),
     boxShadow(~x=px(0), ~y=px(2), ~blur=px(10), hex("ccc")),
@@ -47,11 +47,9 @@ module Styles = {
   ]);
   let input = style([
     borderStyle(`none),
-    /* borderBottom(px(1), `solid, hex("ccc")), */
     outlineStyle(`none),
     fontSize(em(1.5)),
     padding(px(10)),
-    /* marginBottom(px(3)), */
   ]);
   let item = style([
     borderStyle(`none),
@@ -60,6 +58,7 @@ module Styles = {
     fontSize(em(1.2)),
     cursor(`pointer),
     textAlign(`left),
+    fontFamily("sans-serif"),
     hover([
       backgroundColor(hex("eee"))
     ])
@@ -114,7 +113,8 @@ let make = (~getResults, ~onClose, _) => {
           }}
         />
         {state.results->Array.map(({title, action}) => {
-          <button
+          <div
+            role="button"
             className=Styles.item
             onClick={evt => {
               evt->ReactEvent.Mouse.stopPropagation;
@@ -123,7 +123,7 @@ let make = (~getResults, ~onClose, _) => {
             }}
           >
             {ReasonReact.string(title)}
-          </button>
+          </div>
         })->ReasonReact.array}
       </div>
     </div>
