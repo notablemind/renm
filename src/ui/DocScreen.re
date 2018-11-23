@@ -70,6 +70,10 @@ let getCommands = (store, text) => {
 
 [@bs.val] external body: Dom.element = "document.body";
 
+let wrapper = Css.(style([
+  color(Colors.black)
+]));
+
 let make = (~setupWorker, _) => {
   ...component,
   initialState: () => {store: None, superMenu: false, focus: ref(() => ())},
@@ -106,7 +110,7 @@ let make = (~setupWorker, _) => {
   render: ({state, send}) =>
     switch (state.store) {
     | None => <div> {ReasonReact.string("Connecting...")} </div>
-    | Some(store) => <div>
+    | Some(store) => <div className=wrapper>
       <Header store={store.session()}/>
       <Tree
         store

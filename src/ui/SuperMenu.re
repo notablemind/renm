@@ -59,8 +59,11 @@ module Styles = {
     textAlign(`left),
     fontFamily("sans-serif"),
     hover([
-      backgroundColor(hex("eee"))
+      backgroundColor(Colors.offWhite)
     ])
+  ]);
+  let selectedItem = style([
+    backgroundColor(Colors.gray10)
   ]);
   let itemName = style([
     fontSize(em(1.2)),
@@ -123,7 +126,7 @@ let make = (~getResults, ~onClose, _) => {
           <div
             role="button"
             key={string_of_int(i)}
-            className=Styles.item
+            className=(Styles.item ++ " " ++ (i == state.selected ? Styles.selectedItem : ""))
             onClick={evt => {
               evt->ReactEvent.Mouse.stopPropagation;
               action();
