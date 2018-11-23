@@ -36,6 +36,7 @@ module Header = {
 type state('a, 'b, 'c) = {
   store: option(ClientStore.t('a, 'b, 'c)),
   superMenu: bool,
+  focus: ref(unit => unit),
 };
 
 type actions('a, 'b, 'c) =
@@ -67,9 +68,11 @@ let getCommands = (store, text) => {
   |]->Array.keep(item => SuperMenu.fuzzysearch(text, item.title) || SuperMenu.fuzzysearch(text, item.description))
 };
 
+[@bs.val] external body: Dom.element = "document.body";
+
 let make = (~setupWorker, _) => {
   ...component,
-  initialState: () => {store: None, superMenu: false},
+  initialState: () => {store: None, superMenu: false, focus: ref(() => ())},
   reducer: (action, state) => ReasonReact.Update(switch action {
     | Store(store) => {...state, store: Some(store)}
     | ShowSuperMenu => {...state, superMenu: true}
@@ -84,11 +87,20 @@ let make = (~setupWorker, _) => {
       }),
     ]);
 
+
     let state = ref(KeyManager.init(keys));
     open Webapi.Dom;
     document |> Document.addKeyDownEventListener(evt => {
       state := state^ -> KeyManager.handle(keyEvt(evt), evt)
     });
+
+    body |> Webapi.Dom.Element.addBlurEventListenerUseCapture(_ => {
+      Js.Global.setTimeout(() => {
+        if ([%bs.raw "document.activeElement == document.body"]) {
+          self.state.focus^()
+        }
+      }, 200) |> ignore
+    })
   },
 
   render: ({state, send}) =>
@@ -96,7 +108,12 @@ let make = (~setupWorker, _) => {
     | None => <div> {ReasonReact.string("Connecting...")} </div>
     | Some(store) => <div>
       <Header store={store.session()}/>
-      <Tree store />
+      <Tree
+        store
+        registerFocus={fn => {
+          state.focus := fn
+        }}
+      />
       {state.superMenu
       ? <SuperMenu
         getResults={getCommands(store)}

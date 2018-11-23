@@ -113,7 +113,7 @@ let onSelectionChange =
   on(quill, "selection-change", fn);
 
 let setupQuill =
-    (element, props: ref(NodeTypes.props(Delta.delta, (int, int)))) => {
+    (element, props: ref(NodeTypes.props(Delta.delta, (int, int))), registerFocus) => {
   let quill =
     makeQuill(
       element,
@@ -269,8 +269,18 @@ let setupQuill =
       | _ => ()
       };
       switch (range->Js.toOption) {
-      | None when props^.editPos != None => ()
+      | None when props^.editPos != None => {
+        /* Js.Global.setTimeout(() => {
+          if ([%bs.raw "document.activeElement == document.body"]) {
+            focus(quill)
+          }
+        }, 200) |> ignore */
+        ()
+      }
       | Some(range) =>
+        if (oldRange->Js.toOption == None) {
+          registerFocus(() => focus(quill));
+        }
         /* Js.log2("Sending range", range); */
         props^.onCursorChange(range);
       /* focus(quill); */
@@ -404,7 +414,8 @@ let make = (~props: NodeTypes.props(Delta.delta, (int, int)), _children) => {
           | (None, _)
           | (_, Some(_)) => ()
           | (Some(el), None) =>
-            self.state.quill := Some(setupQuill(el, self.state.props))
+            let quill = setupQuill(el, self.state.props, props.registerFocus);
+            self.state.quill := Some(quill)
           }
       }
     />,

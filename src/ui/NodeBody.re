@@ -34,6 +34,7 @@ let renderContents =
           (int, int),
         ),
       node: NodeType.t,
+      registerFocus,
       editPos,
       collapsed,
     ) =>
@@ -43,6 +44,7 @@ let renderContents =
       props={
         NodeTypes.value: text,
         editPos,
+        registerFocus,
         remoteCursors:
           store.session().view.remoteCursors
           ->Belt.List.keep(cursor => cursor.node == node.id),
@@ -149,6 +151,7 @@ let make =
     (
       ~store: ClientStore.t('a, 'b, 'c),
       ~data as {node, selected, editPos, collapsed},
+      ~registerFocus,
       ~renderChild,
       ~renderDraggable,
       _children,
@@ -194,7 +197,7 @@ let make =
                 ReasonReact.null
             }
             <div style=ReactDOMRe.Style.(make(~flex="1", ()))>
-              {renderContents(store, node, editPos, collapsed)}
+              {renderContents(store, node, registerFocus, editPos, collapsed)}
             </div>
           </div>
         )

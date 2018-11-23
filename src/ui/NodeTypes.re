@@ -1,5 +1,6 @@
 type props('value, 'selection) = {
   value: 'value,
+  registerFocus: (unit => unit) => unit,
   editPos: option(View.editPos),
   remoteCursors: list(View.cursor),
   onUndo: unit => unit,

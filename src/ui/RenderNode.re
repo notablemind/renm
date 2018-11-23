@@ -1,7 +1,7 @@
 open Opens;
 
 let component = ReasonReact.reducerComponent("Node");
-let rec make = (~depth, ~id, ~store, ~renderDraggable, _children) => {
+let rec make = (~depth, ~id, ~store, ~renderDraggable, ~registerFocus, _children) => {
   ...component,
   initialState: () => NodeBody.getData(store, id),
   reducer: (node, _state) => ReasonReact.Update(node),
@@ -23,11 +23,12 @@ let rec make = (~depth, ~id, ~store, ~renderDraggable, _children) => {
         store
         data
         renderDraggable
+        registerFocus
         renderChild=(
           id =>
             ReasonReact.element(
               ~key=id,
-              make(~depth=depth + 1, ~id, ~store, ~renderDraggable, [||]),
+              make(~depth=depth + 1, ~id, ~store, ~renderDraggable, ~registerFocus, [||]),
             )
         )
       />

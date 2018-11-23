@@ -28,7 +28,7 @@ let rec visibleChildren = (store: ClientStore.t('a, 'b, 'c), id) => {
   };
 };
 
-let make = (~store: ClientStore.t('a, 'b, 'c), _children) => {
+let make = (~store: ClientStore.t('a, 'b, 'c), ~registerFocus=(f) => (), _children) => {
   ...component,
   render: _self =>
     <Draggable
@@ -132,6 +132,7 @@ let make = (~store: ClientStore.t('a, 'b, 'c), _children) => {
                store
                depth=0
                renderDraggable
+               registerFocus
                id={store.session().view.root}
              />
          }

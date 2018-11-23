@@ -64,7 +64,7 @@ module Styles = {
   ]);
   let itemName = style([
     fontSize(em(1.2)),
-    marginRight(px(10))
+    marginRight(px(10)),
   ]);
   let description = style([
     fontSize(em(1.)),
