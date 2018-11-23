@@ -38,6 +38,7 @@ let loadSharedViewData = (~fileId) => {
 type state = {
   mutable session: Session.session,
   mutable data: World.MultiChange.data,
+  files: Hashtbl.t(string, WorkerProtocol.metaData)
 };
 
 let handleActions = (~state, ~port, ~preSelection, ~postSelection, actions) => {
@@ -76,9 +77,10 @@ let handleActions = (~state, ~port, ~preSelection, ~postSelection, actions) => {
 
 let handleMessage = (~state, ~port, ~message: WorkerProtocol.serverMessage) =>
   switch (message) {
-  | LoadFile(_) => ()
-  | AllFiles(_) => ()
-  | MetaDataUpdate(_) => ()
+  | LoadFile(_) => Js.log("TODO")
+  | AllFiles(files) =>
+    files->List.forEach(meta => state.files->Hashtbl.replace(meta.id, meta))
+  | MetaDataUpdate(meta) => state.files->Hashtbl.replace(meta.id, meta)
 
   | TabChange(change) =>
     /* TODO need to make sure that selections are updated correctly... */
@@ -158,7 +160,7 @@ let initStore = (~metaData, ~sessionId, ~port, data, cursors) => {
       remoteCursors: cursors,
     },
   };
-  let state = {session, data};
+  let state = {session, data, files: Hashtbl.create(10)};
   let clientStore = {
     ClientStore.session: () => state.session,
     data: () => state.data,

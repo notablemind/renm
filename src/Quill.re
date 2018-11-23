@@ -270,11 +270,6 @@ let setupQuill =
       };
       switch (range->Js.toOption) {
       | None when props^.editPos != None => {
-        /* Js.Global.setTimeout(() => {
-          if ([%bs.raw "document.activeElement == document.body"]) {
-            focus(quill)
-          }
-        }, 200) |> ignore */
         ()
       }
       | Some(range) =>
