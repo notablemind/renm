@@ -292,7 +292,7 @@ let setupQuill =
     "text-change",
     (delta, oldDelta, source) => {
       let range = getSelection(quill);
-      /* Js.log2("Text change", range); */
+      Js.log3("Text change", delta, range);
       props^.onChange(
         delta,
         rangePair(range->Js.toOption),

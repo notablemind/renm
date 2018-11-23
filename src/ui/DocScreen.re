@@ -58,12 +58,15 @@ let keyEvt = evt => {
   )
 };
 
-let getCommands = (store, text) => {
+let getCommands = (store: ClientStore.t('a, 'b, 'c), text) => {
   [|
     {
       SuperMenu.title: "New File",
       description: "Create a new file",
-      action: () => Js.log("Hi")
+      action: () => {
+        let s = store.session();
+        /* s.view.editPos */
+      }
     }
   |]->Array.keep(item => SuperMenu.fuzzysearch(text, item.title) || SuperMenu.fuzzysearch(text, item.description))
 };

@@ -171,7 +171,8 @@ let initStore = (~metaData, ~sessionId, ~port, data, cursors) => {
         );
     },
     act: (~preSelection=?, ~postSelection=?, actions) => {
-      handleActions(~state, ~port, ~preSelection, ~postSelection, actions)
+      handleActions(~state, ~port, ~preSelection, ~postSelection, actions);
+      Js.log(state.session.view)
     },
     actView: action => {
       let (session, events) =

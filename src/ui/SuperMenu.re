@@ -109,6 +109,13 @@ let make = (~getResults, ~onClose, _) => {
             let%Lets.OptConsume action = switch (evt->ReactEvent.Keyboard.key) {
               | "Up" => Some(Up)
               | "Down" => Some(Down)
+              | "Enter" =>
+                switch (state.results[state.selected]) {
+                  | Some({action}) => action()
+                  | None => ()
+                };
+                onClose();
+                None
               | "Esc" =>
                 onClose();
                 None
