@@ -150,140 +150,172 @@ let onSelectionChange =
     (quill, fn: (Js.nullable(range), Js.nullable(range), string) => unit) =>
   on(quill, "selection-change", fn);
 
+
+
+
+
+
+
+
+let quillConfig = (props: ref(NodeTypes.props(Delta.delta, (int, int)))) => {
+  "theme": false,
+  "placeholder": " ",
+  "modules": {
+    "cursors": true,
+    "mention": {
+      "mentionDenotationChars": [|"/"|],
+      "source":
+        (. searchTerm: string, renderList, mentionChar: string) =>
+          renderList(.
+            [|
+              {"id": 0, "value": "Header"},
+              {"id": 1, "value": "Normal"},
+              {"id": 2, "value": "Code"},
+            |],
+            searchTerm,
+          ),
+    },
+    "keyboard": {
+      "bindings": {
+        "undo": {
+          "key": "z",
+          "shortKey": true,
+          "handler":
+            (.) => {
+              props^.onUndo();
+              false;
+            },
+        },
+        "redo": {
+          "key": "z",
+          "shortKey": true,
+          "shiftKey": true,
+          "handler":
+            (.) => {
+              props^.onRedo();
+              false;
+            },
+        },
+        "dedent": {
+          "key": "Tab",
+          "collapsed": true,
+          "shiftKey": true,
+          "handler": (.) => !props^.onDedent(),
+        },
+        "tab": {
+          "key": "Tab",
+          "collapsed": true,
+          "handler": (.) => !props^.onIndent(),
+        },
+        "collapse": {
+          "key": "z",
+          "collapsed": true,
+          "altKey": true,
+          "handler": (.) => props^.onToggleCollapse(),
+        },
+        "left-at-start": {
+          "key": "Left",
+          "handler":
+            [@bs.this]
+            (this => !(atLeft(this##quill) && props^.onLeft() != None)),
+        },
+        "backspace": {
+          "key": 8,
+          "collapsed": true,
+          "handler":
+            [@bs.this]
+            (
+              this =>
+                if (atLeft(this##quill)) {
+                  if (getLength(this##quill) == 1.) {
+                    props^.onBackspace(None) == None;
+                  } else {
+                    props^.onBackspace(Some(getContents(this##quill)))
+                    == None;
+                  };
+                } else {
+                  true;
+                }
+            ),
+        },
+        "move-right": {
+          "key": "Right",
+          "collapsed": true,
+          "handler":
+            [@bs.this]
+            (this => !(atRight(this##quill) && props^.onRight() != None)),
+        },
+        "j-down": {
+          "key": "j",
+          "collapsed": true,
+          "altKey": true,
+          "handler": (.) => !(props^.onDown() != None),
+        },
+        "k-up": {
+          "key": "k",
+          "collapsed": true,
+          "altKey": true,
+          "handler": (.) => !(props^.onUp() != None),
+        },
+        "escape-select": {
+          "key": 27,
+          "collapsed": false,
+          "handler":
+            [@bs.this]
+            (
+              this => {
+                let selection = this##quill->getSelection;
+                switch (Js.toOption(selection)) {
+                | None => ()
+                | Some(selection) =>
+                  this##quill
+                  ->setSelection(
+                      View.Range.indexGet(selection)
+                      +. View.Range.lengthGet(selection),
+                      0.,
+                      "user",
+                    )
+                };
+                false;
+              }
+            ),
+        },
+        "go-up": {
+          "key": 38.,
+          "collapsed": true,
+          "handler":
+            [@bs.this]
+            (this => !(atTop(this##quill) && props^.onUp() != None)),
+        },
+        "go-down": {
+          "key": 40.,
+          "collapsed": true,
+          "handler":
+            [@bs.this]
+            (this => !(atBottom(this##quill) && props^.onDown() != None)),
+        },
+        "enter": {
+          "key": "Enter",
+          "collapsed": true,
+          "handler": () => {
+            props^.onEnter();
+            false;
+          },
+        },
+      },
+    },
+  },
+};
+
+
+
 let setupQuill =
     (element, props: ref(NodeTypes.props(Delta.delta, (int, int))), registerFocus) => {
   let quill =
     makeQuill(
       element,
-      {
-        "theme": false,
-        "placeholder": " ",
-        "modules": {
-          "cursors": true,
-          "mention": {
-            "mentionDenotationChars": [|"/"|],
-            "source":
-              (. searchTerm: string, renderList, mentionChar: string) =>
-                renderList(.
-                  [|
-                    {"id": 0, "value": "Header"},
-                    {"id": 1, "value": "Normal"},
-                    {"id": 2, "value": "Code"},
-                  |],
-                  searchTerm,
-                ),
-          },
-        },
-      },
+      quillConfig(props),
     );
-
-  keyboard(quill)
-  ->addBinding(
-      {"key": "z", "shortKey": true},
-      () => {
-        props^.onUndo();
-        false;
-      },
-    );
-
-  keyboard(quill)
-  ->addBinding(
-      {"key": "z", "shortKey": true, "shiftKey": true},
-      () => {
-        props^.onRedo();
-        false;
-      },
-    );
-
-  keyboard(quill)
-  ->addBinding({"key": "Tab", "collapsed": true, "shiftKey": true}, () =>
-      !props^.onDedent()
-    );
-  let () = [%bs.raw
-    {|quill.keyboard.bindings[9].unshift(quill.keyboard.bindings[9].pop())|}
-  ];
-  keyboard(quill)
-  ->addBinding({"key": "Tab", "collapsed": true}, () => !props^.onIndent());
-  let () = [%bs.raw
-    {|quill.keyboard.bindings[9].unshift(quill.keyboard.bindings[9].pop())|}
-  ];
-  keyboard(quill)
-  ->addBinding({"key": "z", "collapsed": true, "altKey": true}, () =>
-      props^.onToggleCollapse()
-    );
-  keyboard(quill)
-  ->addBinding({"key": "Left"}, () =>
-      !(atLeft(quill) && props^.onLeft() != None)
-    );
-  let () = [%bs.raw
-    {|quill.keyboard.bindings[37].unshift(quill.keyboard.bindings[37].pop())|}
-  ];
-  keyboard(quill)
-  ->addBinding({"key": 8, "collapsed": true}, () =>
-      if (atLeft(quill)) {
-        if (getLength(quill) == 1.) {
-          props^.onBackspace(None) == None;
-        } else {
-          props^.onBackspace(Some(getContents(quill))) == None;
-        };
-      } else {
-        true;
-      }
-    );
-  let () = [%bs.raw
-    {|quill.keyboard.bindings[8].unshift(quill.keyboard.bindings[8].pop())|}
-  ];
-  keyboard(quill)
-  ->addBinding({"key": "Right", "collapsed": true}, () =>
-      !(atRight(quill) && props^.onRight() != None)
-    );
-  keyboard(quill)
-  ->addBinding({"key": "k", "collapsed": true, "altKey": true}, () =>
-      !(props^.onUp() != None)
-    );
-  keyboard(quill)
-  ->addBinding(
-      {"key": 27, "collapsed": false},
-      () => {
-        let selection = quill->getSelection;
-        switch (Js.toOption(selection)) {
-        | None => ()
-        | Some(selection) =>
-          quill
-          ->setSelection(
-              View.Range.indexGet(selection)
-              +. View.Range.lengthGet(selection),
-              0.,
-              "user",
-            )
-        };
-        false;
-      },
-    );
-  keyboard(quill)
-  ->addBinding({"key": "j", "collapsed": true, "altKey": true}, () =>
-      !(props^.onDown() != None)
-    );
-  keyboard(quill)
-  ->addBinding({"key": 38., "collapsed": true}, () =>
-      !(atTop(quill) && props^.onUp() != None)
-    );
-  keyboard(quill)
-  ->addBinding({"key": 40., "collapsed": true}, () =>
-      !(atBottom(quill) && props^.onDown() != None)
-    );
-  keyboard(quill)
-  ->addBinding(
-      {"key": "Enter", "collapsed": true},
-      () => {
-        props^.onEnter();
-        false;
-      },
-    );
-  /* Lol megahaxxx. The first one needs to be the "mention" enter handler. */
-  let () = [%bs.raw
-    {|quill.keyboard.bindings[13].splice(1, 0, quill.keyboard.bindings[13].pop())|}
-  ];
 
   let savedRange = ref(quill->getSelection);
 
