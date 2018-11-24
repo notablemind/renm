@@ -64,7 +64,18 @@ let getCommands = (store: ClientStore.t('a, 'b, 'c), text) => {
       SuperMenu.title: "New File",
       description: "Create a new file",
       action: () => {
-        let s = store.session();
+        let session = store.session();
+        Js.log(session.view.editPos)
+        switch (session.view.editPos) {
+          | Exactly(start, length) =>
+              store.act(
+                [Actions.ChangeContents(
+                  session.view.active,
+                  Delta.makeAttributes(start, length, {"link": "nm://awesome"})
+                )]
+              )
+        | _ => ()
+        }
         /* s.view.editPos */
       }
     }
@@ -86,7 +97,10 @@ let make = (~setupWorker, _) => {
     | HideSuperMenu => {...state, superMenu: false}
   }),
   didMount: self => {
-    setupWorker(store => self.send(Store(store)));
+    setupWorker(store => {
+      [%bs.raw "window.store = store"];
+      self.send(Store(store))
+    });
 
     let keys = KeyManager.makeHandlers([
       ("cmd+p", evt => {

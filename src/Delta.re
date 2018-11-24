@@ -12,6 +12,7 @@ let withNewline = text =>
 let fromString = str => make([|insert({"insert": withNewline(str)})|]);
 
 [@bs.send] external retain: (delta, int) => delta = "";
+[@bs.send] external retainWithAttributes: (delta, int, Js.t('a)) => delta = "retain";
 [@bs.send] external delete: (delta, int) => delta = "";
 [@bs.send] external insert: (delta, string) => delta = "";
 [@bs.send] external diff: (delta, delta) => delta = "";
@@ -60,4 +61,15 @@ let makeInsert = (idx, text) => {
       delta;
     };
   delta->insert(text);
+};
+
+let makeAttributes = (idx, length, attributes) => {
+  let delta = make([||]);
+  let delta =
+    if (idx > 0) {
+      delta->retain(idx);
+    } else {
+      delta;
+    };
+  delta->retainWithAttributes(length, attributes);
 };

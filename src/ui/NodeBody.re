@@ -63,7 +63,6 @@ let renderContents =
           false;
         },
         onEnter: () => ActionCreators.createAfter(store, node),
-        /*** TODO indents n stuff */
         onIndent: () => {
           ActionCreators.indent(store, node);
           true;

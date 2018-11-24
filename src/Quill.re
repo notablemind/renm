@@ -8,6 +8,10 @@ type quill;
 external makeQuill: ('element, 'config) => quill = "quill";
 [@bs.module "quill"] external register: 'a => unit = "register";
 
+Js.log(makeQuill);
+
+[%bs.raw "window.quill = Quill"];
+
 let historyClass = [%bs.raw
   {|class MyHistory {
   constructor(quill, options) { }
@@ -16,10 +20,44 @@ let historyClass = [%bs.raw
 }|}
 ];
 
+let myLink = [%bs.raw {|
+() => {
+
+  const Inline = Quill.imports['blots/inline'];
+  class Link extends Inline {
+    static create(value) {
+      const node = super.create(value);
+      node.setAttribute('href', value);
+      node.setAttribute('target', '_blank');
+      return node;
+    }
+
+    static formats(domNode) {
+      return domNode.getAttribute('href');
+    }
+
+    format(name, value) {
+      if (name !== this.statics.blotName || !value) {
+        super.format(name, value);
+      } else {
+        this.domNode.setAttribute('href', value);
+      }
+    }
+  }
+  Link.blotName = 'link';
+  Link.tagName = 'A';
+  return Link
+}
+|}];
+
 [@bs.module "quill-cursors"] external quillCursors: 'a = "default";
 Js.log(quillCursors);
 
-register({"modules/history": historyClass, "modules/cursors": quillCursors});
+register({
+  "modules/history": historyClass,
+  "modules/cursors": quillCursors,
+  "formats/link": myLink(),
+});
 
 [%bs.raw {|require("quill-mention")|}];
 [%bs.raw {|require("quill-cursors")|}];
@@ -270,6 +308,11 @@ let setupQuill =
       };
       switch (range->Js.toOption) {
       | None when props^.editPos != None => {
+        /* Js.Global.setTimeout(() => {
+          if ([%bs.raw "document.activeElement == document.body"]) {
+            focus(quill)
+          }
+        }, 200) |> ignore */
         ()
       }
       | Some(range) =>
@@ -292,7 +335,7 @@ let setupQuill =
     "text-change",
     (delta, oldDelta, source) => {
       let range = getSelection(quill);
-      Js.log3("Text change", delta, range);
+      /* Js.log2("Text change", range); */
       props^.onChange(
         delta,
         rangePair(range->Js.toOption),

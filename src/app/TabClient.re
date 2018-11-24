@@ -161,6 +161,16 @@ let initStore = (~metaData, ~sessionId, ~port, data, cursors) => {
     },
   };
   let state = {session, data, files: Hashtbl.create(10)};
+  let actView = action => {
+      let (session, events) =
+        Session.actView_(state.session, action);
+      if (session.sharedViewData != state.session.sharedViewData) {
+        saveSharedViewData(~fileId=metaData.id, session.sharedViewData);
+      };
+      state.session = session;
+      Subscription.trigger(session.subs, events);
+
+  };
   let clientStore = {
     ClientStore.session: () => state.session,
     data: () => state.data,
@@ -169,20 +179,24 @@ let initStore = (~metaData, ~sessionId, ~port, data, cursors) => {
       ->postMessage(
           messageToJson(WorkerProtocol.SelectionChanged(nodeId, range)),
         );
+      let start = int_of_float(
+        View.Range.indexGet(range)
+      );
+      let length = View.Range.lengthGet(range) |> int_of_float;
+      if (state.session.view.editPos != View.Exactly(start, length)) {
+        /* TODO use this to handle undo selection change */
+        actView(View.Edit(View.Exactly(
+          start,
+          length
+        )));
+        /* Js.log(state.session.view) */
+      }
     },
     act: (~preSelection=?, ~postSelection=?, actions) => {
       handleActions(~state, ~port, ~preSelection, ~postSelection, actions);
-      Js.log(state.session.view)
+      /* Js.log(state.session.view) */
     },
-    actView: action => {
-      let (session, events) =
-        Session.actView_(state.session, action);
-      if (session.sharedViewData != state.session.sharedViewData) {
-        saveSharedViewData(~fileId=metaData.id, session.sharedViewData);
-      };
-      state.session = session;
-      Subscription.trigger(session.subs, events);
-    },
+    actView,
     undo: () => port->postMessage(messageToJson(UndoRequest)),
     redo: () => port->postMessage(messageToJson(RedoRequest)),
   };

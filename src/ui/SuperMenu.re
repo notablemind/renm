@@ -115,6 +115,8 @@ let make = (~getResults, ~onClose, _) => {
                   | None => ()
                 };
                 onClose();
+                evt->ReactEvent.Keyboard.preventDefault;
+                evt->ReactEvent.Keyboard.stopPropagation;
                 None
               | "Esc" =>
                 onClose();
