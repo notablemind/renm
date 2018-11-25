@@ -79,6 +79,7 @@ let handleMessage = (~state, ~port, ~message: WorkerProtocol.serverMessage) =>
   switch (message) {
   | LoadFile(_) => Js.log("TODO")
   | AllFiles(files) =>
+  Js.log("GOT ASLL FILES");
     files->List.forEach(meta => state.session.allFiles->Hashtbl.replace(meta.id, meta))
   | MetaDataUpdate(meta) => state.session.allFiles->Hashtbl.replace(meta.id, meta)
 

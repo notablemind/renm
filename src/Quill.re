@@ -8,7 +8,7 @@ type quill;
 external makeQuill: ('element, 'config) => quill = "quill";
 [@bs.module "quill"] external register: 'a => unit = "register";
 
-Js.log(makeQuill);
+/* Js.log(makeQuill); */
 
 [%bs.raw "window.quill = Quill"];
 
@@ -51,7 +51,7 @@ let myLink = [%bs.raw {|
 |}];
 
 [@bs.module "quill-cursors"] external quillCursors: 'a = "default";
-Js.log(quillCursors);
+/* Js.log(quillCursors); */
 
 register({
   "modules/history": historyClass,

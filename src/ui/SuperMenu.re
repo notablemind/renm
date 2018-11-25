@@ -75,8 +75,8 @@ let make = (~getResults, ~onClose, _) => {
         value={state.search}
         onKeyDown={evt => {
           let%Lets.OptConsume action = switch (evt->ReactEvent.Keyboard.key) {
-            | "Up" => Some(Up)
-            | "Down" => Some(Down)
+            | "ArrowUp" => Some(Up)
+            | "ArrowDown" => Some(Down)
             | "Enter" =>
               switch (state.results[state.selected]) {
                 | Some({action}) => action()
@@ -86,7 +86,7 @@ let make = (~getResults, ~onClose, _) => {
               evt->ReactEvent.Keyboard.preventDefault;
               evt->ReactEvent.Keyboard.stopPropagation;
               None
-            | "Esc" =>
+            | "Escape" =>
               onClose();
               None
             | _ => None

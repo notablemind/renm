@@ -310,6 +310,7 @@ addEventListener("connect", e => {
       | Ok(Close) => ()
       | Ok(Init(sessionId, fileId)) =>
         let%Lets.Async.Consume file = initialPromise;
+        let%Lets.Async.Consume allFiles = Dbs.metasDb->Persistance.getAll;
         ports->HashMap.String.set(sessionId, port);
         port->onmessage(handleMessage(file, ports, sessionId));
         port
@@ -322,6 +323,10 @@ addEventListener("connect", e => {
               ),
             ),
           );
+        Js.log2("Allfiles", allFiles);
+        port->postMessage(messageToJson(
+          AllFiles(allFiles->Belt.Array.map(m => m##value)->List.fromArray)
+        ));
       | _ => ()
       };
     });
