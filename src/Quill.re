@@ -21,7 +21,7 @@ let historyClass = [%bs.raw
 ];
 
 let myLink = [%bs.raw {|
-() => {
+(getFileName) => {
 
   const Inline = Quill.imports['blots/inline'];
   class Link extends Inline {
@@ -38,9 +38,21 @@ let myLink = [%bs.raw {|
         hover = null
       }
       const showHover = () => {
-        hover = document.createElement('div')
+        hover = document.createElement('a')
         hover.className = 'ql-link-hover'
-        hover.innerText = value
+        if (value.startsWith('nm://')) {
+          const id = value.slice(5)
+          const title = getFileName(id)
+          if (title) {
+            hover.innerText = title
+            hover.href = '#' + id
+          } else {
+            hover.innerText = 'Unknown file'
+          }
+        } else {
+          hover.href = value
+          hover.innerText = value
+        }
         document.body.appendChild(hover)
 
         const box = node.getBoundingClientRect()
@@ -79,10 +91,12 @@ let myLink = [%bs.raw {|
 [@bs.module "quill-cursors"] external quillCursors: 'a = "default";
 /* Js.log(quillCursors); */
 
+let getFileName: ref(string => option(string)) = ref((id: string) => None);
+
 register({
   "modules/history": historyClass,
   "modules/cursors": quillCursors,
-  "formats/link": myLink(),
+  "formats/link": myLink(id => getFileName^(id)),
 });
 
 [%bs.raw {|require("quill-mention")|}];

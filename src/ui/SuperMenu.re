@@ -52,7 +52,7 @@ module Styles = {
   ])
 };
 
-let make = (~getResults, ~onClose, _) => {
+let make = (~placeholder, ~getResults, ~onClose, _) => {
   ...component,
   initialState: () => {search: "", selected: 0, results: getResults("")},
   reducer: (action, state) => ReasonReact.Update(switch action {
@@ -71,7 +71,7 @@ let make = (~getResults, ~onClose, _) => {
       <input
         className=Styles.input
         autoFocus=true
-        placeholder="Search..."
+        placeholder
         value={state.search}
         onKeyDown={evt => {
           let%Lets.OptConsume action = switch (evt->ReactEvent.Keyboard.key) {

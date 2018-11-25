@@ -35,6 +35,7 @@ module Header = {
 
 type dialog =
   | SuperMenu
+  | FileMenu
   | FileLink
 
 type state('a, 'b, 'c) = {
@@ -74,7 +75,7 @@ let getCommands = (store: ClientStore.t('a, 'b, 'c), send, text) => {
   |]->Array.keep(item => SuperMenu.fuzzysearch(text, item.title) || SuperMenu.fuzzysearch(text, item.description))
 };
 
-let getFiles = (store: ClientStore.t('a, 'b, 'c), sendMessage, text) => {
+let fileCommands = (store: ClientStore.t('a, 'b, 'c), ~onSelect, ~onCreate, text) => {
   let files = store.session().allFiles;
   Hashtbl.fold((id, meta: WorkerProtocol.metaData, results) => {
     if (SuperMenu.fuzzysearch(text, meta.title)) {
@@ -82,18 +83,9 @@ let getFiles = (store: ClientStore.t('a, 'b, 'c), sendMessage, text) => {
         SuperMenu.title: meta.title,
         description: meta.id,
         action: () => {
-          let session = store.session();
-          switch (session.view.editPos) {
-            | Exactly(start, length) =>
-                store.act(
-                  [Actions.ChangeContents(
-                    session.view.active,
-                    Delta.makeAttributes(start, length, {"link": "nm://" ++ meta.id})
-                  )]
-                )
-          | _ => ()
-          }
+          Js.log2("Hi", meta);
 
+          onSelect(meta)
         }
       }, ...results]
     } else {
@@ -105,8 +97,46 @@ let getFiles = (store: ClientStore.t('a, 'b, 'c), sendMessage, text) => {
     action: () => ()
   } : {
     SuperMenu.title: "Create file \"" ++ text ++ "\"",
-    description: "Will link to this file",
-    action: () => {
+    description: "",
+    action: () => onCreate(text)
+  }])->List.toArray
+};
+
+[@bs.set] external hash: Dom.location => string => unit = "";
+
+let fileOpenCommands = (store, sendMessage) => {
+  fileCommands(
+    store,
+    ~onSelect=meta => {
+      Js.log(meta);
+      Webapi.Dom.Window.location(Webapi.Dom.window)->hash("#" ++ meta.id)
+    },
+    ~onCreate=text => {
+      let id = Utils.newId();
+      sendMessage(WorkerProtocol.CreateFile(id, text));
+      /* TODO this wont work */
+      Webapi.Dom.Window.location(Webapi.Dom.window)->hash("#" ++ id)
+    }
+  )
+};
+
+let fileLinkCommands = (store: ClientStore.t('a, 'b, 'c), sendMessage) => {
+  fileCommands(
+    store,
+    ~onSelect=(meta) => {
+          let session = store.session();
+          switch (session.view.editPos) {
+            | Exactly(start, length) =>
+                store.act(
+                  [Actions.ChangeContents(
+                    session.view.active,
+                    Delta.makeAttributes(start, length, {"link": "nm://" ++ meta.id})
+                  )]
+                )
+          | _ => ()
+          }
+    },
+    ~onCreate=text => {
       let session = store.session();
       switch (session.view.editPos) {
         | Exactly(start, length) =>
@@ -123,8 +153,8 @@ let getFiles = (store: ClientStore.t('a, 'b, 'c), sendMessage, text) => {
           )
       | _ => ()
       }
-    }
-  }])->List.toArray
+    },
+  )
 };
 
 [@bs.val] external body: Dom.element = "document.body";
@@ -146,12 +176,21 @@ let make = (~setupWorker, _) => {
   didMount: self => {
     setupWorker((store, sendMessage) => {
       [%bs.raw "window.store = store"];
+      Quill.getFileName := id => {
+        switch (store.ClientStore.session().allFiles->Hashtbl.find(id)) {
+          | exception Not_found => None
+          | {title} => Some(title)
+        }
+      };
       self.send(Store(store, sendMessage))
     });
 
     let keys = KeyManager.makeHandlers([
-      ("cmd+p", evt => {
+      ("cmd+shift+p", evt => {
         self.send(ShowDialog(SuperMenu))
+      }),
+      ("cmd+p", evt => {
+        self.send(ShowDialog(FileMenu))
       }),
     ]);
 
@@ -186,13 +225,22 @@ let make = (~setupWorker, _) => {
         | Some(SuperMenu) =>
           <SuperMenu
             key="commands"
+            placeholder="Search for a command"
             getResults={getCommands(store, send)}
             onClose={() => send(HideDialog(SuperMenu))}
           />
+        | Some(FileMenu) =>
+          <SuperMenu
+            placeholder="Select file to open"
+            key="file-menu"
+            getResults={fileOpenCommands(store, sendMessage)}
+            onClose={() => send(HideDialog(FileMenu))}
+          />
         | Some(FileLink) =>
           <SuperMenu
-            key="files"
-            getResults={getFiles(store, sendMessage)}
+            key="link-files"
+            placeholder="Select file to link"
+            getResults={fileLinkCommands(store, sendMessage)}
             onClose={() => send(HideDialog(FileLink))}
           />
         | None => ReasonReact.null
