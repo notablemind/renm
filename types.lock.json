@@ -2335,9 +2335,18 @@
                         "Reference",
                         [
                           "Builtin",
-                          "string"
+                          "option"
                         ],
-                        []
+                        [
+                          [
+                            "Reference",
+                            [
+                              "Builtin",
+                              "string"
+                            ],
+                            []
+                          ]
+                        ]
                       ]
                     ],
                     null

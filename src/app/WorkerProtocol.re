@@ -36,7 +36,7 @@ let blankMetaData = () => {
 type message =
   /* sessionId, fileId to open */
   | Init(string, option(string))
-  | Open(string)
+  | Open(option(string))
   | Close
   | Change(changeInner)
   | ChangeTitle(string)

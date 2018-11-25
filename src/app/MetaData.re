@@ -63,6 +63,8 @@ let getHome = () => {
   Dbs.metasDb->Persistance.get(homeId);
 };
 
+let getFile = id => Dbs.metasDb->Persistance.get(id);
+
 let loadNodes = db => {
   let%Lets.Async nodes = db->Dbs.getNodesDb->Persistance.getAll;
   let nodeMap = nodes->Array.map(node => (node##key, node##value))->Map.String.fromArray;

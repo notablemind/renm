@@ -77,7 +77,7 @@ let handleActions = (~state, ~port, ~preSelection, ~postSelection, actions) => {
 
 let handleMessage = (~state, ~port, ~message: WorkerProtocol.serverMessage) =>
   switch (message) {
-  | LoadFile(_) => Js.log("TODO")
+    | LoadFile(_) => assert(false)
   | AllFiles(files) =>
   Js.log("GOT ASLL FILES");
     files->List.forEach(meta => state.session.allFiles->Hashtbl.replace(meta.id, meta))
@@ -147,7 +147,7 @@ let handleMessage = (~state, ~port, ~message: WorkerProtocol.serverMessage) =>
   };
 
 
-let initStore = (~metaData, ~sessionId, ~port, data, cursors) => {
+let rec initStore = (~metaData, ~sessionId, ~port, data, cursors) => {
   let session =
     Session.createSession(~metaData, ~sessionId, ~root=data.Data.root);
   let session = {
@@ -204,6 +204,9 @@ let initStore = (~metaData, ~sessionId, ~port, data, cursors) => {
   port
   ->onmessage(evt =>
       switch (messageFromJson(evt##data)) {
+      | Ok(LoadFile(metaData, data, cursors)) =>
+        let clientStore = initStore(~metaData, ~sessionId, ~port, data, cursors);
+        onSetup(clientStore, message => port->postMessage(messageToJson(message)));
       | Ok(message) =>
         handleMessage(~port, ~state, ~message)
       | Error(message) =>

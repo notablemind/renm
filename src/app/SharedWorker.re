@@ -201,7 +201,25 @@ let sendCursors = (cursors, ports, sessionId) =>
       }
     );
 
-let handleMessage = (state, ports, sessionId, evt) =>
+let arrayFind = (items, fn) => Array.reduce(items, None, (current, item) => switch current {
+  | None => fn(item)
+  | Some(_) => current
+});
+
+let loadFile = id => {
+  let db = Dbs.getFileDb(id);
+  let%Lets.Async nodeMap = MetaData.loadNodes(db);
+
+  let world =
+    StoreInOne.make(
+      {...Data.emptyData(~root="root"), nodes: nodeMap},
+      StoreInOne.History.empty,
+    );
+
+  Js.Promise.resolve((db, world));
+};
+
+let handleMessage = (port, state, ports, sessionId, evt) =>
   switch (parseMessage(evt##data)) {
   | Ok(message) =>
     switch (message) {
@@ -220,31 +238,28 @@ let handleMessage = (state, ports, sessionId, evt) =>
       Js.log2(nodeId, range);
       Hashtbl.replace(state.cursors, sessionId, (nodeId, range));
       sendCursors(state.cursors, ports, sessionId);
-    | Open(_)
+    | Open(id) =>
+      let%Lets.Async.Consume meta = switch (id) {
+        | None => MetaData.getHome()
+        | Some(id) => MetaData.getFile(id)
+      };
+      let%Lets.Async.Consume (db, world) = loadFile(meta.WorkerProtocol.id)
+      port
+      ->postMessage(
+          messageToJson(
+            LoadFile(
+              state.meta,
+              state->data,
+              cursorsForSession(state.cursors, sessionId),
+            ),
+          ),
+        );
     | ChangeTitle(_)
     | Init(_) => ()
     }
   | Error(message) =>
     Js.log3("Invalid message received!", message, evt##data)
   };
-
-let arrayFind = (items, fn) => Array.reduce(items, None, (current, item) => switch current {
-  | None => fn(item)
-  | Some(_) => current
-});
-
-let loadFile = id => {
-  let db = Dbs.getFileDb(id);
-  let%Lets.Async nodeMap = MetaData.loadNodes(db);
-
-  let world =
-    StoreInOne.make(
-      {...Data.emptyData(~root="root"), nodes: nodeMap},
-      StoreInOne.History.empty,
-    );
-
-  Js.Promise.resolve((db, world));
-};
 
 let getInitialState = () => {
   let%Lets.Async meta = MetaData.getHome();
@@ -271,17 +286,17 @@ addEventListener("connect", e => {
       switch (parseMessage(evt##data)) {
       | Ok(Close) => ()
       | Ok(Init(sessionId, fileId)) =>
-        let%Lets.Async.Consume file = initialPromise;
+        let%Lets.Async.Consume state = initialPromise;
         let%Lets.Async.Consume allFiles = Dbs.metasDb->Persistance.getAll;
         ports->HashMap.String.set(sessionId, port);
-        port->onmessage(handleMessage(file, ports, sessionId));
+        port->onmessage(handleMessage(port, state, ports, sessionId));
         port
         ->postMessage(
             messageToJson(
               LoadFile(
-                file.meta,
-                file->data,
-                cursorsForSession(file.cursors, sessionId),
+                state.meta,
+                state->data,
+                cursorsForSession(state.cursors, sessionId),
               ),
             ),
           );

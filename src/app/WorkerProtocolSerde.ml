@@ -127,7 +127,7 @@ module Version1 =
     and _WorkerProtocol__data = _World__MultiChange__data
     and _WorkerProtocol__message = WorkerProtocol.message =
       | Init of string * string option 
-      | Open of string 
+      | Open of string option 
       | Close 
       | Change of _WorkerProtocol__changeInner 
       | ChangeTitle of string 
@@ -2209,12 +2209,27 @@ module Version1 =
             ((Js.Json.JSONString ("Open"))[@explicit_arity ]) =
               (Js.Json.classify tag)
             ->
-            (match (fun string ->
-                      match Js.Json.classify string with
-                      | ((JSONString (string))[@explicit_arity ]) ->
-                          ((Belt.Result.Ok (string))[@explicit_arity ])
-                      | _ -> ((Error (["expected a string"]))
-                          [@explicit_arity ])) arg0
+            (match ((fun transformer ->
+                       fun option ->
+                         match Js.Json.classify option with
+                         | JSONNull -> ((Belt.Result.Ok (None))
+                             [@explicit_arity ])
+                         | _ ->
+                             (match transformer option with
+                              | ((Belt.Result.Error
+                                  (error))[@explicit_arity ]) ->
+                                  ((Belt.Result.Error
+                                      (("optional value" :: error)))
+                                  [@explicit_arity ])
+                              | ((Ok (value))[@explicit_arity ]) ->
+                                  ((Ok (((Some (value))[@explicit_arity ])))
+                                  [@explicit_arity ])))
+                      (fun string ->
+                         match Js.Json.classify string with
+                         | ((JSONString (string))[@explicit_arity ]) ->
+                             ((Belt.Result.Ok (string))[@explicit_arity ])
+                         | _ -> ((Error (["expected a string"]))
+                             [@explicit_arity ]))) arg0
              with
              | Belt.Result.Ok arg0 ->
                  Belt.Result.Ok (Open (arg0) : _WorkerProtocol__message)
@@ -3315,7 +3330,14 @@ module Version1 =
                                                                   Js.Json.string)
                                                                  arg1)|]
         | Open arg0 ->
-            Js.Json.array [|(Js.Json.string "Open");(Js.Json.string arg0)|]
+            Js.Json.array
+              [|(Js.Json.string "Open");((((fun transformer ->
+                                              function
+                                              | ((Some
+                                                  (inner))[@explicit_arity ])
+                                                  -> transformer inner
+                                              | None -> Js.Json.null))
+                                            Js.Json.string) arg0)|]
         | Close -> Js.Json.array [|(Js.Json.string "Close")|]
         | Change arg0 ->
             Js.Json.array

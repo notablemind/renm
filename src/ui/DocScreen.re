@@ -158,6 +158,7 @@ let fileLinkCommands = (store: ClientStore.t('a, 'b, 'c), sendMessage) => {
 };
 
 [@bs.val] external body: Dom.element = "document.body";
+[@bs.get] external hash: Dom.location => string = "hash";
 
 let wrapper = Css.(style([
   color(Colors.black)
@@ -182,7 +183,20 @@ let make = (~setupWorker, _) => {
           | {title} => Some(title)
         }
       };
-      self.send(Store(store, sendMessage))
+      self.send(Store(store, sendMessage));
+
+
+      /* open Webapi.Dom; */
+      Webapi.Dom.window |> Webapi.Dom.Window.addEventListener("hashchange", evt => {
+        let hash = Webapi.Dom.location->hash;
+        let id = if (hash == "") {
+          None
+        } else {
+          Some(Js.String.sliceToEnd(~from=1, hash))
+        };
+        sendMessage(Open(id))
+      });
+
     });
 
     let keys = KeyManager.makeHandlers([
@@ -216,6 +230,7 @@ let make = (~setupWorker, _) => {
     | Some((store, sendMessage)) => <div className=wrapper>
       <Header store={store.session()}/>
       <Tree
+        key={store.session().metaData.id}
         store
         registerFocus={fn => {
           state.focus := fn
