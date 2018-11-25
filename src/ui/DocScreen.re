@@ -45,8 +45,8 @@ type state('a, 'b, 'c) = {
 
 type actions('a, 'b, 'c) =
   | Store(ClientStore.t('a, 'b, 'c))
-  | ShowSuperMenu
-  | HideSuperMenu
+  | ShowDialog(dialog)
+  | HideDialog(dialog)
 
 let component = ReasonReact.reducerComponent("OnePage");
 
@@ -62,28 +62,55 @@ let keyEvt = evt => {
   )
 };
 
-let getCommands = (store: ClientStore.t('a, 'b, 'c), text) => {
+let getCommands = (store: ClientStore.t('a, 'b, 'c), send, text) => {
   [|
     {
-      SuperMenu.title: "New File",
-      description: "Create a new file",
+      SuperMenu.title: "Link to File",
+      description: "Hyperlink the current text to another (maybe new) file",
       action: () => {
-        let session = store.session();
-        Js.log(session.view.editPos)
-        switch (session.view.editPos) {
-          | Exactly(start, length) =>
-              store.act(
-                [Actions.ChangeContents(
-                  session.view.active,
-                  Delta.makeAttributes(start, length, {"link": "nm://awesome"})
-                )]
-              )
-        | _ => ()
-        }
-        /* s.view.editPos */
+        send(ShowDialog(FileLink))
       }
     }
   |]->Array.keep(item => SuperMenu.fuzzysearch(text, item.title) || SuperMenu.fuzzysearch(text, item.description))
+};
+
+let getFiles = (store: ClientStore.t('a, 'b, 'c), text) => {
+  let files = store.session().allFiles;
+  Hashtbl.fold((id, meta: WorkerProtocol.metaData, results) => {
+    if (SuperMenu.fuzzysearch(text, meta.title)) {
+      [{
+        SuperMenu.title: meta.title,
+        description: meta.id,
+        action: () => {
+          let session = store.session();
+          Js.log(session.view.editPos)
+          switch (session.view.editPos) {
+            | Exactly(start, length) =>
+                store.act(
+                  [Actions.ChangeContents(
+                    session.view.active,
+                    Delta.makeAttributes(start, length, {"link": "nm://" ++ meta.id})
+                  )]
+                )
+          | _ => ()
+          }
+
+        }
+      }, ...results]
+    } else {
+      results
+    }
+  }, files, [text == "" ? {
+    SuperMenu.title: "[new file]",
+    description: "Type the name you want to give to the new file",
+    action: () => ()
+  } : {
+    SuperMenu.title: "Create file \"" ++ text ++ "\"",
+    description: "Will link to this file",
+    action: () => {
+      Js.log("Ok " ++ text)
+    }
+  }])->List.toArray
 };
 
 [@bs.val] external body: Dom.element = "document.body";
@@ -97,8 +124,10 @@ let make = (~setupWorker, _) => {
   initialState: () => {store: None, dialog: None, focus: ref(() => ())},
   reducer: (action, state) => ReasonReact.Update(switch action {
     | Store(store) => {...state, store: Some(store)}
-    | ShowSuperMenu => {...state, dialog: Some(SuperMenu)}
-    | HideSuperMenu => {...state, dialog: None}
+    | ShowDialog(dialog) => {...state, dialog: Some(dialog)}
+    | HideDialog(dialog) => if (state.dialog == Some(dialog)) {
+      {...state, dialog: None}
+    } else { state }
   }),
   didMount: self => {
     setupWorker(store => {
@@ -108,7 +137,7 @@ let make = (~setupWorker, _) => {
 
     let keys = KeyManager.makeHandlers([
       ("cmd+p", evt => {
-        self.send(ShowSuperMenu)
+        self.send(ShowDialog(SuperMenu))
       }),
     ]);
 
@@ -141,12 +170,19 @@ let make = (~setupWorker, _) => {
       />
       {switch (state.dialog) {
         | Some(SuperMenu) =>
-        <SuperMenu
-          getResults={getCommands(store)}
-          onClose={() => send(HideSuperMenu)}
-        />
-      | None => ReasonReact.null}
-      }
+          <SuperMenu
+            key="commands"
+            getResults={getCommands(store, send)}
+            onClose={() => send(HideDialog(SuperMenu))}
+          />
+        | Some(FileLink) =>
+          <SuperMenu
+            key="files"
+            getResults={getFiles(store)}
+            onClose={() => send(HideDialog(FileLink))}
+          />
+        | None => ReasonReact.null
+      }}
     </div>
     },
 };
