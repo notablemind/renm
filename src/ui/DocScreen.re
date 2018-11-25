@@ -38,13 +38,13 @@ type dialog =
   | FileLink
 
 type state('a, 'b, 'c) = {
-  store: option(ClientStore.t('a, 'b, 'c)),
+  store: option((ClientStore.t('a, 'b, 'c), WorkerProtocol.message => unit)),
   dialog: option(dialog),
   focus: ref(unit => unit),
 };
 
 type actions('a, 'b, 'c) =
-  | Store(ClientStore.t('a, 'b, 'c))
+  | Store(ClientStore.t('a, 'b, 'c), WorkerProtocol.message => unit)
   | ShowDialog(dialog)
   | HideDialog(dialog)
 
@@ -74,7 +74,7 @@ let getCommands = (store: ClientStore.t('a, 'b, 'c), send, text) => {
   |]->Array.keep(item => SuperMenu.fuzzysearch(text, item.title) || SuperMenu.fuzzysearch(text, item.description))
 };
 
-let getFiles = (store: ClientStore.t('a, 'b, 'c), text) => {
+let getFiles = (store: ClientStore.t('a, 'b, 'c), sendMessage, text) => {
   let files = store.session().allFiles;
   Hashtbl.fold((id, meta: WorkerProtocol.metaData, results) => {
     if (SuperMenu.fuzzysearch(text, meta.title)) {
@@ -83,7 +83,6 @@ let getFiles = (store: ClientStore.t('a, 'b, 'c), text) => {
         description: meta.id,
         action: () => {
           let session = store.session();
-          Js.log(session.view.editPos)
           switch (session.view.editPos) {
             | Exactly(start, length) =>
                 store.act(
@@ -108,7 +107,22 @@ let getFiles = (store: ClientStore.t('a, 'b, 'c), text) => {
     SuperMenu.title: "Create file \"" ++ text ++ "\"",
     description: "Will link to this file",
     action: () => {
-      Js.log("Ok " ++ text)
+      let session = store.session();
+      switch (session.view.editPos) {
+        | Exactly(start, length) =>
+          let id = Utils.newId();
+          sendMessage(WorkerProtocol.CreateFile(id, text));
+          let attributes ={"link": "nm://" ++ id};
+          store.act(
+            [Actions.ChangeContents(
+              session.view.active,
+              length == 0
+              ? Delta.makeInsert(~attributes, start, text)
+              : Delta.makeAttributes(start, length, attributes)
+            )]
+          )
+      | _ => ()
+      }
     }
   }])->List.toArray
 };
@@ -123,16 +137,16 @@ let make = (~setupWorker, _) => {
   ...component,
   initialState: () => {store: None, dialog: None, focus: ref(() => ())},
   reducer: (action, state) => ReasonReact.Update(switch action {
-    | Store(store) => {...state, store: Some(store)}
+    | Store(store, sendMessage) => {...state, store: Some((store, sendMessage))}
     | ShowDialog(dialog) => {...state, dialog: Some(dialog)}
     | HideDialog(dialog) => if (state.dialog == Some(dialog)) {
       {...state, dialog: None}
     } else { state }
   }),
   didMount: self => {
-    setupWorker(store => {
+    setupWorker((store, sendMessage) => {
       [%bs.raw "window.store = store"];
-      self.send(Store(store))
+      self.send(Store(store, sendMessage))
     });
 
     let keys = KeyManager.makeHandlers([
@@ -160,7 +174,7 @@ let make = (~setupWorker, _) => {
   render: ({state, send}) =>
     switch (state.store) {
     | None => <div> {ReasonReact.string("Connecting...")} </div>
-    | Some(store) => <div className=wrapper>
+    | Some((store, sendMessage)) => <div className=wrapper>
       <Header store={store.session()}/>
       <Tree
         store
@@ -178,7 +192,7 @@ let make = (~setupWorker, _) => {
         | Some(FileLink) =>
           <SuperMenu
             key="files"
-            getResults={getFiles(store)}
+            getResults={getFiles(store, sendMessage)}
             onClose={() => send(HideDialog(FileLink))}
           />
         | None => ReasonReact.null

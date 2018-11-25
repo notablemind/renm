@@ -2380,6 +2380,28 @@
                     null
                   ],
                   [
+                    "CreateFile",
+                    [
+                      [
+                        "Reference",
+                        [
+                          "Builtin",
+                          "string"
+                        ],
+                        []
+                      ],
+                      [
+                        "Reference",
+                        [
+                          "Builtin",
+                          "string"
+                        ],
+                        []
+                      ]
+                    ],
+                    null
+                  ],
+                  [
                     "UndoRequest",
                     [],
                     null

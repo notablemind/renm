@@ -131,6 +131,7 @@ module Version1 =
       | Close 
       | Change of _WorkerProtocol__changeInner 
       | ChangeTitle of string 
+      | CreateFile of string * string 
       | UndoRequest 
       | RedoRequest 
       | SelectionChanged of _Data__Node__id * _Quill__range 
@@ -2245,6 +2246,30 @@ module Version1 =
                  Belt.Result.Ok
                    (ChangeTitle (arg0) : _WorkerProtocol__message)
              | Error error -> Error ("constructor argument 0" :: error))
+        | JSONArray [|tag;arg0;arg1|] when
+            ((Js.Json.JSONString ("CreateFile"))[@explicit_arity ]) =
+              (Js.Json.classify tag)
+            ->
+            (match (fun string ->
+                      match Js.Json.classify string with
+                      | ((JSONString (string))[@explicit_arity ]) ->
+                          ((Belt.Result.Ok (string))[@explicit_arity ])
+                      | _ -> ((Error (["expected a string"]))
+                          [@explicit_arity ])) arg1
+             with
+             | Belt.Result.Ok arg1 ->
+                 (match (fun string ->
+                           match Js.Json.classify string with
+                           | ((JSONString (string))[@explicit_arity ]) ->
+                               ((Belt.Result.Ok (string))[@explicit_arity ])
+                           | _ -> ((Error (["expected a string"]))
+                               [@explicit_arity ])) arg0
+                  with
+                  | Belt.Result.Ok arg0 ->
+                      Belt.Result.Ok
+                        (CreateFile (arg0, arg1) : _WorkerProtocol__message)
+                  | Error error -> Error ("constructor argument 0" :: error))
+             | Error error -> Error ("constructor argument 1" :: error))
         | JSONArray [|tag|] when
             ((Js.Json.JSONString ("UndoRequest"))[@explicit_arity ]) =
               (Js.Json.classify tag)
@@ -3299,6 +3324,10 @@ module Version1 =
         | ChangeTitle arg0 ->
             Js.Json.array
               [|(Js.Json.string "ChangeTitle");(Js.Json.string arg0)|]
+        | CreateFile (arg0, arg1) ->
+            Js.Json.array
+              [|(Js.Json.string "CreateFile");(Js.Json.string arg0);(
+                Js.Json.string arg1)|]
         | UndoRequest -> Js.Json.array [|(Js.Json.string "UndoRequest")|]
         | RedoRequest -> Js.Json.array [|(Js.Json.string "RedoRequest")|]
         | SelectionChanged (arg0, arg1) ->

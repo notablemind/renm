@@ -229,7 +229,7 @@ let setupWorker = onSetup => {
       switch (messageFromJson(evt##data)) {
       | Ok(LoadFile(metaData, data, cursors)) =>
         let clientStore = initStore(~metaData, ~sessionId, ~port, data, cursors);
-        onSetup(clientStore);
+        onSetup(clientStore, message => port->postMessage(messageToJson(message)));
       | _ => ()
       };
     });

@@ -40,6 +40,8 @@ type message =
   | Close
   | Change(changeInner)
   | ChangeTitle(string)
+  /* id, title */
+  | CreateFile(string, string)
   | UndoRequest
   | RedoRequest
   | SelectionChanged(Data.Node.id, Quill.range);

@@ -66,22 +66,26 @@ let nextChangeNum = () => {
 
 let data = file => file.world.current;
 
-let sendChange = (~excludeSession=?, ports, change) => {
+let sendToPorts = (~excludeSession=?, ports, message) => {
   switch (excludeSession) {
   | None =>
     ports
     ->HashMap.String.forEach((sid, port) =>
-        port->postMessage(messageToJson(WorkerProtocol.TabChange(change)))
+        port->postMessage(messageToJson(message))
       )
   | Some(sessionId) =>
     ports
     ->HashMap.String.forEach((sid, port) =>
         sid != sessionId ?
           port
-          ->postMessage(messageToJson(WorkerProtocol.TabChange(change))) :
+          ->postMessage(messageToJson(message)) :
           ()
       )
   };
+};
+
+let sendChange = (~excludeSession=?, ports, change) => {
+  sendToPorts(~excludeSession?, ports, WorkerProtocol.TabChange(change))
 };
 
 let unique = items => {
@@ -205,6 +209,9 @@ let handleMessage = (state, ports, sessionId, evt) =>
       onChange(state, ports, sessionId, change)
     | UndoRequest => onUndo(state, ports, sessionId)
     | RedoRequest => onRedo(state, ports, sessionId)
+    | CreateFile(id, title) =>
+      let%Lets.Async.Consume meta = MetaData.makeEmptyFile(~id, ~title);
+      sendToPorts(ports, WorkerProtocol.MetaDataUpdate(meta))
     | Close =>
       state.cursors->Hashtbl.remove(sessionId);
       ports->HashMap.String.remove(sessionId);
@@ -226,54 +233,9 @@ let arrayFind = (items, fn) => Array.reduce(items, None, (current, item) => swit
   | Some(_) => current
 });
 
-let makeHome = () => {
-  Js.log("Making a home");
-  let meta = {
-    WorkerProtocol.id: Utils.newId(),
-    title: "Home",
-    nodeCount: 1,
-    created: 0.,
-    lastOpened: 0.,
-    lastModified: 0.,
-    sync: None,
-  };
-  let%Lets.Async _ = Dbs.metasDb->Persistance.put(meta.id, meta);
-  let%Lets.Async _ = Dbs.homeDb->Persistance.put("home", meta.id);
-  let%Lets.Async _ = Dbs.getFileDb(meta.id)->Dbs.getNodesDb->Persistance.batch(
-    Fixture.large->Belt.List.map(node => {
-      Persistance.batchPut({
-        "key": node.id,
-        "type": "put",
-        "value": node
-      })
-    })->List.toArray
-  );
-  Js.Promise.resolve(meta.id)
-};
-
-let getHome = () => {
-  let%Lets.Async homeId =
-    try%Lets.Async (
-      Dbs.homeDb->Persistance.get("home")
-      ->Lets.Async.map(value => {
-        value
-      })
-    ) {
-    | _ => makeHome()
-    };
-  Js.log2("Home id", homeId);
-  Dbs.metasDb->Persistance.get(homeId);
-};
-
-let loadNodes = db => {
-  let%Lets.Async nodes = db->Dbs.getNodesDb->Persistance.getAll;
-  let nodeMap = nodes->Array.map(node => (node##key, node##value))->Map.String.fromArray;
-  Js.Promise.resolve(nodeMap)
-};
-
 let loadFile = id => {
   let db = Dbs.getFileDb(id);
-  let%Lets.Async nodeMap = loadNodes(db);
+  let%Lets.Async nodeMap = MetaData.loadNodes(db);
 
   let world =
     StoreInOne.make(
@@ -285,7 +247,7 @@ let loadFile = id => {
 };
 
 let getInitialState = () => {
-  let%Lets.Async meta = getHome();
+  let%Lets.Async meta = MetaData.getHome();
   let%Lets.Async (db, world) = loadFile(meta.WorkerProtocol.id);
   Js.Promise.resolve({
     meta,

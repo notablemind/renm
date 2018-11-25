@@ -13,8 +13,9 @@ let fromString = str => make([|insert({"insert": withNewline(str)})|]);
 
 [@bs.send] external retain: (delta, int) => delta = "";
 [@bs.send] external retainWithAttributes: (delta, int, Js.t('a)) => delta = "retain";
-[@bs.send] external delete: (delta, int) => delta = "";
 [@bs.send] external insert: (delta, string) => delta = "";
+[@bs.send] external insertWithAttributes: (delta, string, Js.t('a)) => delta = "insert";
+[@bs.send] external delete: (delta, int) => delta = "";
 [@bs.send] external diff: (delta, delta) => delta = "";
 
 [@bs.send] external transform: (delta, delta) => delta = "";
@@ -52,7 +53,7 @@ let makeDelete = (idx, num) => {
   delta->delete(num);
 };
 
-let makeInsert = (idx, text) => {
+let makeInsert = (~attributes=?, idx, text) => {
   let delta = make([||]);
   let delta =
     if (idx > 0) {
@@ -60,7 +61,10 @@ let makeInsert = (idx, text) => {
     } else {
       delta;
     };
-  delta->insert(text);
+  switch attributes {
+    | None => delta->insert(text);
+    | Some(attributes) => delta->insertWithAttributes(text, attributes)
+  }
 };
 
 let makeAttributes = (idx, length, attributes) => {
