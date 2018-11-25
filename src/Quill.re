@@ -29,6 +29,32 @@ let myLink = [%bs.raw {|
       const node = super.create(value);
       node.setAttribute('href', value);
       node.setAttribute('target', '_blank');
+      let hover = null
+      let timeout = null
+      const closeHover = () => {
+        if (hover && hover.parentNode) {
+          hover.parentNode.removeChild(hover)
+        }
+        hover = null
+      }
+      const showHover = () => {
+        hover = document.createElement('div')
+        hover.className = 'ql-link-hover'
+        hover.innerText = value
+        document.body.appendChild(hover)
+
+        const box = node.getBoundingClientRect()
+        hover.style.top = box.top - hover.getBoundingClientRect().height + 'px'
+        hover.style.left = box.left + 'px'
+        hover.addEventListener('mouseover', () => clearTimeout(timeout))
+        hover.addEventListener('mouseout', closeHover)
+      }
+      node.addEventListener('mouseover', () => {
+        showHover();
+      })
+      node.addEventListener('mouseout', () => {
+        timeout = setTimeout(closeHover, 100);
+      })
       return node;
     }
 
