@@ -7,6 +7,7 @@ which lives for the life of the tab.
 
 type session = {
   metaData: WorkerProtocol.metaData,
+  allFiles: Hashtbl.t(string, WorkerProtocol.metaData),
   sessionId: string,
   changeNum: int,
   changeSet: option((string, float, string)),
@@ -27,6 +28,7 @@ let subscribeToMetadata = (session, fn) => {
 let createSession = (~metaData, ~sessionId, ~root) => {
   metaData,
   sessionId,
+  allFiles: Hashtbl.create(1),
   changeNum: 0,
   changeSet: None,
   view: View.emptyView(~root, ~id=0),
@@ -39,13 +41,6 @@ let actView_ = (store, action) => {
     View.processViewAction(store.view, store.sharedViewData, action);
 
   ({...store, view, sharedViewData}, events);
-  /* store.view = view;
-     store.sharedViewData = sharedViewData;
-
-     Subscription.trigger(store.subs, events);
-     Js.Global.setTimeout(() => {
-       LocalStorage.setItem("renm:viewData", Js.Json.stringify(Serialize.toJson(store.sharedViewData)));
-     }, 0)->ignore; */
 };
 
 let applyView = (session, viewActions) => {

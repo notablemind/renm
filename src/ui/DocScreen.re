@@ -33,9 +33,13 @@ module Header = {
   };
 };
 
+type dialog =
+  | SuperMenu
+  | FileLink
+
 type state('a, 'b, 'c) = {
   store: option(ClientStore.t('a, 'b, 'c)),
-  superMenu: bool,
+  dialog: option(dialog),
   focus: ref(unit => unit),
 };
 
@@ -90,11 +94,11 @@ let wrapper = Css.(style([
 
 let make = (~setupWorker, _) => {
   ...component,
-  initialState: () => {store: None, superMenu: false, focus: ref(() => ())},
+  initialState: () => {store: None, dialog: None, focus: ref(() => ())},
   reducer: (action, state) => ReasonReact.Update(switch action {
     | Store(store) => {...state, store: Some(store)}
-    | ShowSuperMenu => {...state, superMenu: true}
-    | HideSuperMenu => {...state, superMenu: false}
+    | ShowSuperMenu => {...state, dialog: Some(SuperMenu)}
+    | HideSuperMenu => {...state, dialog: None}
   }),
   didMount: self => {
     setupWorker(store => {
@@ -135,12 +139,14 @@ let make = (~setupWorker, _) => {
           state.focus := fn
         }}
       />
-      {state.superMenu
-      ? <SuperMenu
-        getResults={getCommands(store)}
-        onClose={() => send(HideSuperMenu)}
-      />
-      : ReasonReact.null}
+      {switch (state.dialog) {
+        | Some(SuperMenu) =>
+        <SuperMenu
+          getResults={getCommands(store)}
+          onClose={() => send(HideSuperMenu)}
+        />
+      | None => ReasonReact.null}
+      }
     </div>
     },
 };

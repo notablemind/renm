@@ -22,29 +22,6 @@ let component = ReasonReact.reducerComponent("SuperMenu");
 
 module Styles = {
   open Css;
-  let wrapper = style([
-    position(fixed),
-    left(px(0)),
-    right(px(0)),
-    top(px(0)),
-    bottom(px(0)),
-    display(`flex),
-    flexDirection(`column),
-    alignItems(`center),
-    justifyContent(`flexStart),
-    paddingTop(px(100)),
-    backgroundColor(rgba(100, 100, 100, 0.1))
-  ]);
-  let container = style([
-    backgroundColor(white),
-    width(px(600)),
-    borderRadius(px(5)),
-    boxShadow(~x=px(0), ~y=px(2), ~blur=px(10), hex("ccc")),
-    display(`flex),
-    backgroundColor(transparent),
-    flexDirection(`column),
-    alignItems(`stretch)
-  ]);
   let input = style([
     borderStyle(`none),
     outlineStyle(`none),
@@ -90,67 +67,57 @@ let make = (~getResults, ~onClose, _) => {
   }),
   render: ({state, send}) => {
     ();
-    <div
-      className=Styles.wrapper
-      onMouseDown={evt => onClose()}
-    >
-      <div
-        className=Styles.container
-        onMouseDown={evt => {
-          evt->ReactEvent.Mouse.stopPropagation
-        }}
-      >
-        <input
-          className=Styles.input
-          autoFocus=true
-          placeholder="Search..."
-          value={state.search}
-          onKeyDown={evt => {
-            let%Lets.OptConsume action = switch (evt->ReactEvent.Keyboard.key) {
-              | "Up" => Some(Up)
-              | "Down" => Some(Down)
-              | "Enter" =>
-                switch (state.results[state.selected]) {
-                  | Some({action}) => action()
-                  | None => ()
-                };
-                onClose();
-                evt->ReactEvent.Keyboard.preventDefault;
-                evt->ReactEvent.Keyboard.stopPropagation;
-                None
-              | "Esc" =>
-                onClose();
-                None
-              | _ => None
-            };
-            send(action);
-            evt->ReactEvent.Keyboard.preventDefault;
-            evt->ReactEvent.Keyboard.stopPropagation;
-          }}
-          onChange={evt => {
-            send(SetText(evt->ReactEvent.Form.nativeEvent##target##value))
-          }}
-        />
-        {state.results->Array.mapWithIndex((i, {title, action, description}) => {
-          <div
-            role="button"
-            key={string_of_int(i)}
-            className=(Styles.item ++ " " ++ (i == state.selected ? Styles.selectedItem : ""))
-            onClick={evt => {
-              evt->ReactEvent.Mouse.stopPropagation;
-              action();
+    <Dialog onClose>
+      <input
+        className=Styles.input
+        autoFocus=true
+        placeholder="Search..."
+        value={state.search}
+        onKeyDown={evt => {
+          let%Lets.OptConsume action = switch (evt->ReactEvent.Keyboard.key) {
+            | "Up" => Some(Up)
+            | "Down" => Some(Down)
+            | "Enter" =>
+              switch (state.results[state.selected]) {
+                | Some({action}) => action()
+                | None => ()
+              };
               onClose();
-            }}
-          >
-            <span className=Styles.itemName>
-              {ReasonReact.string(title)}
-            </span>
-            <span className=Styles.description>
-              {ReasonReact.string(description)}
-            </span>
-          </div>
-        })->ReasonReact.array}
-      </div>
-    </div>
+              evt->ReactEvent.Keyboard.preventDefault;
+              evt->ReactEvent.Keyboard.stopPropagation;
+              None
+            | "Esc" =>
+              onClose();
+              None
+            | _ => None
+          };
+          send(action);
+          evt->ReactEvent.Keyboard.preventDefault;
+          evt->ReactEvent.Keyboard.stopPropagation;
+        }}
+        onChange={evt => {
+          send(SetText(evt->ReactEvent.Form.nativeEvent##target##value))
+        }}
+      />
+      {state.results->Array.mapWithIndex((i, {title, action, description}) => {
+        <div
+          role="button"
+          key={string_of_int(i)}
+          className=(Styles.item ++ " " ++ (i == state.selected ? Styles.selectedItem : ""))
+          onClick={evt => {
+            evt->ReactEvent.Mouse.stopPropagation;
+            action();
+            onClose();
+          }}
+        >
+          <span className=Styles.itemName>
+            {ReasonReact.string(title)}
+          </span>
+          <span className=Styles.description>
+            {ReasonReact.string(description)}
+          </span>
+        </div>
+      })->ReasonReact.array}
+    </Dialog>
   }
 };
