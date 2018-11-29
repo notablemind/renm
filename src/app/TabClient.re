@@ -147,7 +147,7 @@ let handleMessage = (~state, ~port, ~message: WorkerProtocol.serverMessage) =>
   };
 
 
-let rec initStore = (~metaData, ~sessionId, ~port, data, cursors) => {
+let rec initStore = (~onSetup, ~metaData, ~sessionId, ~port, data, cursors) => {
   let session =
     Session.createSession(~metaData, ~sessionId, ~root=data.Data.root);
   let session = {
@@ -205,7 +205,7 @@ let rec initStore = (~metaData, ~sessionId, ~port, data, cursors) => {
   ->onmessage(evt =>
       switch (messageFromJson(evt##data)) {
       | Ok(LoadFile(metaData, data, cursors)) =>
-        let clientStore = initStore(~metaData, ~sessionId, ~port, data, cursors);
+        let clientStore = initStore(~onSetup, ~metaData, ~sessionId, ~port, data, cursors);
         onSetup(clientStore, message => port->postMessage(messageToJson(message)));
       | Ok(message) =>
         handleMessage(~port, ~state, ~message)
@@ -231,7 +231,7 @@ let setupWorker = onSetup => {
       /* Js.log2("Got message", evt); */
       switch (messageFromJson(evt##data)) {
       | Ok(LoadFile(metaData, data, cursors)) =>
-        let clientStore = initStore(~metaData, ~sessionId, ~port, data, cursors);
+        let clientStore = initStore(~onSetup, ~metaData, ~sessionId, ~port, data, cursors);
         onSetup(clientStore, message => port->postMessage(messageToJson(message)));
       | _ => ()
       };

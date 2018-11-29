@@ -202,7 +202,7 @@ let quillConfig = (props: ref(NodeTypes.props(Delta.delta, (int, int)))) => {
   "placeholder": " ",
   "modules": {
     "cursors": true,
-    "mention": {
+    /* "mention": {
       "mentionDenotationChars": [|"/"|],
       "source":
         (. searchTerm: string, renderList, mentionChar: string) =>
@@ -214,7 +214,7 @@ let quillConfig = (props: ref(NodeTypes.props(Delta.delta, (int, int)))) => {
             |],
             searchTerm,
           ),
-    },
+    }, */
     "keyboard": {
       "bindings": {
         "undo": {
@@ -254,7 +254,7 @@ let quillConfig = (props: ref(NodeTypes.props(Delta.delta, (int, int)))) => {
           "handler": (.) => props^.onToggleCollapse(),
         },
         "left-at-start": {
-          "key": "Left",
+          "key": "ArrowLeft",
           "handler":
             [@bs.this]
             (this => !(atLeft(this##quill) && props^.onLeft() != None)),
@@ -279,17 +279,29 @@ let quillConfig = (props: ref(NodeTypes.props(Delta.delta, (int, int)))) => {
             ),
         },
         "move-right": {
-          "key": "Right",
+          "key": "ArrowRight",
           "collapsed": true,
           "handler":
             [@bs.this]
             (this => !(atRight(this##quill) && props^.onRight() != None)),
+        },
+        "j-down-mac": {
+          "key": {j|∆|j},
+          "collapsed": true,
+          "altKey": true,
+          "handler": (.) => !(props^.onDown() != None),
         },
         "j-down": {
           "key": "j",
           "collapsed": true,
           "altKey": true,
           "handler": (.) => !(props^.onDown() != None),
+        },
+        "k-up-mac": {
+          "key": {j|˚|j},
+          "collapsed": true,
+          "altKey": true,
+          "handler": (.) => !(props^.onUp() != None),
         },
         "k-up": {
           "key": "k",
