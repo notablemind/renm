@@ -385,29 +385,31 @@ let setupQuill =
     quill,
     (range, oldRange, source) => {
       /* Js.log3("Selection change", range, oldRange); */
-      savedRange := range;
-      switch (oldRange->Js.toOption) {
-      | None when props^.editPos == None => props^.onFocus()
-      | _ => ()
-      };
-      switch (range->Js.toOption) {
-      | None when props^.editPos != None => {
-        /* Js.Global.setTimeout(() => {
-          if ([%bs.raw "document.activeElement == document.body"]) {
-            focus(quill)
-          }
-        }, 200) |> ignore */
-        ()
-      }
-      | Some(range) =>
-        if (oldRange->Js.toOption == None) {
-          registerFocus(() => focus(quill));
+      Js.Global.setTimeout(() => {
+        savedRange := range;
+        switch (oldRange->Js.toOption) {
+        | None when props^.editPos == None => props^.onFocus()
+        | _ => ()
+        };
+        switch (range->Js.toOption) {
+        | None when props^.editPos != None => {
+          /* Js.Global.setTimeout(() => {
+            if ([%bs.raw "document.activeElement == document.body"]) {
+              focus(quill)
+            }
+          }, 200) |> ignore */
+          ()
         }
-        /* Js.log2("Sending range", range); */
-        props^.onCursorChange(range);
-      /* focus(quill); */
-      | _ => ()
-      };
+        | Some(range) =>
+          if (oldRange->Js.toOption == None) {
+            registerFocus(() => focus(quill));
+          }
+          /* Js.log2("Sending range", range); */
+          props^.onCursorChange(range);
+        /* focus(quill); */
+        | _ => ()
+        };
+      }, 0) |> ignore;
     },
   );
   setContents(quill, props^.value, "silent");
@@ -418,17 +420,19 @@ let setupQuill =
     quill,
     "text-change",
     (delta, oldDelta, source) => {
-      let range = getSelection(quill);
-      /* Js.log2("Text change", range); */
-      props^.onChange(
-        delta,
-        rangePair(range->Js.toOption),
-        rangePair((savedRange^)->Js.toOption),
-      );
-      switch (range->Js.toOption) {
-      | Some(range) => props^.onCursorChange(range)
-      | None => ()
-      };
+      Js.Global.setTimeout(() => {
+        let range = getSelection(quill);
+        /* Js.log2("Text change", range); */
+        props^.onChange(
+          delta,
+          rangePair(range->Js.toOption),
+          rangePair((savedRange^)->Js.toOption),
+        );
+        switch (range->Js.toOption) {
+        | Some(range) => props^.onCursorChange(range)
+        | None => ()
+        };
+      }, 0)
     },
   );
   quill;
@@ -473,6 +477,7 @@ let make = (~props: NodeTypes.props(Delta.delta, (int, int)), _children) => {
     let props = newSelf.state.props^;
     if (!Delta.deepEqual(props.value, getContents(quill))) {
       let sel = getSelection(quill);
+      Js.log3("Resetting contents on didUpdate, also resetting cursor", props.value, getContents(quill));
       quill->setContents(props.value, "silent");
       quill->setSelectionRange(sel);
     };
@@ -493,6 +498,7 @@ let make = (~props: NodeTypes.props(Delta.delta, (int, int)), _children) => {
       | None => blur(quill)
       | Some(pos) =>
         focus(quill);
+        Js.log("Refocusing, because it wasn't focused")
         switch (pos) {
         | Start => setSelection(quill, 0., 0., "api")
         | End => setSelection(quill, getLength(quill), 0., "api")
@@ -511,18 +517,24 @@ let make = (~props: NodeTypes.props(Delta.delta, (int, int)), _children) => {
       /* Js.log2("Setting selection ", newSelf.state.props^.editPos); */
       switch (newSelf.state.props^.editPos) {
       | None => ()
-      | Some(pos) =>
-        switch (pos) {
-        | Start => setSelection(quill, 0., 0., "api")
-        | End => setSelection(quill, getLength(quill), 0., "api")
-        | Replace => setSelection(quill, 0., getLength(quill), "api")
-        | Exactly(index, length) =>
+      | Some(Exactly(index, length)) =>
+        let%Lets.OptConsume current = getSelection(quill) |> Js.toOption;
+        if (View.Range.indexGet(current)->int_of_float != index || View.Range.lengthGet(current)->int_of_float != length) {
+          Js.log4("New editpos is different, setting the selection", (index, length), oldSelf.state.props^.editPos, current);
           setSelection(
             quill,
             float_of_int(index),
             float_of_int(length),
             "api",
           )
+        }
+      | Some(pos) =>
+        Js.log4("New editpos is different, setting the selection", pos, oldSelf.state.props^.editPos, getSelection(quill));
+        switch (pos) {
+        | Start => setSelection(quill, 0., 0., "api")
+        | End => setSelection(quill, getLength(quill), 0., "api")
+        | Replace => setSelection(quill, 0., getLength(quill), "api")
+        | Exactly(index, length) => assert(false)
         | Default => ()
         }
       };
