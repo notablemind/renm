@@ -157,6 +157,8 @@ let fileLinkCommands = (store: ClientStore.t('a, 'b, 'c), sendMessage) => {
   )
 };
 
+[@bs.val] external location: {. "search": string, "hash": string} = "";
+
 [@bs.val] external body: Dom.element = "document.body";
 [@bs.get] external hash: Dom.location => string = "hash";
 
@@ -175,7 +177,13 @@ let make = (~setupWorker, _) => {
     } else { state }
   }),
   didMount: self => {
-    setupWorker((store, sendMessage) => {
+    let docId = switch (Js.String.sliceToEnd(~from=1, location##hash)) {
+      | "" => None
+      | id => Some(id)
+    };
+    let sender = ref(None);
+    setupWorker(docId, (store, sendMessage) => {
+      Js.log2("Setting up worker", store.ClientStore.session().metaData.id);
       [%bs.raw "window.store = store"];
       Quill.getFileName := id => {
         switch (store.ClientStore.session().allFiles->Hashtbl.find(id)) {
@@ -183,20 +191,22 @@ let make = (~setupWorker, _) => {
           | {title} => Some(title)
         }
       };
+      sender := Some(sendMessage);
       self.send(Store(store, sendMessage));
+    });
 
-
-      /* open Webapi.Dom; */
-      Webapi.Dom.window |> Webapi.Dom.Window.addEventListener("hashchange", evt => {
-        let hash = Webapi.Dom.location->hash;
-        let id = if (hash == "") {
-          None
-        } else {
-          Some(Js.String.sliceToEnd(~from=1, hash))
-        };
-        sendMessage(Open(id))
-      });
-
+    Webapi.Dom.window |> Webapi.Dom.Window.addEventListener("hashchange", evt => {
+      let hash = Webapi.Dom.location->hash;
+      let id = if (hash == "") {
+        None
+      } else {
+        Some(Js.String.sliceToEnd(~from=1, hash))
+      };
+      Js.log2("OPening", id)
+      switch (sender^) {
+        | None => ()
+        | Some(sendMessage) => sendMessage(Open(id))
+      }
     });
 
     let keys = KeyManager.makeHandlers([
@@ -227,7 +237,9 @@ let make = (~setupWorker, _) => {
   render: ({state, send}) =>
     switch (state.store) {
     | None => <div> {ReasonReact.string("Connecting...")} </div>
-    | Some((store, sendMessage)) => <div className=wrapper>
+    | Some((store, sendMessage)) =>
+    Js.log("Meta id " ++ store.session().metaData.id);
+      <div className=wrapper>
       <Header store={store.session()}/>
       <Tree
         key={store.session().metaData.id}

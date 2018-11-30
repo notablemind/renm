@@ -137,32 +137,32 @@ let applyChange = (file, change, ports, dontSendToSession) => {
   persistChangedNodes(file, changeEvents);
 };
 
-let onUndo = (state, ports, sessionId) => {
+let onUndo = (file, ports, sessionId) => {
   let%Lets.OptConsume change =
     World.getUndoChange(
       ~sessionId,
       ~author="worker",
       ~changeId=workerId ++ string_of_int(nextChangeNum()),
-      state.world.unsynced->StoreInOne.Queue.toRevList
-      @ state.world.history->StoreInOne.History.itemsSince(None)->List.reverse,
+      file.world.unsynced->StoreInOne.Queue.toRevList
+      @ file.world.history->StoreInOne.History.itemsSince(None)->List.reverse,
     );
 
-  applyChange(state, change, ports, None);
+  applyChange(file, change, ports, None);
 };
 
-let onRedo = (state, ports, sessionId) => {
+let onRedo = (file, ports, sessionId) => {
   let%Lets.OptConsume change = World.getRedoChange(
     ~sessionId,
     ~changeId=workerId ++ string_of_int(nextChangeNum()),
     ~author="worker",
-    state.world.unsynced->StoreInOne.Queue.toRevList,
+    file.world.unsynced->StoreInOne.Queue.toRevList,
   );
 
-  applyChange(state, change, ports, None);
+  applyChange(file, change, ports, None);
 };
 
-let onChange = (state, ports, id, change) => {
-  applyChange(state, change, ports, Some(id));
+let onChange = (file, ports, id, change) => {
+  applyChange(file, change, ports, Some(id));
   /* TODO go through events to see what needs to be persisted */
   /* TODO debounced sync w/ server */
 };
@@ -219,38 +219,58 @@ let loadFile = id => {
   Js.Promise.resolve((db, world));
 };
 
-let handleMessage = (port, state, ports, sessionId, evt) =>
+let getFile = (docId) => {
+  let%Lets.Async meta = switch docId {
+    | None => MetaData.getHome()
+    | Some(id) => MetaData.getFile(id)
+  };
+  let%Lets.Async (db, world) = loadFile(meta.WorkerProtocol.id);
+  Js.Promise.resolve({
+    meta,
+    db,
+    world,
+    cursors: Hashtbl.create(10)
+  })
+};
+
+let filePromises = Hashtbl.create(10);
+
+let getCachedFile = docId => switch (Hashtbl.find(filePromises, docId)) {
+  | exception Not_found =>
+    let promise = getFile(docId);
+    filePromises->Hashtbl.replace(docId, promise);
+    promise
+  | promise => promise
+};
+
+let handleMessage = (port, file, ports, sessionId, evt) =>
   switch (parseMessage(evt##data)) {
   | Ok(message) =>
     switch (message) {
     | WorkerProtocol.Change(change) =>
-      onChange(state, ports, sessionId, change)
-    | UndoRequest => onUndo(state, ports, sessionId)
-    | RedoRequest => onRedo(state, ports, sessionId)
+      onChange(file, ports, sessionId, change)
+    | UndoRequest => onUndo(file, ports, sessionId)
+    | RedoRequest => onRedo(file, ports, sessionId)
     | CreateFile(id, title) =>
       let%Lets.Async.Consume meta = MetaData.makeEmptyFile(~id, ~title);
       sendToPorts(ports, WorkerProtocol.MetaDataUpdate(meta))
     | Close =>
-      state.cursors->Hashtbl.remove(sessionId);
+      file.cursors->Hashtbl.remove(sessionId);
       ports->HashMap.String.remove(sessionId);
-      sendCursors(state.cursors, ports, sessionId);
+      sendCursors(file.cursors, ports, sessionId);
     | SelectionChanged(nodeId, range) =>
       Js.log2(nodeId, range);
-      Hashtbl.replace(state.cursors, sessionId, (nodeId, range));
-      sendCursors(state.cursors, ports, sessionId);
+      Hashtbl.replace(file.cursors, sessionId, (nodeId, range));
+      sendCursors(file.cursors, ports, sessionId);
     | Open(id) =>
-      let%Lets.Async.Consume meta = switch (id) {
-        | None => MetaData.getHome()
-        | Some(id) => MetaData.getFile(id)
-      };
-      let%Lets.Async.Consume (db, world) = loadFile(meta.WorkerProtocol.id)
+      let%Lets.Async.Consume file = getCachedFile(id);
       port
       ->postMessage(
           messageToJson(
             LoadFile(
-              state.meta,
-              state->data,
-              cursorsForSession(state.cursors, sessionId),
+              file.meta,
+              file->data,
+              cursorsForSession(file.cursors, sessionId),
             ),
           ),
         );
@@ -261,20 +281,10 @@ let handleMessage = (port, state, ports, sessionId, evt) =>
     Js.log3("Invalid message received!", message, evt##data)
   };
 
-let getInitialState = () => {
-  let%Lets.Async meta = MetaData.getHome();
-  let%Lets.Async (db, world) = loadFile(meta.WorkerProtocol.id);
-  Js.Promise.resolve({
-    meta,
-    db,
-    world,
-    cursors: Hashtbl.create(10)
-  })
-};
 
-let initialPromise = getInitialState();
+/* let initialPromise = getInitialState(); */
 
-[%bs.raw "this.state = initialPromise"];
+/* [%bs.raw "this.state = initialPromise"]; */
 
 let ports = HashMap.String.make(~hintSize=5);
 addEventListener("connect", e => {
@@ -286,17 +296,18 @@ addEventListener("connect", e => {
       switch (parseMessage(evt##data)) {
       | Ok(Close) => ()
       | Ok(Init(sessionId, fileId)) =>
-        let%Lets.Async.Consume state = initialPromise;
+        /* TODO fileid */
+        let%Lets.Async.Consume file = getCachedFile(fileId);
         let%Lets.Async.Consume allFiles = Dbs.metasDb->Persistance.getAll;
         ports->HashMap.String.set(sessionId, port);
-        port->onmessage(handleMessage(port, state, ports, sessionId));
+        port->onmessage(handleMessage(port, file, ports, sessionId));
         port
         ->postMessage(
             messageToJson(
               LoadFile(
-                state.meta,
-                state->data,
-                cursorsForSession(state.cursors, sessionId),
+                file.meta,
+                file->data,
+                cursorsForSession(file.cursors, sessionId),
               ),
             ),
           );

@@ -205,6 +205,7 @@ let rec initStore = (~onSetup, ~metaData, ~sessionId, ~port, data, cursors) => {
   ->onmessage(evt =>
       switch (messageFromJson(evt##data)) {
       | Ok(LoadFile(metaData, data, cursors)) =>
+      Js.log2("Load file", metaData);
         let clientStore = initStore(~onSetup, ~metaData, ~sessionId, ~port, data, cursors);
         onSetup(clientStore, message => port->postMessage(messageToJson(message)));
       | Ok(message) =>
@@ -218,14 +219,15 @@ let rec initStore = (~onSetup, ~metaData, ~sessionId, ~port, data, cursors) => {
 };
 
 
-let setupWorker = onSetup => {
+let setupWorker = (docId, onSetup) => {
+  Js.log2("Docid", docId);
   let worker = sharedWorker("/bundle/SharedWorker.js");
   worker->onerror(err => Js.log(err));
   let port = worker->port;
   port->start;
   let sessionId = Utils.newId();
   window->addUnloadEvent(() => port->postMessage(messageToJson(Close)));
-  port->postMessage(messageToJson(Init(sessionId, None)));
+  port->postMessage(messageToJson(Init(sessionId, docId)));
   port
   ->onmessage(evt => {
       /* Js.log2("Got message", evt); */
