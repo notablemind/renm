@@ -43,6 +43,7 @@ let renderContents =
     <Quill
       props={
         NodeTypes.value: text,
+        id: node.id,
         editPos,
         registerFocus,
         remoteCursors:

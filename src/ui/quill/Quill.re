@@ -3,101 +3,39 @@
 [%bs.raw {|require("quill-cursors/dist/quill-cursors.css")|}];
 
 type quill;
+type quillModule;
 
 [@bs.module] [@bs.new]
 external makeQuill: ('element, 'config) => quill = "quill";
+
 [@bs.module "quill"] external register: 'a => unit = "register";
 
-/* Js.log(makeQuill); */
+[@bs.send] external registerQuill: (quill, 'a) => unit = "register";
+
+[@bs.module]
+external linkModule: (string => option(string)) => quillModule = "./Link.js";
 
 [%bs.raw "window.quill = Quill"];
 
 let historyClass = [%bs.raw
   {|class MyHistory {
-  constructor(quill, options) { }
-  clear() { }
-  cutoff() { }
-}|}
+    constructor(quill, options) { }
+    clear() { }
+    cutoff() { }
+  }|}
 ];
 
-let myLink = [%bs.raw {|
-(getFileName) => {
-
-  const Inline = Quill.imports['blots/inline'];
-  class Link extends Inline {
-    static create(value) {
-      const node = super.create(value);
-      node.setAttribute('href', value);
-      node.setAttribute('target', '_blank');
-      let hover = null
-      let timeout = null
-      const closeHover = () => {
-        if (hover && hover.parentNode) {
-          hover.parentNode.removeChild(hover)
-        }
-        hover = null
-      }
-      const showHover = () => {
-        hover = document.createElement('a')
-        hover.className = 'ql-link-hover'
-        if (value.startsWith('nm://')) {
-          const id = value.slice(5)
-          const title = getFileName(id)
-          if (title) {
-            hover.innerText = title
-            hover.href = '#' + id
-          } else {
-            hover.innerText = 'Unknown file'
-          }
-        } else {
-          hover.href = value
-          hover.innerText = value
-        }
-        document.body.appendChild(hover)
-
-        const box = node.getBoundingClientRect()
-        hover.style.top = box.top - hover.getBoundingClientRect().height + 'px'
-        hover.style.left = box.left + 'px'
-        hover.addEventListener('mouseover', () => clearTimeout(timeout))
-        hover.addEventListener('mouseout', closeHover)
-      }
-      node.addEventListener('mouseover', () => {
-        showHover();
-      })
-      node.addEventListener('mouseout', () => {
-        timeout = setTimeout(closeHover, 100);
-      })
-      return node;
-    }
-
-    static formats(domNode) {
-      return domNode.getAttribute('href');
-    }
-
-    format(name, value) {
-      if (name !== this.statics.blotName || !value) {
-        super.format(name, value);
-      } else {
-        this.domNode.setAttribute('href', value);
-      }
-    }
-  }
-  Link.blotName = 'link';
-  Link.tagName = 'A';
-  return Link
-}
-|}];
-
-[@bs.module "quill-cursors"] external quillCursors: 'a = "default";
-/* Js.log(quillCursors); */
+[@bs.module "quill-cursors"] external quillCursors: quillModule = "default";
 
 let getFileName: ref(string => option(string)) = ref((id: string) => None);
 
 register({
   "modules/history": historyClass,
   "modules/cursors": quillCursors,
-  "formats/link": myLink(id => getFileName^(id)),
+  /* "formats/link": myLink(id => getFileName^(id)), */
 });
+
+[@bs.module] external customRegistry: (array(quillModule)) => 'a = "./CustomRegistry.js";
 
 [%bs.raw {|require("quill-mention")|}];
 [%bs.raw {|require("quill-cursors")|}];
@@ -197,8 +135,9 @@ let onSelectionChange =
 
 
 
-let quillConfig = (props: ref(NodeTypes.props(Delta.delta, (int, int)))) => {
+let quillConfig = (props: ref(NodeTypes.props(Delta.delta, (int, int))), registry) => {
   "theme": false,
+  "registry": registry,
   "placeholder": " ",
   "modules": {
     "cursors": true,
@@ -363,10 +302,14 @@ let quillConfig = (props: ref(NodeTypes.props(Delta.delta, (int, int)))) => {
 
 let setupQuill =
     (element, props: ref(NodeTypes.props(Delta.delta, (int, int))), registerFocus) => {
+
+  let registry = customRegistry([|
+    linkModule(getFileName^)
+  |]);
   let quill =
     makeQuill(
       element,
-      quillConfig(props),
+      quillConfig(props, registry),
     );
 
   let savedRange = ref(quill->getSelection);
@@ -381,11 +324,14 @@ let setupQuill =
       ))
     };
 
+  let timeout = ref(Obj.magic(0));
   onSelectionChange(
     quill,
     (range, oldRange, source) => {
-      /* Js.log3("Selection change", range, oldRange); */
-      Js.Global.setTimeout(() => {
+      Js.log3("Selection change (new, old)", range, oldRange);
+      Js.Global.clearTimeout(timeout^);
+      timeout := Js.Global.setTimeout(() => {
+        Js.log3("--> sending Selection change (new, old)", range, oldRange);
         savedRange := range;
         switch (oldRange->Js.toOption) {
         | None when props^.editPos == None => props^.onFocus()
@@ -409,7 +355,7 @@ let setupQuill =
         /* focus(quill); */
         | _ => ()
         };
-      }, 0) |> ignore;
+      }, 20);
     },
   );
   setContents(quill, props^.value, "silent");
@@ -481,12 +427,12 @@ let make = (~props: NodeTypes.props(Delta.delta, (int, int)), _children) => {
       quill->setContents(props.value, "silent");
       quill->setSelectionRange(sel);
     };
-    if (newSelf.state.prevCursors^ !== newSelf.state.props^.remoteCursors) {
+    if (newSelf.state.prevCursors^ !== props.remoteCursors) {
       (newSelf.state.prevCursors^)
       ->List.forEach(({userId}) =>
           quill->getCursorsModule->removeCursor(userId)
         );
-      newSelf.state.props^.remoteCursors
+      props.remoteCursors
       ->List.forEach(({userId, range, userName, color}) =>
           quill
           ->getCursorsModule
@@ -497,7 +443,6 @@ let make = (~props: NodeTypes.props(Delta.delta, (int, int)), _children) => {
       switch (props.editPos) {
       | None => blur(quill)
       | Some(pos) =>
-        focus(quill);
         Js.log("Refocusing, because it wasn't focused")
         switch (pos) {
         | Start => setSelection(quill, 0., 0., "api")
@@ -512,15 +457,16 @@ let make = (~props: NodeTypes.props(Delta.delta, (int, int)), _children) => {
           )
         | Default => ()
         };
+        focus(quill);
       };
-    } else if (newSelf.state.prevEditPos^ != oldSelf.state.props^.editPos) {
+    } else if (newSelf.state.prevEditPos^ != props.editPos) {
       /* Js.log2("Setting selection ", newSelf.state.props^.editPos); */
-      switch (newSelf.state.props^.editPos) {
+      switch (props.editPos) {
       | None => ()
       | Some(Exactly(index, length)) =>
         let%Lets.OptConsume current = getSelection(quill) |> Js.toOption;
         if (View.Range.indexGet(current)->int_of_float != index || View.Range.lengthGet(current)->int_of_float != length) {
-          Js.log4("New editpos is different, setting the selection", (index, length), oldSelf.state.props^.editPos, current);
+          Js.log4(props.id ++ " New editpos is different, setting the selection", (index, length), oldSelf.state.props^.editPos, current);
           setSelection(
             quill,
             float_of_int(index),
@@ -529,7 +475,7 @@ let make = (~props: NodeTypes.props(Delta.delta, (int, int)), _children) => {
           )
         }
       | Some(pos) =>
-        Js.log4("New editpos is different, setting the selection", pos, oldSelf.state.props^.editPos, getSelection(quill));
+        Js.log4(props.id ++ " New editpos is different, setting the selection", pos, oldSelf.state.props^.editPos, getSelection(quill));
         switch (pos) {
         | Start => setSelection(quill, 0., 0., "api")
         | End => setSelection(quill, getLength(quill), 0., "api")

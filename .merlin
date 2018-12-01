@@ -30,4 +30,6 @@ S src/core
 B lib/bs/src/core
 S src/ui
 B lib/bs/src/ui
+S src/ui/quill
+B lib/bs/src/ui/quill
 ####BSB GENERATED: NO EDIT}

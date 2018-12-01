@@ -92,7 +92,7 @@ let processViewAction = (view, sharedViewData, action) =>
   switch (action) {
   /*** TODO clear selection if id is same */
   | SetActive(id, editPos) =>
-    if (id != view.active || view.editPos != editPos) {
+    if (id != view.active || (view.editPos != editPos && editPos != Default)) {
       (
         {
           ...view,

@@ -1,4 +1,5 @@
 type props('value, 'selection) = {
+  id: string,
   value: 'value,
   registerFocus: (unit => unit) => unit,
   editPos: option(View.editPos),
