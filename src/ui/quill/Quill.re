@@ -1,3 +1,4 @@
+
 [%bs.raw {|require("quill/dist/quill.core.css")|}];
 [%bs.raw {|require("quill/dist/quill.bubble.css")|}];
 [%bs.raw {|require("quill-cursors/dist/quill-cursors.css")|}];
@@ -5,10 +6,10 @@
 type quill;
 type quillModule;
 
-[@bs.module] [@bs.new]
-external makeQuill: ('element, 'config) => quill = "quill";
+[@bs.module "quill/quill"] [@bs.new]
+external makeQuill: ('element, 'config) => quill = "default";
 
-[@bs.module "quill"] external register: 'a => unit = "register";
+[@bs.scope "default"] [@bs.module "quill/quill"] external register: 'a => unit = "register";
 
 [@bs.send] external registerQuill: (quill, 'a) => unit = "register";
 
@@ -328,10 +329,10 @@ let setupQuill =
   onSelectionChange(
     quill,
     (range, oldRange, source) => {
-      Js.log3("Selection change (new, old)", range, oldRange);
+      /* Js.log3("Selection change (new, old)", range, oldRange); */
       Js.Global.clearTimeout(timeout^);
       timeout := Js.Global.setTimeout(() => {
-        Js.log3("--> sending Selection change (new, old)", range, oldRange);
+        /* Js.log3("--> sending Selection change (new, old)", range, oldRange); */
         savedRange := range;
         switch (oldRange->Js.toOption) {
         | None when props^.editPos == None => props^.onFocus()
@@ -349,9 +350,10 @@ let setupQuill =
         | Some(range) =>
           if (oldRange->Js.toOption == None) {
             registerFocus(() => focus(quill));
+          } else {
+            props^.onCursorChange(range);
           }
           /* Js.log2("Sending range", range); */
-          props^.onCursorChange(range);
         /* focus(quill); */
         | _ => ()
         };
@@ -443,7 +445,7 @@ let make = (~props: NodeTypes.props(Delta.delta, (int, int)), _children) => {
       switch (props.editPos) {
       | None => blur(quill)
       | Some(pos) =>
-        Js.log("Refocusing, because it wasn't focused")
+        /* Js.log("Refocusing, because it wasn't focused") */
         switch (pos) {
         | Start => setSelection(quill, 0., 0., "api")
         | End => setSelection(quill, getLength(quill), 0., "api")

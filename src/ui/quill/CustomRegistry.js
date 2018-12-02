@@ -1,7 +1,7 @@
 
 const Registry = require('parchment').Registry;
 // const globalRegistry = require('quill').globalRegistry;
-const Quill = require('quill')
+const Quill = require('quill/quill').default
 
 module.exports = (items) => {
   const registry = new Registry();

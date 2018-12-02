@@ -1,5 +1,5 @@
 
-const Quill = require('quill')
+const Quill = require('quill/quill').default
 
 module.exports = (getFileName) => {
   const Inline = Quill.DEFAULTS.registry.types.inline;
