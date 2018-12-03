@@ -243,7 +243,7 @@ let getCachedFile = docId => switch (Hashtbl.find(filePromises, docId)) {
   | promise => promise
 };
 
-let handleMessage = (port, file, ports, sessionId, evt) =>
+let rec handleMessage = (port, file, ports, sessionId, evt) =>
   switch (parseMessage(evt##data)) {
   | Ok(message) =>
     switch (message) {
@@ -264,6 +264,7 @@ let handleMessage = (port, file, ports, sessionId, evt) =>
       sendCursors(file.cursors, ports, sessionId);
     | Open(id) =>
       let%Lets.Async.Consume file = getCachedFile(id);
+      port->onmessage(handleMessage(port, file, ports, sessionId));
       port
       ->postMessage(
           messageToJson(
