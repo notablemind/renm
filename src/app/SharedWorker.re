@@ -114,12 +114,11 @@ let persistChangedNodes = (file, changeEvents) => {
     changedIds->Array.keepMap(id => {
       let%Lets.Opt node = file.world.current->Data.get(id);
       Some(Persistance.batchPut({
-      "key": id,
-      "type": "put",
-      "value": node
-    }))
-    }
-    )
+        "key": id,
+        "type": "put",
+        "value": node
+      }))
+    })
   )
 };
 

@@ -166,7 +166,9 @@ let fileLinkCommands = (store: ClientStore.t('a, 'b, 'c), sendMessage) => {
 [@bs.get] external hash: Dom.location => string = "hash";
 
 let wrapper = Css.(style([
-  color(Colors.black)
+  color(Colors.black),
+  /* backgroundColor(Colors.gray80), */
+  /* color(Colors.offWhite), */
 ]));
 
 let make = (~setupWorker, _) => {
@@ -210,11 +212,13 @@ let make = (~setupWorker, _) => {
       ("cmd+shift+p", evt => {
         self.send(ShowDialog(SuperMenu))
       }),
+      ("cmd+k", evt => {
+        self.send(ShowDialog(FileLink))
+      }),
       ("cmd+p", evt => {
         self.send(ShowDialog(FileMenu))
       }),
     ]);
-
 
     let state = ref(KeyManager.init(keys));
     open Webapi.Dom;
