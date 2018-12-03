@@ -20,4 +20,3 @@ module.exports = (blotName, render) => {
   Custom.tagName = 'SPAN';
   return Custom
 }
-

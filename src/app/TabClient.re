@@ -86,7 +86,6 @@ let handleMessage = (~state, ~port, ~message: WorkerProtocol.serverMessage) =>
       state.session = {...state.session, metaData: meta}
     };
     state.session.allFiles->Hashtbl.replace(meta.id, meta);
-    /* Js.log2("Ok metadata update", meta) */
     state.session.subs->Subscription.trigger([SharedTypes.Event.MetaData(meta.id)])
 
   | TabChange(change) =>

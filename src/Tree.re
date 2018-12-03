@@ -9,7 +9,7 @@ let placeholderStyle =
     )
   );
 
-let component = ReasonReact.statelessComponent("Tree");
+let component = ReasonReact.reducerComponent("Tree");
 
 let rec visibleChildren = (store: ClientStore.t('a, 'b, 'c), id) => {
   let one = Set.String.empty->Set.String.add(id);
@@ -30,6 +30,16 @@ let rec visibleChildren = (store: ClientStore.t('a, 'b, 'c), id) => {
 
 let make = (~store: ClientStore.t('a, 'b, 'c), ~registerFocus=(f) => (), _children) => {
   ...component,
+  initialState: () => (),
+  reducer: ((), ()) => ReasonReact.Update(()),
+  didMount: self => {
+    self.onUnmount(
+      store.ClientStore.session().subs->Subscription.subscribe([SharedTypes.Event.View(Root)], (0, () => {
+        Js.log("triggered");
+        self.send()
+      }))
+    )
+  },
   render: _self =>
     <Draggable
       renderPlaceholder={
@@ -133,6 +143,7 @@ let make = (~store: ClientStore.t('a, 'b, 'c), ~registerFocus=(f) => (), _childr
                depth=0
                renderDraggable
                registerFocus
+               key={store.session().view.root}
                id={store.session().view.root}
              />
          }

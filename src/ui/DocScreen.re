@@ -1,5 +1,24 @@
 
 
+module EventListener = {
+  let component = ReasonReact.reducerComponent("MetaDataProvider");
+  let make = (~store, ~render, ~events, _) => {
+    ...component,
+    initialState: () => (),
+    reducer: ((), ()) => ReasonReact.Update(()),
+    didMount: (self) => {
+      self.onUnmount(
+        store.ClientStore.session().subs->Subscription.subscribe(events, (0, () => {
+          self.send()
+        }))
+      )
+    },
+    render: ({state}) => {
+      render()
+    }
+  };
+};
+
 module MetaDataProvider = {
   let component = ReasonReact.reducerComponent("MetaDataProvider");
   let make = (~store, ~render, _) => {
@@ -19,16 +38,66 @@ module MetaDataProvider = {
   };
 };
 
+let getPath = (data, root) => {
+  let rec loop = root =>
+  switch (data->Data.get(root)) {
+    | None => []
+    | Some(node) => node.parent == node.id ? [node] : [node, ...loop(node.parent)]
+  };
+  switch (loop(root)) {
+    | [] => []
+    | [one, ...rest] => List.reverse(rest)
+  }
+};
+
+module Styles = {
+  open Css;
+  let breadcrumbs = style([
+    display(`flex),
+    flexDirection(`row),
+    height(px(24)),
+    overflowX(auto)
+  ]);
+  let bread = style([
+    padding2(~v=px(4), ~h=px(8)),
+    marginRight(px(2)),
+    borderRadius(px(4)),
+    cursor(`pointer),
+    hover([
+      backgroundColor(Colors.offWhite)
+    ])
+  ])
+};
+
 module Header = {
   let component = ReasonReact.statelessComponent("Header");
   let make = (~store, _) => {
     ...component,
     render: (_) => {
-      <MetaDataProvider store render={metaData => {
+      <EventListener
+        store
+        events=[SharedTypes.Event.View(Root)]
+        render={() => {
+          let view = store.session().view;
+          let data = store.data();
+          let path = getPath(data, view.root);
+          <div className=Styles.breadcrumbs>
+            {path->List.toArray->Array.map(node => {
+              <div className=Styles.bread onClick={evt => store.actView(Rebase(node.id))}>
+                {ReasonReact.string(switch (node.contents) {
+                  | NodeType.Normal(delta) => Delta.getText(delta)
+                  | _ => " "
+                })}
+              </div>
+            })->ReasonReact.array}
+          </div>
+        }}
+      />
+      /* <MetaDataProvider store render={metaData => {
         <div>
           (ReasonReact.string(metaData.title))
         </div>
-      }} />
+      }} /> */
     }
   };
 };

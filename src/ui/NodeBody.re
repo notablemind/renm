@@ -189,7 +189,16 @@ let make =
             {
               node.id != store.session().view.root ?
                 renderHandle(
-                  ~onMouseDown,
+                  ~onMouseDown=evt => {
+                    if (ReactEvent.Mouse.metaKey(evt)) {
+                      ReactEvent.Mouse.preventDefault(evt);
+                      ReactEvent.Mouse.stopPropagation(evt);
+                      Js.log("ok");
+                      store.actView(Rebase(node.id));
+                    } else {
+                      onMouseDown(evt)
+                    }
+                  },
                   ~hasChildren=node.children != [],
                   ~collapsed,
                   ~toggleCollapsed=() =>
