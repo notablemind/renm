@@ -79,7 +79,7 @@ let handleMessage = (~state, ~port, ~message: WorkerProtocol.serverMessage) =>
   switch (message) {
     | LoadFile(_) => assert(false)
   | AllFiles(files) =>
-  Js.log("GOT ASLL FILES");
+  Js.log2("GOT ASLL FILES", files);
     files->List.forEach(meta => state.session.allFiles->Hashtbl.replace(meta.id, meta))
   | MetaDataUpdate(meta) => state.session.allFiles->Hashtbl.replace(meta.id, meta)
 
@@ -146,8 +146,7 @@ let handleMessage = (~state, ~port, ~message: WorkerProtocol.serverMessage) =>
     );
   };
 
-
-let rec initStore = (~onSetup, ~metaData, ~sessionId, ~port, data, cursors) => {
+let makeSession = (~metaData, ~sessionId, ~data, ~cursors) => {
   let session =
     Session.createSession(~metaData, ~sessionId, ~root=data.Data.root);
   let session = {
@@ -161,17 +160,25 @@ let rec initStore = (~onSetup, ~metaData, ~sessionId, ~port, data, cursors) => {
       remoteCursors: cursors,
     },
   };
-  let state = {session, data};
-  let actView = action => {
-      let (session, events) =
-        Session.actView_(state.session, action);
-      if (session.sharedViewData != state.session.sharedViewData) {
-        saveSharedViewData(~fileId=metaData.id, session.sharedViewData);
-      };
-      state.session = session;
-      Subscription.trigger(session.subs, events);
+  session
+};
 
+let actView = (state, action) => {
+  let (session, events) =
+    Session.actView_(state.session, action);
+  if (session.sharedViewData != state.session.sharedViewData) {
+    saveSharedViewData(~fileId=state.session.metaData.id, session.sharedViewData);
   };
+  state.session = session;
+  Subscription.trigger(session.subs, events);
+};
+
+let initStore = (~onSetup, ~metaData, ~sessionId, ~port, data, cursors) => {
+  let state = {
+    session: makeSession(~metaData, ~sessionId, ~data, ~cursors),
+    data,
+  };
+
   let clientStore = {
     ClientStore.session: () => state.session,
     data: () => state.data,
@@ -186,7 +193,7 @@ let rec initStore = (~onSetup, ~metaData, ~sessionId, ~port, data, cursors) => {
       let length = View.Range.lengthGet(range) |> int_of_float;
       if (state.session.view.editPos != View.Exactly(start, length)) {
         /* TODO use this to handle undo selection change */
-        actView(View.Edit(View.Exactly(
+        state->actView(View.Edit(View.Exactly(
           start,
           length
         )));
@@ -197,16 +204,22 @@ let rec initStore = (~onSetup, ~metaData, ~sessionId, ~port, data, cursors) => {
       handleActions(~state, ~port, ~preSelection, ~postSelection, actions);
       /* Js.log(state.session.view) */
     },
-    actView,
+    actView: actView(state),
     undo: () => port->postMessage(messageToJson(UndoRequest)),
     redo: () => port->postMessage(messageToJson(RedoRequest)),
   };
+
   port
   ->onmessage(evt =>
       switch (messageFromJson(evt##data)) {
       | Ok(LoadFile(metaData, data, cursors)) =>
-      Js.log2("Load file", metaData);
-        let clientStore = initStore(~onSetup, ~metaData, ~sessionId, ~port, data, cursors);
+        Js.log2("Load file", metaData);
+        state.session = {
+          ...makeSession(~metaData, ~sessionId, ~data, ~cursors),
+          allFiles: state.session.allFiles,
+        };
+        state.data = data;
+        /* let clientStore = initStore(~onSetup, ~metaData, ~sessionId, ~port, data, cursors); */
         onSetup(clientStore, message => port->postMessage(messageToJson(message)));
       | Ok(message) =>
         handleMessage(~port, ~state, ~message)
