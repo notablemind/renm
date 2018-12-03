@@ -127,10 +127,13 @@ let fileLinkCommands = (store: ClientStore.t('a, 'b, 'c), sendMessage) => {
           let session = store.session();
           switch (session.view.editPos) {
             | Exactly(start, length) =>
+              let attributes = {"link": "nm://" ++ meta.id};
                 store.act(
                   [Actions.ChangeContents(
                     session.view.active,
-                    Delta.makeAttributes(start, length, {"link": "nm://" ++ meta.id})
+                    length == 0
+                    ? Delta.makeInsert(~attributes, start, meta.title)
+                    : Delta.makeAttributes(start, length, attributes)
                   )]
                 )
           | _ => ()
