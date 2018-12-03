@@ -24,9 +24,9 @@ let blankMetaData = () => {
   id: "blank",
   title: "Blank",
   nodeCount: 0,
-  created: 0.,
+  created: Js.Date.now(),
   lastOpened: 0.,
-  lastModified: 0.,
+  lastModified: Js.Date.now(),
   sync: None
 };
 

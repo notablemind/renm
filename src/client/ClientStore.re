@@ -18,6 +18,6 @@ type t('contents, 'prefix, 'selection) = {
 let getFileName = (store, id) => {
   switch (store.session().allFiles->Hashtbl.find(id)) {
     | exception Not_found => None
-    | {title} => Some(title)
+    | {title, nodeCount} => Some(title ++ " " ++ string_of_int(nodeCount))
   }
 };

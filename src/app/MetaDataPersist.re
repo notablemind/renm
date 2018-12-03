@@ -55,6 +55,8 @@ let getHome = () => {
   Dbs.metasDb->Persistance.get(homeId);
 };
 
+let save = meta => Dbs.metasDb->Persistance.put(meta.id, meta);
+
 let getFile = id => Dbs.metasDb->Persistance.get(id);
 
 let loadNodes = db => {

@@ -36,7 +36,7 @@ let messageToJson = WorkerProtocolSerde.serializeServerMessage;
  */
 
 type file = {
-  meta: MetaData.t,
+  mutable meta: MetaData.t,
   /* mutable current: Change.data,
   mutable snapshot: Change.data, */
   /* TODO maybe keep around a cache of recent changes to be able to get undo things sooner */
@@ -83,6 +83,9 @@ let sendToPorts = (~excludeSession=?, ports, message) => {
       )
   };
 };
+
+let sendMetaDataChange = (~excludeSession=?, ports, metaData) =>
+  sendToPorts(~excludeSession?, ports, WorkerProtocol.MetaDataUpdate(metaData));
 
 let sendChange = (~excludeSession=?, ports, change) => {
   sendToPorts(~excludeSession?, ports, WorkerProtocol.TabChange(change))
@@ -135,6 +138,20 @@ let applyChange = (file, change, ports, dontSendToSession) => {
 
   sendChange(~excludeSession=?dontSendToSession, ports, change);
   persistChangedNodes(file, changeEvents);
+  let title = switch (world.current.nodes->Map.String.get(world.current.root)) {
+    | Some({contents: Normal(delta)}) => Delta.getText(delta)
+    | _ => file.meta.title
+  };
+  file.meta = {
+    ...file.meta,
+    title,
+    lastModified: Js.Date.now(),
+    nodeCount: world.current.nodes->Map.String.size,
+  };
+  sendMetaDataChange(ports, file.meta);
+
+  /* FUTURE(optimize): Probably debounce metadata persistence */
+  let%Lets.Async.Consume () = MetaDataPersist.save(file.meta);
 };
 
 let onUndo = (file, ports, sessionId) => {
@@ -235,12 +252,21 @@ let getFile = (docId) => {
 
 let filePromises = Hashtbl.create(10);
 
-let getCachedFile = docId => switch (Hashtbl.find(filePromises, docId)) {
-  | exception Not_found =>
-    let promise = getFile(docId);
-    filePromises->Hashtbl.replace(docId, promise);
-    promise
-  | promise => promise
+let getCachedFile = (sessionId, ports, docId) => {
+  let%Lets.Async file = switch (Hashtbl.find(filePromises, docId)) {
+    | exception Not_found =>
+      let promise = getFile(docId);
+      filePromises->Hashtbl.replace(docId, promise);
+      promise
+    | promise => promise
+  };
+  file.meta = {
+    ...file.meta,
+    lastOpened: Js.Date.now()
+  };
+  sendMetaDataChange(~excludeSession=sessionId, ports, file.meta);
+  let%Lets.Async () = MetaDataPersist.save(file.meta);
+  Js.Promise.resolve(file)
 };
 
 let rec handleMessage = (port, file, ports, sessionId, evt) =>
@@ -259,11 +285,11 @@ let rec handleMessage = (port, file, ports, sessionId, evt) =>
       ports->HashMap.String.remove(sessionId);
       sendCursors(file.cursors, ports, sessionId);
     | SelectionChanged(nodeId, range) =>
-      Js.log2(nodeId, range);
+      /* Js.log2(nodeId, range); */
       Hashtbl.replace(file.cursors, sessionId, (nodeId, range));
       sendCursors(file.cursors, ports, sessionId);
     | Open(id) =>
-      let%Lets.Async.Consume file = getCachedFile(id);
+      let%Lets.Async.Consume file = getCachedFile(sessionId, ports, id);
       port->onmessage(handleMessage(port, file, ports, sessionId));
       port
       ->postMessage(
@@ -298,7 +324,7 @@ addEventListener("connect", e => {
       | Ok(Close) => ()
       | Ok(Init(sessionId, fileId)) =>
         /* TODO fileid */
-        let%Lets.Async.Consume file = getCachedFile(fileId);
+        let%Lets.Async.Consume file = getCachedFile(sessionId, ports, fileId);
         let%Lets.Async.Consume allFiles = Dbs.metasDb->Persistance.getAll;
         ports->HashMap.String.set(sessionId, port);
         port->onmessage(handleMessage(port, file, ports, sessionId));
