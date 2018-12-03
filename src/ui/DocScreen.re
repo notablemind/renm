@@ -4,12 +4,12 @@ module MetaDataProvider = {
   let component = ReasonReact.reducerComponent("MetaDataProvider");
   let make = (~store, ~render, _) => {
     ...component,
-    initialState: () => store.metaData,
+    initialState: () => store.ClientStore.session().metaData,
     reducer: (action, _) => ReasonReact.Update(action),
     didMount: (self) => {
       self.onUnmount(
-        Session.subscribeToMetadata(store, (0, () => {
-          self.send(store.metaData)
+        Session.subscribeToMetadata(store.ClientStore.session(), (0, () => {
+          self.send(store.ClientStore.session().metaData)
         }))
       )
     },
@@ -241,7 +241,7 @@ let make = (~setupWorker, _) => {
     | Some((store, sendMessage)) =>
     Js.log("Meta id " ++ store.session().metaData.id);
       <div className=wrapper>
-      <Header store={store.session()}/>
+      <Header store={store}/>
       <Tree
         key={store.session().metaData.id}
         store

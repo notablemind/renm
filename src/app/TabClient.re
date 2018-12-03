@@ -81,7 +81,13 @@ let handleMessage = (~state, ~port, ~message: WorkerProtocol.serverMessage) =>
   | AllFiles(files) =>
     Js.log2("GOT ASLL FILES", files);
     files->List.forEach(meta => state.session.allFiles->Hashtbl.replace(meta.id, meta))
-  | MetaDataUpdate(meta) => state.session.allFiles->Hashtbl.replace(meta.id, meta)
+  | MetaDataUpdate(meta) =>
+    if (state.session.metaData.id == meta.id) {
+      state.session = {...state.session, metaData: meta}
+    };
+    state.session.allFiles->Hashtbl.replace(meta.id, meta);
+    /* Js.log2("Ok metadata update", meta) */
+    state.session.subs->Subscription.trigger([SharedTypes.Event.MetaData(meta.id)])
 
   | TabChange(change) =>
     /* TODO need to make sure that selections are updated correctly... */
