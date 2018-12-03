@@ -44,6 +44,7 @@ let renderContents =
       props={
         NodeTypes.value: text,
         id: node.id,
+        store,
         editPos,
         registerFocus,
         remoteCursors:

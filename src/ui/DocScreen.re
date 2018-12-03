@@ -77,7 +77,7 @@ let getCommands = (store: ClientStore.t('a, 'b, 'c), send, text) => {
 
 let fileCommands = (store: ClientStore.t('a, 'b, 'c), ~onSelect, ~onCreate, text) => {
   let files = store.session().allFiles;
-  Hashtbl.fold((id, meta: WorkerProtocol.metaData, results) => {
+  Hashtbl.fold((id, meta: MetaData.t, results) => {
     if (SuperMenu.fuzzysearch(text, meta.title)) {
       [{
         SuperMenu.title: meta.title,

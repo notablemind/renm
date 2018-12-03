@@ -33,7 +33,7 @@ let make = _ => {
       StoreInOne.session: {
         ...
           Session.createSession(
-            ~metaData=WorkerProtocol.blankMetaData(),
+            ~metaData=MetaData.blankMetaData(),
             ~sessionId=Utils.newId(),
             ~root=world.current.root,
           ),

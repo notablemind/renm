@@ -36,7 +36,7 @@ let messageToJson = WorkerProtocolSerde.serializeServerMessage;
  */
 
 type file = {
-  meta: WorkerProtocol.metaData,
+  meta: MetaData.t,
   /* mutable current: Change.data,
   mutable snapshot: Change.data, */
   /* TODO maybe keep around a cache of recent changes to be able to get undo things sooner */
@@ -208,7 +208,7 @@ let arrayFind = (items, fn) => Array.reduce(items, None, (current, item) => swit
 
 let loadFile = id => {
   let db = Dbs.getFileDb(id);
-  let%Lets.Async nodeMap = MetaData.loadNodes(db);
+  let%Lets.Async nodeMap = MetaDataPersist.loadNodes(db);
 
   let world =
     StoreInOne.make(
@@ -221,10 +221,10 @@ let loadFile = id => {
 
 let getFile = (docId) => {
   let%Lets.Async meta = switch docId {
-    | None => MetaData.getHome()
-    | Some(id) => MetaData.getFile(id)
+    | None => MetaDataPersist.getHome()
+    | Some(id) => MetaDataPersist.getFile(id)
   };
-  let%Lets.Async (db, world) = loadFile(meta.WorkerProtocol.id);
+  let%Lets.Async (db, world) = loadFile(meta.MetaData.id);
   Js.Promise.resolve({
     meta,
     db,
@@ -252,7 +252,7 @@ let handleMessage = (port, file, ports, sessionId, evt) =>
     | UndoRequest => onUndo(file, ports, sessionId)
     | RedoRequest => onRedo(file, ports, sessionId)
     | CreateFile(id, title) =>
-      let%Lets.Async.Consume meta = MetaData.makeEmptyFile(~id, ~title);
+      let%Lets.Async.Consume meta = MetaDataPersist.makeEmptyFile(~id, ~title);
       sendToPorts(ports, WorkerProtocol.MetaDataUpdate(meta))
     | Close =>
       file.cursors->Hashtbl.remove(sessionId);

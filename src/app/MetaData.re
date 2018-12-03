@@ -1,72 +1,41 @@
 
+type remote =
+  /* username, fileid */
+  | Google(string, string)
+  | Gist(string, string)
+  | LocalDisk(string)
+
+type sync = {
+  remote,
+  lastSyncTime: float,
+};
+
+type t = {
+  id: string,
+  title: string,
+  nodeCount: int,
+  created: float,
+  lastOpened: float,
+  lastModified: float,
+  sync: option(sync),
+};
+
+let blankMetaData = () => {
+  id: "blank",
+  title: "Blank",
+  nodeCount: 0,
+  created: 0.,
+  lastOpened: 0.,
+  lastModified: 0.,
+  sync: None
+};
+
 let newMeta = (~title, ~id) => {
-  WorkerProtocol.id,
+  id,
   title,
   nodeCount: 1,
   created: Js.Date.now(),
   lastOpened: Js.Date.now(),
   lastModified: Js.Date.now(),
   sync: None,
-};
-
-let makeFileWithNodes = (~title, ~id, ~nodes: list(Data.Node.t('a, 'b))) => {
-  let meta = newMeta(~title, ~id);
-  let%Lets.Async _ = Dbs.metasDb->Persistance.put(meta.id, meta);
-  let%Lets.Async _ = Dbs.getFileDb(meta.id)->Dbs.getNodesDb->Persistance.batch(
-    nodes->Belt.List.map(node => {
-      Persistance.batchPut({
-        "key": node.id,
-        "type": "put",
-        "value": node
-      })
-    })->List.toArray
-  );
-  Js.Promise.resolve(meta)
-};
-
-let makeEmptyFile = (~title, ~id) => {
-  let meta = newMeta(~title, ~id);
-  makeFileWithNodes(~title, ~id, ~nodes=[
-    Data.Node.create(
-      ~id="root",
-      ~parent="root",
-      ~contents=NodeType.Normal(Delta.fromString(title)),
-      ~children=[],
-      ~prefix=None
-    )
-  ])
-};
-
-let makeHome = () => {
-  Js.log("Making a home");
-  let id = Utils.newId();
-  let%Lets.Async meta = makeFileWithNodes(
-    ~title="Home",
-    ~id,
-    ~nodes=Fixture.large
-  )
-  let%Lets.Async _ = Dbs.homeDb->Persistance.put("home", id);
-  Js.Promise.resolve(id)
-};
-
-let getHome = () => {
-  let%Lets.Async homeId =
-    try%Lets.Async (
-      Dbs.homeDb->Persistance.get("home")
-      ->Lets.Async.map(value => {
-        value
-      })
-    ) {
-    | _ => makeHome()
-    };
-  Js.log2("Home id", homeId);
-  Dbs.metasDb->Persistance.get(homeId);
-};
-
-let getFile = id => Dbs.metasDb->Persistance.get(id);
-
-let loadNodes = db => {
-  let%Lets.Async nodes = db->Dbs.getNodesDb->Persistance.getAll;
-  let nodeMap = nodes->Array.map(node => (node##key, node##value))->Map.String.fromArray;
-  Js.Promise.resolve(nodeMap)
 };

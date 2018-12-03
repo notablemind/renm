@@ -18,7 +18,7 @@ let getEncoder = (name, encode, decode) => {
 };
 
 let filesDb: Persistance.levelup(unit) = getDb("nm:files");
-let metasDb: Persistance.levelup(WorkerProtocol.metaData) = filesDb->Persistance.subleveldown("metas", {
+let metasDb: Persistance.levelup(MetaData.t) = filesDb->Persistance.subleveldown("metas", {
   getEncoder(
     "WorkerProtocol__metaData",
     WorkerProtocolSerde.serializeMetaData,
@@ -38,6 +38,6 @@ let homeDb: Persistance.levelup(string) = filesDb->Persistance.subleveldown("hom
 let getFileDb: string => Persistance.levelup(unit) = id => getDb("nm:doc:" ++ id);
 let getNodesDb: Persistance.levelup(unit) => Persistance.levelup(NodeType.t) = fileDb => fileDb->Persistance.subleveldown("nodes", getEncoder(
   "NodeType____t",
-  WorkerProtocolSerde.serializeT,
-  WorkerProtocolSerde.deserializeT,
+  WorkerProtocolSerde.serializeNode,
+  WorkerProtocolSerde.deserializeNode,
 ));

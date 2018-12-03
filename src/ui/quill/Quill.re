@@ -132,11 +132,16 @@ let onSelectionChange =
 
 
 
+type propsType = NodeTypes.props(
+  Delta.delta,
+  NodeType.contents,
+  option(NodeType.prefix),
+  (int, int)
+  );
 
 
 
-
-let quillConfig = (props: ref(NodeTypes.props(Delta.delta, (int, int))), registry) => {
+let quillConfig = (props: ref(propsType), registry) => {
   "theme": false,
   "registry": registry,
   "placeholder": " ",
@@ -302,7 +307,7 @@ let quillConfig = (props: ref(NodeTypes.props(Delta.delta, (int, int))), registr
 
 
 let setupQuill =
-    (element, props: ref(NodeTypes.props(Delta.delta, (int, int))), registerFocus) => {
+    (element, props: ref(propsType), registerFocus) => {
 
   let registry = customRegistry([|
     linkModule(getFileName^)
@@ -387,7 +392,7 @@ let setupQuill =
 };
 
 type state = {
-  props: ref(NodeTypes.props(Delta.delta, (int, int))),
+  props: ref(propsType),
   quill: ref(option(quill)),
   prevEditPos: ref(option(View.editPos)),
   prevCursors: ref(list(View.cursor)),
@@ -395,7 +400,7 @@ type state = {
 
 let component = ReasonReact.reducerComponent("Quill");
 
-let make = (~props: NodeTypes.props(Delta.delta, (int, int)), _children) => {
+let make = (~props: propsType, _children) => {
   ...component,
   initialState: () => {
     props: ref(props),

@@ -68,9 +68,9 @@ let make = _children => {
     root: (
       {history: baseWorld.history, current: baseWorld.current}: StoreInOne.server
     ),
-    a: StoreInOne.fromWorld(~metaData=WorkerProtocol.blankMetaData(), ~sessionId="a", ~world=baseWorld),
-    b: StoreInOne.fromWorld(~metaData=WorkerProtocol.blankMetaData(), ~sessionId="b", ~world=baseWorld),
-    c: StoreInOne.fromWorld(~metaData=WorkerProtocol.blankMetaData(), ~sessionId="c", ~world=baseWorld),
+    a: StoreInOne.fromWorld(~metaData=MetaData.blankMetaData(), ~sessionId="a", ~world=baseWorld),
+    b: StoreInOne.fromWorld(~metaData=MetaData.blankMetaData(), ~sessionId="b", ~world=baseWorld),
+    c: StoreInOne.fromWorld(~metaData=MetaData.blankMetaData(), ~sessionId="c", ~world=baseWorld),
   },
   reducer: (state, _) => ReasonReact.Update(state),
   render: ({state: {root, a, b, c}} as self) => {

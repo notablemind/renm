@@ -15,9 +15,9 @@
           "name": "serverMessage"
         },
         {
-          "moduleName": "WorkerProtocol",
+          "moduleName": "MetaData",
           "modulePath": [],
-          "name": "metaData"
+          "name": "t"
         },
         {
           "moduleName": "View",
@@ -1069,6 +1069,237 @@
               "name": "t",
               "variables": [],
               "body": ["Abstract"]
+            }
+          ]
+        ],
+        [
+          [
+            "MetaData",
+            [],
+            "remote"
+          ],
+          [
+            [],
+            {
+              "name": "remote",
+              "variables": [],
+              "body": [
+                "Variant",
+                [
+                  [
+                    "Google",
+                    [
+                      [
+                        "Reference",
+                        [
+                          "Builtin",
+                          "string"
+                        ],
+                        []
+                      ],
+                      [
+                        "Reference",
+                        [
+                          "Builtin",
+                          "string"
+                        ],
+                        []
+                      ]
+                    ],
+                    null
+                  ],
+                  [
+                    "Gist",
+                    [
+                      [
+                        "Reference",
+                        [
+                          "Builtin",
+                          "string"
+                        ],
+                        []
+                      ],
+                      [
+                        "Reference",
+                        [
+                          "Builtin",
+                          "string"
+                        ],
+                        []
+                      ]
+                    ],
+                    null
+                  ],
+                  [
+                    "LocalDisk",
+                    [
+                      [
+                        "Reference",
+                        [
+                          "Builtin",
+                          "string"
+                        ],
+                        []
+                      ]
+                    ],
+                    null
+                  ]
+                ]
+              ]
+            }
+          ]
+        ],
+        [
+          [
+            "MetaData",
+            [],
+            "sync"
+          ],
+          [
+            [],
+            {
+              "name": "sync",
+              "variables": [],
+              "body": [
+                "Record",
+                [
+                  [
+                    "remote",
+                    [
+                      "Reference",
+                      [
+                        "Public",
+                        [
+                          "MetaData",
+                          [],
+                          "remote"
+                        ]
+                      ],
+                      []
+                    ]
+                  ],
+                  [
+                    "lastSyncTime",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "float"
+                      ],
+                      []
+                    ]
+                  ]
+                ]
+              ]
+            }
+          ]
+        ],
+        [
+          [
+            "MetaData",
+            [],
+            "t"
+          ],
+          [
+            [],
+            {
+              "name": "t",
+              "variables": [],
+              "body": [
+                "Record",
+                [
+                  [
+                    "id",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "string"
+                      ],
+                      []
+                    ]
+                  ],
+                  [
+                    "title",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "string"
+                      ],
+                      []
+                    ]
+                  ],
+                  [
+                    "nodeCount",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "int"
+                      ],
+                      []
+                    ]
+                  ],
+                  [
+                    "created",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "float"
+                      ],
+                      []
+                    ]
+                  ],
+                  [
+                    "lastOpened",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "float"
+                      ],
+                      []
+                    ]
+                  ],
+                  [
+                    "lastModified",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "float"
+                      ],
+                      []
+                    ]
+                  ],
+                  [
+                    "sync",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "option"
+                      ],
+                      [
+                        [
+                          "Reference",
+                          [
+                            "Public",
+                            [
+                              "MetaData",
+                              [],
+                              "sync"
+                            ]
+                          ],
+                          []
+                        ]
+                      ]
+                    ]
+                  ]
+                ]
+              ]
             }
           ]
         ],
@@ -2459,192 +2690,6 @@
           [
             "WorkerProtocol",
             [],
-            "metaData"
-          ],
-          [
-            [],
-            {
-              "name": "metaData",
-              "variables": [],
-              "body": [
-                "Record",
-                [
-                  [
-                    "id",
-                    [
-                      "Reference",
-                      [
-                        "Builtin",
-                        "string"
-                      ],
-                      []
-                    ]
-                  ],
-                  [
-                    "title",
-                    [
-                      "Reference",
-                      [
-                        "Builtin",
-                        "string"
-                      ],
-                      []
-                    ]
-                  ],
-                  [
-                    "nodeCount",
-                    [
-                      "Reference",
-                      [
-                        "Builtin",
-                        "int"
-                      ],
-                      []
-                    ]
-                  ],
-                  [
-                    "created",
-                    [
-                      "Reference",
-                      [
-                        "Builtin",
-                        "float"
-                      ],
-                      []
-                    ]
-                  ],
-                  [
-                    "lastOpened",
-                    [
-                      "Reference",
-                      [
-                        "Builtin",
-                        "float"
-                      ],
-                      []
-                    ]
-                  ],
-                  [
-                    "lastModified",
-                    [
-                      "Reference",
-                      [
-                        "Builtin",
-                        "float"
-                      ],
-                      []
-                    ]
-                  ],
-                  [
-                    "sync",
-                    [
-                      "Reference",
-                      [
-                        "Builtin",
-                        "option"
-                      ],
-                      [
-                        [
-                          "Reference",
-                          [
-                            "Public",
-                            [
-                              "WorkerProtocol",
-                              [],
-                              "sync"
-                            ]
-                          ],
-                          []
-                        ]
-                      ]
-                    ]
-                  ]
-                ]
-              ]
-            }
-          ]
-        ],
-        [
-          [
-            "WorkerProtocol",
-            [],
-            "remote"
-          ],
-          [
-            [],
-            {
-              "name": "remote",
-              "variables": [],
-              "body": [
-                "Variant",
-                [
-                  [
-                    "Google",
-                    [
-                      [
-                        "Reference",
-                        [
-                          "Builtin",
-                          "string"
-                        ],
-                        []
-                      ],
-                      [
-                        "Reference",
-                        [
-                          "Builtin",
-                          "string"
-                        ],
-                        []
-                      ]
-                    ],
-                    null
-                  ],
-                  [
-                    "Gist",
-                    [
-                      [
-                        "Reference",
-                        [
-                          "Builtin",
-                          "string"
-                        ],
-                        []
-                      ],
-                      [
-                        "Reference",
-                        [
-                          "Builtin",
-                          "string"
-                        ],
-                        []
-                      ]
-                    ],
-                    null
-                  ],
-                  [
-                    "LocalDisk",
-                    [
-                      [
-                        "Reference",
-                        [
-                          "Builtin",
-                          "string"
-                        ],
-                        []
-                      ]
-                    ],
-                    null
-                  ]
-                ]
-              ]
-            }
-          ]
-        ],
-        [
-          [
-            "WorkerProtocol",
-            [],
             "serverMessage"
           ],
           [
@@ -2663,9 +2708,9 @@
                         [
                           "Public",
                           [
-                            "WorkerProtocol",
+                            "MetaData",
                             [],
-                            "metaData"
+                            "t"
                           ]
                         ],
                         []
@@ -2721,9 +2766,9 @@
                             [
                               "Public",
                               [
-                                "WorkerProtocol",
+                                "MetaData",
                                 [],
-                                "metaData"
+                                "t"
                               ]
                             ],
                             []
@@ -2759,9 +2804,9 @@
                         [
                           "Public",
                           [
-                            "WorkerProtocol",
+                            "MetaData",
                             [],
-                            "metaData"
+                            "t"
                           ]
                         ],
                         []
@@ -2822,51 +2867,6 @@
                       ]
                     ],
                     null
-                  ]
-                ]
-              ]
-            }
-          ]
-        ],
-        [
-          [
-            "WorkerProtocol",
-            [],
-            "sync"
-          ],
-          [
-            [],
-            {
-              "name": "sync",
-              "variables": [],
-              "body": [
-                "Record",
-                [
-                  [
-                    "remote",
-                    [
-                      "Reference",
-                      [
-                        "Public",
-                        [
-                          "WorkerProtocol",
-                          [],
-                          "remote"
-                        ]
-                      ],
-                      []
-                    ]
-                  ],
-                  [
-                    "lastSyncTime",
-                    [
-                      "Reference",
-                      [
-                        "Builtin",
-                        "float"
-                      ],
-                      []
-                    ]
                   ]
                 ]
               ]

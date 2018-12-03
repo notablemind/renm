@@ -6,8 +6,8 @@ which lives for the life of the tab.
 */
 
 type session = {
-  metaData: WorkerProtocol.metaData,
-  allFiles: Hashtbl.t(string, WorkerProtocol.metaData),
+  metaData: MetaData.t,
+  allFiles: Hashtbl.t(string, MetaData.t),
   sessionId: string,
   changeNum: int,
   changeSet: option((string, float, string)),

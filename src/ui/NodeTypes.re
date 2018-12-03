@@ -1,5 +1,6 @@
-type props('value, 'selection) = {
+type props('value, 'contents, 'prefix, 'selection) = {
   id: string,
+  store: ClientStore.t('contents, 'prefix, 'selection),
   value: 'value,
   registerFocus: (unit => unit) => unit,
   editPos: option(View.editPos),
