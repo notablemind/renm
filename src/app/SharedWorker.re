@@ -66,29 +66,31 @@ let nextChangeNum = () => {
 
 let data = file => file.world.current;
 
-let sendToPorts = (~excludeSession=?, ports, message) => {
+let sendToPorts = (~onlyFile=?, ~excludeSession=?, ports, message) =>
   switch (excludeSession) {
   | None =>
     ports
-    ->HashMap.String.forEach((sid, port) =>
-        port->postMessage(messageToJson(message))
+    ->HashMap.String.forEach((sid, (fileId, port)) =>
+        if (onlyFile == None || onlyFile == Some(fileId)) {
+          port->postMessage(messageToJson(message));
+        }
       )
   | Some(sessionId) =>
     ports
-    ->HashMap.String.forEach((sid, port) =>
+    ->HashMap.String.forEach((sid, (fileId, port)) =>
         sid != sessionId ?
-          port
-          ->postMessage(messageToJson(message)) :
+          if (onlyFile == None || onlyFile == Some(fileId)) {
+            port->postMessage(messageToJson(message));
+          } :
           ()
       )
   };
-};
 
 let sendMetaDataChange = (~excludeSession=?, ports, metaData) =>
   sendToPorts(~excludeSession?, ports, WorkerProtocol.MetaDataUpdate(metaData));
 
-let sendChange = (~excludeSession=?, ports, change) => {
-  sendToPorts(~excludeSession?, ports, WorkerProtocol.TabChange(change))
+let sendChange = (~excludeSession=?, fileId, ports, change) => {
+  sendToPorts(~excludeSession?, ~onlyFile=fileId, ports, WorkerProtocol.TabChange(change))
 };
 
 let unique = items => {
@@ -136,10 +138,10 @@ let applyChange = (file, change, ports, dontSendToSession) => {
   };
   file.world = world;
 
-  sendChange(~excludeSession=?dontSendToSession, ports, change);
+  sendChange(~excludeSession=?dontSendToSession, file.meta.id, ports, change);
   persistChangedNodes(file, changeEvents);
   let title = switch (world.current.nodes->Map.String.get(world.current.root)) {
-    | Some({contents: Normal(delta)}) => Delta.getText(delta)
+    | Some({contents: Normal(delta)}) => Delta.getText(delta)->Js.String.trim
     | _ => file.meta.title
   };
   file.meta = {
@@ -205,10 +207,10 @@ let cursorsForSession = (cursors, sid) =>
     [],
   );
 
-let sendCursors = (cursors, ports, sessionId) =>
+let sendCursors = (cursors, ports, sessionId, fileId) =>
   ports
-  ->HashMap.String.forEach((sid, port) =>
-      if (sid != sessionId) {
+  ->HashMap.String.forEach((sid, (fid, port)) =>
+      if (sid != sessionId && fileId == fid) {
         port
         ->postMessage(
             messageToJson(
@@ -283,13 +285,14 @@ let rec handleMessage = (port, file, ports, sessionId, evt) =>
     | Close =>
       file.cursors->Hashtbl.remove(sessionId);
       ports->HashMap.String.remove(sessionId);
-      sendCursors(file.cursors, ports, sessionId);
+      sendCursors(file.cursors, ports, sessionId, file.meta.id);
     | SelectionChanged(nodeId, range) =>
       /* Js.log2(nodeId, range); */
       Hashtbl.replace(file.cursors, sessionId, (nodeId, range));
-      sendCursors(file.cursors, ports, sessionId);
+      sendCursors(file.cursors, ports, sessionId, file.meta.id);
     | Open(id) =>
       let%Lets.Async.Consume file = getCachedFile(sessionId, ports, id);
+      ports->HashMap.String.set(sessionId, (file.meta.id, port));
       port->onmessage(handleMessage(port, file, ports, sessionId));
       port
       ->postMessage(
@@ -326,7 +329,7 @@ addEventListener("connect", e => {
         /* TODO fileid */
         let%Lets.Async.Consume file = getCachedFile(sessionId, ports, fileId);
         let%Lets.Async.Consume allFiles = Dbs.metasDb->Persistance.getAll;
-        ports->HashMap.String.set(sessionId, port);
+        ports->HashMap.String.set(sessionId, (file.meta.id, port));
         port->onmessage(handleMessage(port, file, ports, sessionId));
         port
         ->postMessage(
