@@ -210,7 +210,7 @@ let quillConfig = (props: ref(propsType), registry) => {
           "handler":
             [@bs.this]
             (
-              this =>
+              this => {
                 if (atLeft(this##quill)) {
                   if (getLength(this##quill) == 1.) {
                     props^.onBackspace(None) == None;
@@ -221,6 +221,7 @@ let quillConfig = (props: ref(propsType), registry) => {
                 } else {
                   true;
                 }
+              }
             ),
         },
         "move-right": {
