@@ -290,6 +290,9 @@ let rec handleMessage = (port, file, ports, sessionId, evt) =>
       Hashtbl.replace(file.cursors, sessionId, (nodeId, range));
       sendCursors(file.cursors, ports, sessionId, file.meta.id);
     | Open(id) =>
+      file.cursors->Hashtbl.remove(sessionId);
+      sendCursors(file.cursors, ports, sessionId, file.meta.id);
+
       let%Lets.Async.Consume file = getCachedFile(sessionId, ports, id);
       ports->HashMap.String.set(sessionId, (file.meta.id, port));
       port->onmessage(handleMessage(port, file, ports, sessionId));
