@@ -56,16 +56,21 @@ module Styles = {
     display(`flex),
     flexDirection(`row),
     height(px(24)),
-    overflowX(auto)
+    fontFamily("sans-serif"),
+    fontSize(em(0.7)),
+    overflowX(auto),
+    marginBottom(px(8)),
+
   ]);
   let bread = style([
     padding2(~v=px(4), ~h=px(8)),
-    marginRight(px(2)),
-    borderRadius(px(4)),
+    marginRight(px(4)),
+    borderRadius(px(12)),
     cursor(`pointer),
+    backgroundColor(hex("#f0f0f0")),
     hover([
       backgroundColor(Colors.offWhite)
-    ])
+    ]),
   ])
 };
 

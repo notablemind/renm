@@ -161,7 +161,12 @@ let processViewAction = (view, sharedViewData, action) =>
       [Event.View(Node(view.active))],
     )
 
-  | Rebase(root) => ({...view, root}, sharedViewData, [Event.View(Root)])
+  | Rebase(root) => ({
+      ...view,
+      root,
+      active: root,
+      editPos: End,
+    }, sharedViewData, [Event.View(Root), Event.View(Node(root))])
 
   | HideCompleted(_) => (view, sharedViewData, [])
   };
