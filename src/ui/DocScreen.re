@@ -185,12 +185,6 @@ let make = (~setupWorker, _) => {
     setupWorker(docId, (store, sendMessage) => {
       Js.log2("Setting up worker", store.ClientStore.session().metaData.id);
       [%bs.raw "window.store = store"];
-      Quill.getFileName := id => {
-        switch (store.ClientStore.session().allFiles->Hashtbl.find(id)) {
-          | exception Not_found => None
-          | {title} => Some(title)
-        }
-      };
       sender := Some(sendMessage);
       self.send(Store(store, sendMessage));
     });

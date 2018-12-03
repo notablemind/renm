@@ -28,7 +28,7 @@ let historyClass = [%bs.raw
 
 [@bs.module "quill-cursors"] external quillCursors: quillModule = "default";
 
-let getFileName: ref(string => option(string)) = ref((id: string) => None);
+/* let getFileName: ref(string => option(string)) = ref((id: string) => None); */
 
 register({
   "modules/history": historyClass,
@@ -310,7 +310,7 @@ let setupQuill =
     (element, props: ref(propsType), registerFocus) => {
 
   let registry = customRegistry([|
-    linkModule(getFileName^)
+    linkModule(id => props^.store->ClientStore.getFileName(id))
   |]);
   let quill =
     makeQuill(

@@ -32,6 +32,9 @@ module.exports = (getFileName) => {
           hover.href = value
           hover.innerText = value
         }
+        hover.onclick = evt => {
+          closeHover();
+        }
         document.body.appendChild(hover)
 
         const box = node.getBoundingClientRect()
