@@ -180,11 +180,8 @@ let onRedo = (file, ports, sessionId) => {
   applyChange(file, change, ports, None);
 };
 
-let onChange = (file, ports, id, change) => {
-  applyChange(file, change, ports, Some(id));
   /* TODO go through events to see what needs to be persisted */
   /* TODO debounced sync w/ server */
-};
 
 let cursorsForSession = (cursors, sid) =>
   Hashtbl.fold(
@@ -276,7 +273,7 @@ let rec handleMessage = (port, file, ports, sessionId, evt) =>
   | Ok(message) =>
     switch (message) {
     | WorkerProtocol.Change(change) =>
-      onChange(file, ports, sessionId, change)
+      applyChange(file, change, ports, Some(sessionId));
     | UndoRequest => onUndo(file, ports, sessionId)
     | RedoRequest => onRedo(file, ports, sessionId)
     | CreateFile(id, title) =>
@@ -315,14 +312,11 @@ let rec handleMessage = (port, file, ports, sessionId, evt) =>
   };
 
 
-/* let initialPromise = getInitialState(); */
-
-/* [%bs.raw "this.state = initialPromise"]; */
 
 let ports = HashMap.String.make(~hintSize=5);
+
 addEventListener("connect", e => {
   let%Lets.OptForce port = e##ports[0];
-
   port
   ->onmessage(evt => {
       Js.log2("Got message", evt);
