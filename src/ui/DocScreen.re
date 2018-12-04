@@ -142,6 +142,13 @@ let getCommands = (store: ClientStore.t('a, 'b, 'c), send, text) => {
       action: () => {
         send(ShowDialog(FileLink))
       }
+    },
+    {
+      SuperMenu.title: "Prefix: checkbox",
+      description: "Make this a 'todo' item",
+      action: () => {
+        store.act([Actions.SetPrefix(store.session().view.active, Some(Todo))])
+      }
     }
   |]->Array.keep(item => SuperMenu.fuzzysearch(text, item.title) || SuperMenu.fuzzysearch(text, item.description))
 };

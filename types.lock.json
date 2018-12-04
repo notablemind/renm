@@ -336,6 +336,32 @@
                     null
                   ],
                   [
+                    "SetCompleted",
+                    [
+                      [
+                        "Reference",
+                        [
+                          "Public",
+                          [
+                            "Data",
+                            ["Node"],
+                            "id"
+                          ]
+                        ],
+                        []
+                      ],
+                      [
+                        "Reference",
+                        [
+                          "Builtin",
+                          "bool"
+                        ],
+                        []
+                      ]
+                    ],
+                    null
+                  ],
+                  [
                     "SetContents",
                     [
                       [

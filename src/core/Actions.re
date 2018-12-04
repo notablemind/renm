@@ -2,6 +2,9 @@ open Data;
 type action =
   | /** second arg is the thing to focus after */ Remove(Node.id, Node.id)
   | SetContents(Node.id, Delta.delta)
+  | SetPrefix(Node.id, option(NodeType.prefix))
+  | SetCompleted(Node.id, bool)
+
   | ChangeContents(Node.id, Delta.delta)
   | Move(list(Node.id), Node.id, int)
   | Create(int, NodeType.t)
@@ -20,6 +23,12 @@ let processAction =
 
   | SetContents(id, contents) =>
     Ok(([SetContents(id, contents)], []))
+
+  | SetCompleted(id, contents) =>
+    Ok(([SetCompleted(id, contents)], []))
+
+  | SetPrefix(id, prefix) =>
+    Ok(([SetPrefix(id, prefix)], []))
 
   /* TODO track selection here */
   | ChangeContents(id, delta) =>

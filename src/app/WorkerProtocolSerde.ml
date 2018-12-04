@@ -10,6 +10,7 @@ module Version1 =
       | MoveNode of _Data__Node__id * int * _Data__Node__id 
       | ChangeContents of _Data__Node__id * _Delta__delta 
       | SetPrefix of _Data__Node__id * _NodeType__prefix option 
+      | SetCompleted of _Data__Node__id * bool 
       | SetContents of _Data__Node__id * _Delta__delta 
     and _Change__data = (_Delta__delta, _NodeType__prefix option) _Data__data
     and _Change__rebaseItem = Change.rebaseItem =
@@ -249,6 +250,26 @@ module Version1 =
                   | Belt.Result.Ok arg0 ->
                       Belt.Result.Ok
                         (SetPrefix (arg0, arg1) : _Change__change)
+                  | Error error -> Error ("constructor argument 0" :: error))
+             | Error error -> Error ("constructor argument 1" :: error))
+        | JSONArray [|tag;arg0;arg1|] when
+            ((Js.Json.JSONString ("SetCompleted"))[@explicit_arity ]) =
+              (Js.Json.classify tag)
+            ->
+            (match (fun bool ->
+                      match Js.Json.classify bool with
+                      | JSONTrue -> ((Belt.Result.Ok (true))
+                          [@explicit_arity ])
+                      | JSONFalse -> ((Belt.Result.Ok (false))
+                          [@explicit_arity ])
+                      | _ -> ((Belt.Result.Error (["Expected a bool"]))
+                          [@explicit_arity ])) arg1
+             with
+             | Belt.Result.Ok arg1 ->
+                 (match deserialize_Data__Node__id arg0 with
+                  | Belt.Result.Ok arg0 ->
+                      Belt.Result.Ok
+                        (SetCompleted (arg0, arg1) : _Change__change)
                   | Error error -> Error ("constructor argument 0" :: error))
              | Error error -> Error ("constructor argument 1" :: error))
         | JSONArray [|tag;arg0;arg1|] when
@@ -2083,6 +2104,11 @@ module Version1 =
                          transformer inner
                      | None -> Js.Json.null)) serialize_NodeType____prefix)
                   arg1)|]
+        | SetCompleted (arg0, arg1) ->
+            Js.Json.array
+              [|(Js.Json.string "SetCompleted");(serialize_Data__Node__id
+                                                   arg0);(Js.Json.boolean
+                                                            arg1)|]
         | SetContents (arg0, arg1) ->
             Js.Json.array
               [|(Js.Json.string "SetContents");(serialize_Data__Node__id arg0);(

@@ -205,6 +205,16 @@ let make =
                 ) :
                 ReasonReact.null
             }
+            {switch (node.prefix) {
+              | None => ReasonReact.null
+              | Some(NodeType.Todo) => <input
+                type_="checkbox"
+                onChange={evt => {
+                  store.act([SetCompleted(node.id, !node.completed)])
+                }}
+                checked={node.completed} />
+              | Some(Attribution) => ReasonReact.null
+            }}
             <div style=ReactDOMRe.Style.(make(~flex="1", ()))>
               {renderContents(store, node, registerFocus, editPos, collapsed)}
             </div>
