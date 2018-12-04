@@ -25,14 +25,16 @@ let getData = (store: ClientStore.t('a, 'b, 'c), id) =>
 
 let evtValue = evt => ReactEvent.Form.target(evt)##value;
 
-let renderContents =
-    (
-      store:
-        ClientStore.t(
+type clientStore = ClientStore.t(
           Delta.delta,
           option(NodeType.prefix),
           (int, int),
-        ),
+        );
+
+let renderContents =
+    (
+      store:
+        clientStore,
       node: NodeType.t,
       registerFocus,
       editPos,

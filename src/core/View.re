@@ -77,7 +77,7 @@ let emptyView = (~id, ~root) => {
   id,
   root,
   mode: Insert,
-  selection: Set.String.empty,
+  selection: Set.String.empty->Set.String.add(root),
   hideCompleted: false,
   editPos: Default,
   active: root,
@@ -164,9 +164,13 @@ let processViewAction = (view, sharedViewData, action) =>
   | Rebase(root) => ({
       ...view,
       root,
+      selection: Set.String.empty->Set.String.add(root),
       active: root,
       editPos: End,
-    }, sharedViewData, [Event.View(Root), Event.View(Node(root))])
+    }, sharedViewData, [Event.View(Root), Event.View(Node(root))]
+        @ Set.String.toList(view.selection)
+          ->List.map(id => Event.View(Node(id)))
+    )
 
   | HideCompleted(_) => (view, sharedViewData, [])
   };

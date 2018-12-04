@@ -134,8 +134,56 @@ let keyEvt = evt => {
   )
 };
 
+module Commands = {
+  let prefixes = (store: NodeBody.clientStore, send) => {
+    let view = store.session().view;
+    let%Lets.OptDefault node = (store.data()->Data.get(view.active), [||]);
+    let clear = {
+      SuperMenu.title: "Prefix: clear",
+      description: "Clear the node prefix",
+      action: () => {
+        store.act(view.selection->Set.String.toList->List.map(id => 
+          Actions.SetPrefix(id, None)
+        ))
+      }
+    };
+    let attribution = {
+      SuperMenu.title: "Prefix: attribution",
+      description: "Make this a 'comment' item",
+      action: () => {
+        store.act(view.selection->Set.String.toList->List.map(id => 
+          Actions.SetPrefix(id, Some(Attribution))
+        ))
+      }
+    };
+    let checkbox = {
+      SuperMenu.title: "Prefix: checkbox",
+      description: "Make this a 'todo' item",
+      action: () => {
+        store.act(view.selection->Set.String.toList->List.map(id => 
+          Actions.SetPrefix(id, Some(Todo))
+        ))
+      }
+    };
+    switch (node.prefix) {
+      | Some(Todo) => [|
+        clear,
+        attribution
+      |]
+      | Some(Attribution) => [|
+        checkbox,
+        clear
+      |]
+      | None => [|
+        checkbox,
+        attribution
+      |]
+    }
+  };
+};
+
 let getCommands = (store: ClientStore.t('a, 'b, 'c), send, text) => {
-  [|
+  let items = [|
     {
       SuperMenu.title: "Link to File",
       description: "Hyperlink the current text to another (maybe new) file",
@@ -143,14 +191,8 @@ let getCommands = (store: ClientStore.t('a, 'b, 'c), send, text) => {
         send(ShowDialog(FileLink))
       }
     },
-    {
-      SuperMenu.title: "Prefix: checkbox",
-      description: "Make this a 'todo' item",
-      action: () => {
-        store.act([Actions.SetPrefix(store.session().view.active, Some(Todo))])
-      }
-    }
-  |]->Array.keep(item => SuperMenu.fuzzysearch(text, item.title) || SuperMenu.fuzzysearch(text, item.description))
+  |]->Array.concat(Commands.prefixes(store, send));
+  items->Array.keep(item => SuperMenu.fuzzysearch(text, item.title) || SuperMenu.fuzzysearch(text, item.description))
 };
 
 let fileCommands = (store: ClientStore.t('a, 'b, 'c), ~onSelect, ~onCreate, text) => {
@@ -245,6 +287,8 @@ let fileLinkCommands = (store: ClientStore.t('a, 'b, 'c), sendMessage) => {
 
 let wrapper = Css.(style([
   color(Colors.black),
+  maxWidth(px(800)),
+  margin2(~v=px(0), ~h=`auto)
   /* backgroundColor(Colors.gray80), */
   /* color(Colors.offWhite), */
 ]));
