@@ -1,6 +1,6 @@
 open SharedTypes;
 
-module History: {
+module type HistoryT = {
   type t('change, 'rebase, 'selection);
   let latestId: t('change, 'rebase, 'selection) => option(string);
   let append:
@@ -14,7 +14,9 @@ module History: {
   let itemsSince:
     (t('change, 'rebase, 'selection), option(string)) =>
     list(Sync.change('change, 'rebase, 'selection));
-} = {
+};
+
+module History: HistoryT = {
   type t('change, 'rebase, 'selection) =
     list(Sync.change('change, 'rebase, 'selection));
   let latestId = t => List.head(t)->Lets.Opt.map(c => c.Sync.inner.changeId);
