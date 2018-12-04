@@ -4,7 +4,7 @@ let rec fromFixture = (pid, id, item) =>
       Data.Node.create(
         ~id,
         ~parent=pid,
-        ~contents=NodeType.Normal(Delta.fromString(text)),
+        ~contents=Delta.fromString(text),
         ~children=[],
         ~prefix=None,
       ),
@@ -30,7 +30,7 @@ let rec fromFixture = (pid, id, item) =>
       Data.Node.create(
         ~id,
         ~parent=pid,
-        ~contents=NodeType.Normal(Delta.fromString(text)),
+        ~contents=Delta.fromString(text),
         ~children=List.map(childNodes, fst),
         ~prefix=None,
       ),

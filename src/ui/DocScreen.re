@@ -89,10 +89,7 @@ module Header = {
           <div className=Styles.breadcrumbs>
             {path->List.toArray->Array.map(node => {
               <div className=Styles.bread onClick={evt => store.actView(Rebase(node.id))}>
-                {ReasonReact.string(switch (node.contents) {
-                  | NodeType.Normal(delta) => Delta.getText(delta)
-                  | _ => " "
-                })}
+                {ReasonReact.string(Delta.getText(node.contents))}
               </div>
             })->ReasonReact.array}
           </div>

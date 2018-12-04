@@ -1,9 +1,9 @@
 open SharedTypes;
 open Data;
 
-type delta = Delta.delta;
+/* type delta = Delta.delta; */
 
-type data = Data.data(NodeType.contents, option(NodeType.prefix));
+type data = Data.data(Delta.delta, option(NodeType.prefix));
 
 /*
 
@@ -50,7 +50,7 @@ type rebaseItem =
   | RemoveChild(Node.id, int)
   | AddChild(Node.id, int)
   | MoveChild(Node.id, int, Node.id, int)
-  | Contents(Node.id, delta);
+  | Contents(Node.id, Delta.delta);
 
 type change =
   | Trash(Node.id, Js.Date.t)
@@ -59,8 +59,8 @@ type change =
   | AddNode(int, NodeType.t)
   /* nextPid, idx, id */
   | MoveNode(Node.id, int, Node.id)
-  | ChangeContents(Node.id, delta)
-  | SetContents(Node.id, NodeType.contents);
+  | ChangeContents(Node.id, Delta.delta)
+  | SetContents(Node.id, Delta.delta);
 
 open Lets;
 let events = (data: Map.String.t(NodeType.t), change) =>
@@ -108,16 +108,12 @@ type error =
   | Cycle(Node.id, Node.id);
 
 let changeContents = (node, change) =>
-  Data.Node.(
-    switch (node.contents) {
-    | NodeType.Normal(contents) =>
-      /* let contents = Delta.fromAny(contents); */
-      let newContents = Delta.compose(contents, change);
-      let undo = Delta.diff(newContents, contents);
-      Result.Ok(({...node, contents: NodeType.Normal(newContents)}, undo));
-    | _ => Result.Error(WrongNodeType(node.id, "Not normal"))
-    }
-  );
+  Data.Node.({
+    /* let contents = Delta.fromAny(contents); */
+    let newContents = Delta.compose(node.contents, change);
+    let undo = Delta.diff(newContents, node.contents);
+    Result.Ok(({...node, contents: newContents}, undo));
+  });
 
 let rebasePosAdd = (pid, idx, pid2, idx2) =>
   if (pid == pid2 && idx2 <= idx) {

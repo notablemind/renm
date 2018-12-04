@@ -134,7 +134,7 @@ let onSelectionChange =
 
 type propsType = NodeTypes.props(
   Delta.delta,
-  NodeType.contents,
+  Delta.delta,
   option(NodeType.prefix),
   (int, int)
   );

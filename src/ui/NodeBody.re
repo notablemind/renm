@@ -29,7 +29,7 @@ let renderContents =
     (
       store:
         ClientStore.t(
-          NodeType.contents,
+          Delta.delta,
           option(NodeType.prefix),
           (int, int),
         ),
@@ -38,8 +38,8 @@ let renderContents =
       editPos,
       collapsed,
     ) =>
-  switch (node.contents) {
-  | Normal(text) =>
+  {
+    let text = node.contents;
     <Quill
       props={
         NodeTypes.value: text,
@@ -82,7 +82,6 @@ let renderContents =
         onFocus: _evt => ActionCreators.focus(store, node),
       }
     />
-  | _ => str("Other contents")
   };
 
 module Styles = {

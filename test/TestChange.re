@@ -6,7 +6,7 @@ let rec fromFixture = (pid, item) =>
         Data.Node.create(
           ~id,
           ~parent=pid,
-          ~contents=NodeType.Normal(Delta.fromString(text)),
+          ~contents=Delta.fromString(text),
           ~children=[],
           ~prefix=None,
         ),
@@ -20,7 +20,7 @@ let rec fromFixture = (pid, item) =>
         Data.Node.create(
           ~id,
           ~parent=pid,
-          ~contents=NodeType.Normal(Delta.fromString(text)),
+          ~contents=Delta.fromString(text),
           ~children=List.map(childNodes, fst),
           ~prefix=None,
         ),
@@ -67,21 +67,19 @@ let leaf = (id, parent, text) =>
   Data.Node.create(
     ~id,
     ~parent,
-    ~contents=NodeType.Normal(Delta.fromString(text)),
+    ~contents=Delta.fromString(text),
     ~children=[],
     ~prefix=None,
   );
 
-let contentsEq = (contents, string) =>
-  switch (contents) {
-  | NodeType.Normal(delta) =>
+let contentsEq = (delta, string) =>
+  {
     if (!Delta.deepEqual(delta, Delta.fromString(string))) {
       Js.log2(delta, string);
       false;
     } else {
       true;
     }
-  | _ => false
   };
 
 let expectBoth = (one, two, data) => one(data) && two(data);

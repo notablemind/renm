@@ -140,13 +140,14 @@ let applyChange = (file, change, ports, dontSendToSession) => {
   sendChange(~excludeSession=?dontSendToSession, file.meta.id, ports, change);
   persistChangedNodes(file, changeEvents);
   let title = switch (world.current.nodes->Map.String.get(world.current.root)) {
-    | Some({contents: Normal(delta)}) => Delta.getText(delta)->Js.String.trim
+    | Some({contents}) => Delta.getText(contents)->Js.String.trim
     | _ => file.meta.title
   };
   file.meta = {
     ...file.meta,
     title,
     lastModified: Js.Date.now(),
+    /* TODO maybe only count non-deleted ones? */
     nodeCount: world.current.nodes->Map.String.size,
   };
   sendMetaDataChange(ports, file.meta);

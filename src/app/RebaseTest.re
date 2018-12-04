@@ -1,9 +1,6 @@
 module ShowServer = {
-  let renderContents = (contents: NodeType.contents) =>
-    switch (contents) {
-    | Normal(delta) => ReasonReact.string(Delta.getText(delta))
-    | _ => ReasonReact.string("contents")
-    };
+  let renderContents = (contents: Delta.delta) =>
+    ReasonReact.string(Delta.getText(contents));
   let rec renderNode = (server: StoreInOne.server, id) => {
     let%Lets.OptForce node = server.current.nodes->Map.String.get(id);
     <div key={node.id}>

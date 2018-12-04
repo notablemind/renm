@@ -1,3 +1,4 @@
+
 type prefix =
   | Todo(bool)
   | Rating(int)
@@ -42,20 +43,22 @@ module Svg = {
   };
 };
 
-type contents =
-  | Normal(Delta.delta)
-  | Code(string, string)
-  | Tweet(string)
-  | Youtube(string)
-  | Diagram(Svg.t);
+[@migrate contents => switch contents {
+  | Normal(delta) => delta
+  | _ => Delta.fromString("\n")
+}]
+/* type contents = Delta.delta; */
+
+/*
+this is superceeded by having custom quill format things
 
 type widgets =
   | ChildCounter(int) /* allow providing formulas and stuff */
   | FileLink(string)
   | NodeLink(string)
   | PersonLink(string)
-  | AttachmentLink(string);
+  | AttachmentLink(string); */
 
 /* TODO how to have combined changes? */
 
-type t = Data.Node.t(contents, option(prefix));
+type t = Data.Node.t(Delta.delta, option(prefix));

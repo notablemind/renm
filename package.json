@@ -30,7 +30,7 @@
     "level-js": "^3.0.0",
     "levelup": "^3.1.1",
     "loader-runner": "^2.3.0",
-    "quill": "2.0.0-dev.3",
+    "quill": "jaredly/quill#jared-dist",
     "quill-cursors": "^1.0.3",
     "quill-delta": "^3.6.3",
     "quill-mention": "^2.0.0",

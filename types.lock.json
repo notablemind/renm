@@ -286,7 +286,7 @@
                         [
                           "Public",
                           [
-                            "Change",
+                            "Delta",
                             [],
                             "delta"
                           ]
@@ -316,9 +316,9 @@
                         [
                           "Public",
                           [
-                            "NodeType",
+                            "Delta",
                             [],
-                            "contents"
+                            "delta"
                           ]
                         ],
                         []
@@ -360,9 +360,9 @@
                       [
                         "Public",
                         [
-                          "NodeType",
+                          "Delta",
                           [],
-                          "contents"
+                          "delta"
                         ]
                       ],
                       []
@@ -389,35 +389,6 @@
                       ]
                     ]
                   ]
-                ]
-              ]
-            }
-          ]
-        ],
-        [
-          [
-            "Change",
-            [],
-            "delta"
-          ],
-          [
-            [],
-            {
-              "name": "delta",
-              "variables": [],
-              "body": [
-                "Expr",
-                [
-                  "Reference",
-                  [
-                    "Public",
-                    [
-                      "Delta",
-                      [],
-                      "delta"
-                    ]
-                  ],
-                  []
                 ]
               ]
             }
@@ -560,7 +531,7 @@
                         [
                           "Public",
                           [
-                            "Change",
+                            "Delta",
                             [],
                             "delta"
                           ]
@@ -1307,111 +1278,6 @@
           [
             "NodeType",
             [],
-            "contents"
-          ],
-          [
-            [],
-            {
-              "name": "contents",
-              "variables": [],
-              "body": [
-                "Variant",
-                [
-                  [
-                    "Normal",
-                    [
-                      [
-                        "Reference",
-                        [
-                          "Public",
-                          [
-                            "Delta",
-                            [],
-                            "delta"
-                          ]
-                        ],
-                        []
-                      ]
-                    ],
-                    null
-                  ],
-                  [
-                    "Code",
-                    [
-                      [
-                        "Reference",
-                        [
-                          "Builtin",
-                          "string"
-                        ],
-                        []
-                      ],
-                      [
-                        "Reference",
-                        [
-                          "Builtin",
-                          "string"
-                        ],
-                        []
-                      ]
-                    ],
-                    null
-                  ],
-                  [
-                    "Tweet",
-                    [
-                      [
-                        "Reference",
-                        [
-                          "Builtin",
-                          "string"
-                        ],
-                        []
-                      ]
-                    ],
-                    null
-                  ],
-                  [
-                    "Youtube",
-                    [
-                      [
-                        "Reference",
-                        [
-                          "Builtin",
-                          "string"
-                        ],
-                        []
-                      ]
-                    ],
-                    null
-                  ],
-                  [
-                    "Diagram",
-                    [
-                      [
-                        "Reference",
-                        [
-                          "Public",
-                          [
-                            "NodeType",
-                            ["Svg"],
-                            "t"
-                          ]
-                        ],
-                        []
-                      ]
-                    ],
-                    null
-                  ]
-                ]
-              ]
-            }
-          ]
-        ],
-        [
-          [
-            "NodeType",
-            [],
             "prefix"
           ],
           [
@@ -1481,7 +1347,32 @@
             "t"
           ],
           [
-            [],
+            [
+              [
+                {
+                  "txt": "migrate",
+                  "loc": {
+                    "loc_start": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_end": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_ghost": true
+                  }
+                },
+                [
+                  "PStr",
+                  "let _ =\n  fun contents ->\n    match contents with\n    | ((Normal delta)[@explicit_arity ]) -> delta\n    | _ -> Delta.fromString ((\"\\n\")[@reason.raw_literal \"\\\\n\"])"
+                ]
+              ]
+            ],
             {
               "name": "t",
               "variables": [],
@@ -1503,9 +1394,9 @@
                       [
                         "Public",
                         [
-                          "NodeType",
+                          "Delta",
                           [],
-                          "contents"
+                          "delta"
                         ]
                       ],
                       []
@@ -1525,514 +1416,6 @@
                               "NodeType",
                               [],
                               "prefix"
-                            ]
-                          ],
-                          []
-                        ]
-                      ]
-                    ]
-                  ]
-                ]
-              ]
-            }
-          ]
-        ],
-        [
-          [
-            "NodeType",
-            ["Svg"],
-            "kind"
-          ],
-          [
-            [],
-            {
-              "name": "kind",
-              "variables": [],
-              "body": [
-                "Variant",
-                [
-                  [
-                    "Path",
-                    [
-                      [
-                        "Reference",
-                        [
-                          "Builtin",
-                          "list"
-                        ],
-                        [
-                          [
-                            "Reference",
-                            [
-                              "Public",
-                              [
-                                "NodeType",
-                                ["Svg"],
-                                "point"
-                              ]
-                            ],
-                            []
-                          ]
-                        ]
-                      ]
-                    ],
-                    null
-                  ],
-                  [
-                    "Rect",
-                    [
-                      [
-                        "Reference",
-                        [
-                          "Builtin",
-                          "float"
-                        ],
-                        []
-                      ],
-                      [
-                        "Reference",
-                        [
-                          "Builtin",
-                          "float"
-                        ],
-                        []
-                      ],
-                      [
-                        "Reference",
-                        [
-                          "Builtin",
-                          "float"
-                        ],
-                        []
-                      ]
-                    ],
-                    null
-                  ],
-                  [
-                    "Ellipse",
-                    [
-                      [
-                        "Reference",
-                        [
-                          "Builtin",
-                          "float"
-                        ],
-                        []
-                      ],
-                      [
-                        "Reference",
-                        [
-                          "Builtin",
-                          "float"
-                        ],
-                        []
-                      ]
-                    ],
-                    null
-                  ],
-                  [
-                    "Line",
-                    [
-                      [
-                        "Reference",
-                        [
-                          "Builtin",
-                          "float"
-                        ],
-                        []
-                      ],
-                      [
-                        "Reference",
-                        [
-                          "Builtin",
-                          "float"
-                        ],
-                        []
-                      ]
-                    ],
-                    null
-                  ],
-                  [
-                    "Text",
-                    [
-                      [
-                        "Reference",
-                        [
-                          "Builtin",
-                          "string"
-                        ],
-                        []
-                      ]
-                    ],
-                    null
-                  ]
-                ]
-              ]
-            }
-          ]
-        ],
-        [
-          [
-            "NodeType",
-            ["Svg"],
-            "layer"
-          ],
-          [
-            [],
-            {
-              "name": "layer",
-              "variables": [],
-              "body": [
-                "Record",
-                [
-                  [
-                    "id",
-                    [
-                      "Reference",
-                      [
-                        "Builtin",
-                        "string"
-                      ],
-                      []
-                    ]
-                  ],
-                  [
-                    "name",
-                    [
-                      "Reference",
-                      [
-                        "Builtin",
-                        "string"
-                      ],
-                      []
-                    ]
-                  ],
-                  [
-                    "shapes",
-                    [
-                      "Reference",
-                      [
-                        "Builtin",
-                        "list"
-                      ],
-                      [
-                        [
-                          "Reference",
-                          [
-                            "Public",
-                            [
-                              "NodeType",
-                              ["Svg"],
-                              "shape"
-                            ]
-                          ],
-                          []
-                        ]
-                      ]
-                    ]
-                  ]
-                ]
-              ]
-            }
-          ]
-        ],
-        [
-          [
-            "NodeType",
-            ["Svg"],
-            "point"
-          ],
-          [
-            [],
-            {
-              "name": "point",
-              "variables": [],
-              "body": [
-                "Record",
-                [
-                  [
-                    "pos",
-                    [
-                      "Tuple",
-                      [
-                        [
-                          "Reference",
-                          [
-                            "Builtin",
-                            "float"
-                          ],
-                          []
-                        ],
-                        [
-                          "Reference",
-                          [
-                            "Builtin",
-                            "float"
-                          ],
-                          []
-                        ]
-                      ]
-                    ]
-                  ],
-                  [
-                    "handleBefore",
-                    [
-                      "Reference",
-                      [
-                        "Builtin",
-                        "option"
-                      ],
-                      [
-                        [
-                          "Tuple",
-                          [
-                            [
-                              "Reference",
-                              [
-                                "Builtin",
-                                "float"
-                              ],
-                              []
-                            ],
-                            [
-                              "Reference",
-                              [
-                                "Builtin",
-                                "float"
-                              ],
-                              []
-                            ]
-                          ]
-                        ]
-                      ]
-                    ]
-                  ],
-                  [
-                    "handleAfter",
-                    [
-                      "Reference",
-                      [
-                        "Builtin",
-                        "option"
-                      ],
-                      [
-                        [
-                          "Tuple",
-                          [
-                            [
-                              "Reference",
-                              [
-                                "Builtin",
-                                "float"
-                              ],
-                              []
-                            ],
-                            [
-                              "Reference",
-                              [
-                                "Builtin",
-                                "float"
-                              ],
-                              []
-                            ]
-                          ]
-                        ]
-                      ]
-                    ]
-                  ]
-                ]
-              ]
-            }
-          ]
-        ],
-        [
-          [
-            "NodeType",
-            ["Svg"],
-            "shape"
-          ],
-          [
-            [],
-            {
-              "name": "shape",
-              "variables": [],
-              "body": [
-                "Record",
-                [
-                  [
-                    "id",
-                    [
-                      "Reference",
-                      [
-                        "Builtin",
-                        "string"
-                      ],
-                      []
-                    ]
-                  ],
-                  [
-                    "rotation",
-                    [
-                      "Reference",
-                      [
-                        "Builtin",
-                        "float"
-                      ],
-                      []
-                    ]
-                  ],
-                  [
-                    "pos",
-                    [
-                      "Tuple",
-                      [
-                        [
-                          "Reference",
-                          [
-                            "Builtin",
-                            "float"
-                          ],
-                          []
-                        ],
-                        [
-                          "Reference",
-                          [
-                            "Builtin",
-                            "float"
-                          ],
-                          []
-                        ]
-                      ]
-                    ]
-                  ],
-                  [
-                    "fill",
-                    [
-                      "Reference",
-                      [
-                        "Builtin",
-                        "option"
-                      ],
-                      [
-                        [
-                          "Reference",
-                          [
-                            "Builtin",
-                            "string"
-                          ],
-                          []
-                        ]
-                      ]
-                    ]
-                  ],
-                  [
-                    "stroke",
-                    [
-                      "Reference",
-                      [
-                        "Builtin",
-                        "option"
-                      ],
-                      [
-                        [
-                          "Tuple",
-                          [
-                            [
-                              "Reference",
-                              [
-                                "Builtin",
-                                "string"
-                              ],
-                              []
-                            ],
-                            [
-                              "Reference",
-                              [
-                                "Builtin",
-                                "float"
-                              ],
-                              []
-                            ]
-                          ]
-                        ]
-                      ]
-                    ]
-                  ],
-                  [
-                    "kind",
-                    [
-                      "Reference",
-                      [
-                        "Public",
-                        [
-                          "NodeType",
-                          ["Svg"],
-                          "kind"
-                        ]
-                      ],
-                      []
-                    ]
-                  ]
-                ]
-              ]
-            }
-          ]
-        ],
-        [
-          [
-            "NodeType",
-            ["Svg"],
-            "t"
-          ],
-          [
-            [],
-            {
-              "name": "t",
-              "variables": [],
-              "body": [
-                "Record",
-                [
-                  [
-                    "size",
-                    [
-                      "Tuple",
-                      [
-                        [
-                          "Reference",
-                          [
-                            "Builtin",
-                            "int"
-                          ],
-                          []
-                        ],
-                        [
-                          "Reference",
-                          [
-                            "Builtin",
-                            "int"
-                          ],
-                          []
-                        ]
-                      ]
-                    ]
-                  ],
-                  [
-                    "layers",
-                    [
-                      "Reference",
-                      [
-                        "Builtin",
-                        "list"
-                      ],
-                      [
-                        [
-                          "Reference",
-                          [
-                            "Public",
-                            [
-                              "NodeType",
-                              ["Svg"],
-                              "layer"
                             ]
                           ],
                           []

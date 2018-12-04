@@ -8,17 +8,15 @@ module Version1 =
       | RemoveNode of _Data__Node__id 
       | AddNode of int * _NodeType__t 
       | MoveNode of _Data__Node__id * int * _Data__Node__id 
-      | ChangeContents of _Data__Node__id * _Change__delta 
-      | SetContents of _Data__Node__id * _NodeType__contents 
-    and _Change__data =
-      (_NodeType__contents, _NodeType__prefix option) _Data__data
-    and _Change__delta = _Delta__delta
+      | ChangeContents of _Data__Node__id * _Delta__delta 
+      | SetContents of _Data__Node__id * _Delta__delta 
+    and _Change__data = (_Delta__delta, _NodeType__prefix option) _Data__data
     and _Change__rebaseItem = Change.rebaseItem =
       | Nothing 
       | RemoveChild of _Data__Node__id * int 
       | AddChild of _Data__Node__id * int 
       | MoveChild of _Data__Node__id * int * _Data__Node__id * int 
-      | Contents of _Data__Node__id * _Change__delta 
+      | Contents of _Data__Node__id * _Delta__delta 
     and ('contents, 'prefix) _Data__data = ('contents, 'prefix) Data.data =
       {
       nodes: ('contents, 'prefix) _Data__Node__t _Belt_MapString__t ;
@@ -68,47 +66,13 @@ module Version1 =
       lastOpened: float ;
       lastModified: float ;
       sync: _MetaData__sync option }
-    and _NodeType__contents = NodeType.contents =
-      | Normal of _Delta__delta 
-      | Code of string * string 
-      | Tweet of string 
-      | Youtube of string 
-      | Diagram of _NodeType__Svg__t 
     and _NodeType__prefix = NodeType.prefix =
       | Todo of bool 
       | Rating of int 
       | Sentiment of int 
       | Attribution 
     and _NodeType__t =
-      (_NodeType__contents, _NodeType__prefix option) _Data__Node__t
-    and _NodeType__Svg__kind = NodeType.Svg.kind =
-      | Path of _NodeType__Svg__point list 
-      | Rect of float * float * float 
-      | Ellipse of float * float 
-      | Line of float * float 
-      | Text of string 
-    and _NodeType__Svg__layer = NodeType.Svg.layer =
-      {
-      id: string ;
-      name: string ;
-      shapes: _NodeType__Svg__shape list }
-    and _NodeType__Svg__point = NodeType.Svg.point =
-      {
-      pos: (float * float) ;
-      handleBefore: (float * float) option ;
-      handleAfter: (float * float) option }
-    and _NodeType__Svg__shape = NodeType.Svg.shape =
-      {
-      id: string ;
-      rotation: float ;
-      pos: (float * float) ;
-      fill: string option ;
-      stroke: (string * float) option ;
-      kind: _NodeType__Svg__kind }
-    and _NodeType__Svg__t = NodeType.Svg.t =
-      {
-      size: (int * int) ;
-      layers: _NodeType__Svg__layer list }
+      (_Delta__delta, _NodeType__prefix option) _Data__Node__t
     and _Quill__range = _View__Range__range
     and ('change, 'selection) _Sync__changeInner =
       ('change, 'selection) Sync.changeInner =
@@ -251,7 +215,7 @@ module Version1 =
             ((Js.Json.JSONString ("ChangeContents"))[@explicit_arity ]) =
               (Js.Json.classify tag)
             ->
-            (match deserialize_Change____delta arg1 with
+            (match deserialize_Delta____delta arg1 with
              | Belt.Result.Ok arg1 ->
                  (match deserialize_Data__Node__id arg0 with
                   | Belt.Result.Ok arg0 ->
@@ -263,7 +227,7 @@ module Version1 =
             ((Js.Json.JSONString ("SetContents"))[@explicit_arity ]) =
               (Js.Json.classify tag)
             ->
-            (match deserialize_NodeType____contents arg1 with
+            (match deserialize_Delta____delta arg1 with
              | Belt.Result.Ok arg1 ->
                  (match deserialize_Data__Node__id arg0 with
                   | Belt.Result.Ok arg0 ->
@@ -276,7 +240,7 @@ module Version1 =
     and (deserialize_Change____data :
       Js.Json.t -> (_Change__data, string list) Belt.Result.t) =
       fun value ->
-        (deserialize_Data____data deserialize_NodeType____contents
+        (deserialize_Data____data deserialize_Delta____delta
            ((fun transformer ->
                fun option ->
                  match Js.Json.classify option with
@@ -290,9 +254,6 @@ module Version1 =
                           ((Ok (((Some (value))[@explicit_arity ])))
                           [@explicit_arity ])))
               deserialize_NodeType____prefix)) value
-    and (deserialize_Change____delta :
-      Js.Json.t -> (_Change__delta, string list) Belt.Result.t) =
-      fun value -> deserialize_Delta____delta value
     and (deserialize_Change____rebaseItem :
       Js.Json.t -> (_Change__rebaseItem, string list) Belt.Result.t) =
       fun constructor ->
@@ -379,7 +340,7 @@ module Version1 =
             ((Js.Json.JSONString ("Contents"))[@explicit_arity ]) =
               (Js.Json.classify tag)
             ->
-            (match deserialize_Change____delta arg1 with
+            (match deserialize_Delta____delta arg1 with
              | Belt.Result.Ok arg1 ->
                  (match deserialize_Data__Node__id arg0 with
                   | Belt.Result.Ok arg0 ->
@@ -1118,80 +1079,6 @@ module Version1 =
                   | ((Ok (data))[@explicit_arity ]) -> inner data))
         | _ -> ((Belt.Result.Error (["Expected an object"]))
             [@explicit_arity ])
-    and (deserialize_NodeType____contents :
-      Js.Json.t -> (_NodeType__contents, string list) Belt.Result.t) =
-      fun constructor ->
-        match Js.Json.classify constructor with
-        | JSONArray [|tag;arg0|] when
-            ((Js.Json.JSONString ("Normal"))[@explicit_arity ]) =
-              (Js.Json.classify tag)
-            ->
-            (match deserialize_Delta____delta arg0 with
-             | Belt.Result.Ok arg0 ->
-                 Belt.Result.Ok (Normal (arg0) : _NodeType__contents)
-             | Error error -> Error ("constructor argument 0" :: error))
-        | JSONArray [|tag;arg0;arg1|] when
-            ((Js.Json.JSONString ("Code"))[@explicit_arity ]) =
-              (Js.Json.classify tag)
-            ->
-            (match (fun string ->
-                      match Js.Json.classify string with
-                      | ((JSONString (string))[@explicit_arity ]) ->
-                          ((Belt.Result.Ok (string))[@explicit_arity ])
-                      | _ -> ((Error (["expected a string"]))
-                          [@explicit_arity ])) arg1
-             with
-             | Belt.Result.Ok arg1 ->
-                 (match (fun string ->
-                           match Js.Json.classify string with
-                           | ((JSONString (string))[@explicit_arity ]) ->
-                               ((Belt.Result.Ok (string))[@explicit_arity ])
-                           | _ -> ((Error (["expected a string"]))
-                               [@explicit_arity ])) arg0
-                  with
-                  | Belt.Result.Ok arg0 ->
-                      Belt.Result.Ok
-                        (Code (arg0, arg1) : _NodeType__contents)
-                  | Error error -> Error ("constructor argument 0" :: error))
-             | Error error -> Error ("constructor argument 1" :: error))
-        | JSONArray [|tag;arg0|] when
-            ((Js.Json.JSONString ("Tweet"))[@explicit_arity ]) =
-              (Js.Json.classify tag)
-            ->
-            (match (fun string ->
-                      match Js.Json.classify string with
-                      | ((JSONString (string))[@explicit_arity ]) ->
-                          ((Belt.Result.Ok (string))[@explicit_arity ])
-                      | _ -> ((Error (["expected a string"]))
-                          [@explicit_arity ])) arg0
-             with
-             | Belt.Result.Ok arg0 ->
-                 Belt.Result.Ok (Tweet (arg0) : _NodeType__contents)
-             | Error error -> Error ("constructor argument 0" :: error))
-        | JSONArray [|tag;arg0|] when
-            ((Js.Json.JSONString ("Youtube"))[@explicit_arity ]) =
-              (Js.Json.classify tag)
-            ->
-            (match (fun string ->
-                      match Js.Json.classify string with
-                      | ((JSONString (string))[@explicit_arity ]) ->
-                          ((Belt.Result.Ok (string))[@explicit_arity ])
-                      | _ -> ((Error (["expected a string"]))
-                          [@explicit_arity ])) arg0
-             with
-             | Belt.Result.Ok arg0 ->
-                 Belt.Result.Ok (Youtube (arg0) : _NodeType__contents)
-             | Error error -> Error ("constructor argument 0" :: error))
-        | JSONArray [|tag;arg0|] when
-            ((Js.Json.JSONString ("Diagram"))[@explicit_arity ]) =
-              (Js.Json.classify tag)
-            ->
-            (match deserialize_NodeType__Svg__t arg0 with
-             | Belt.Result.Ok arg0 ->
-                 Belt.Result.Ok (Diagram (arg0) : _NodeType__contents)
-             | Error error -> Error ("constructor argument 0" :: error))
-        | _ -> ((Belt.Result.Error (["Expected an array"]))
-            [@explicit_arity ])
     and (deserialize_NodeType____prefix :
       Js.Json.t -> (_NodeType__prefix, string list) Belt.Result.t) =
       fun constructor ->
@@ -1251,7 +1138,7 @@ module Version1 =
     and (deserialize_NodeType____t :
       Js.Json.t -> (_NodeType__t, string list) Belt.Result.t) =
       fun value ->
-        (deserialize_Data__Node__t deserialize_NodeType____contents
+        (deserialize_Data__Node__t deserialize_Delta____delta
            ((fun transformer ->
                fun option ->
                  match Js.Json.classify option with
@@ -1265,771 +1152,6 @@ module Version1 =
                           ((Ok (((Some (value))[@explicit_arity ])))
                           [@explicit_arity ])))
               deserialize_NodeType____prefix)) value
-    and (deserialize_NodeType__Svg__kind :
-      Js.Json.t -> (_NodeType__Svg__kind, string list) Belt.Result.t) =
-      fun constructor ->
-        match Js.Json.classify constructor with
-        | JSONArray [|tag;arg0|] when
-            ((Js.Json.JSONString ("Path"))[@explicit_arity ]) =
-              (Js.Json.classify tag)
-            ->
-            (match (fun list ->
-                      match Js.Json.classify list with
-                      | ((JSONArray (items))[@explicit_arity ]) ->
-                          let transformer = deserialize_NodeType__Svg__point in
-                          let rec loop i items =
-                            match items with
-                            | [] -> ((Belt.Result.Ok ([]))[@explicit_arity ])
-                            | one::rest ->
-                                (match transformer one with
-                                 | ((Belt.Result.Error
-                                     (error))[@explicit_arity ]) ->
-                                     ((Belt.Result.Error
-                                         ((("list element " ^
-                                              (string_of_int i)) :: error)))
-                                     [@explicit_arity ])
-                                 | ((Belt.Result.Ok
-                                     (value))[@explicit_arity ]) ->
-                                     (match loop (i + 1) rest with
-                                      | ((Belt.Result.Error
-                                          (error))[@explicit_arity ]) ->
-                                          ((Belt.Result.Error (error))
-                                          [@explicit_arity ])
-                                      | ((Belt.Result.Ok
-                                          (rest))[@explicit_arity ]) ->
-                                          ((Belt.Result.Ok ((value :: rest)))
-                                          [@explicit_arity ]))) in
-                          loop 0 (Belt.List.fromArray items)
-                      | _ -> ((Belt.Result.Error (["expected an array"]))
-                          [@explicit_arity ])) arg0
-             with
-             | Belt.Result.Ok arg0 ->
-                 Belt.Result.Ok (Path (arg0) : _NodeType__Svg__kind)
-             | Error error -> Error ("constructor argument 0" :: error))
-        | JSONArray [|tag;arg0;arg1;arg2|] when
-            ((Js.Json.JSONString ("Rect"))[@explicit_arity ]) =
-              (Js.Json.classify tag)
-            ->
-            (match (fun number ->
-                      match Js.Json.classify number with
-                      | ((JSONNumber (number))[@explicit_arity ]) ->
-                          ((Belt.Result.Ok (number))[@explicit_arity ])
-                      | _ -> ((Error (["Expected a float"]))
-                          [@explicit_arity ])) arg2
-             with
-             | Belt.Result.Ok arg2 ->
-                 (match (fun number ->
-                           match Js.Json.classify number with
-                           | ((JSONNumber (number))[@explicit_arity ]) ->
-                               ((Belt.Result.Ok (number))[@explicit_arity ])
-                           | _ -> ((Error (["Expected a float"]))
-                               [@explicit_arity ])) arg1
-                  with
-                  | Belt.Result.Ok arg1 ->
-                      (match (fun number ->
-                                match Js.Json.classify number with
-                                | ((JSONNumber (number))[@explicit_arity ])
-                                    -> ((Belt.Result.Ok (number))
-                                    [@explicit_arity ])
-                                | _ -> ((Error (["Expected a float"]))
-                                    [@explicit_arity ])) arg0
-                       with
-                       | Belt.Result.Ok arg0 ->
-                           Belt.Result.Ok
-                             (Rect (arg0, arg1, arg2) : _NodeType__Svg__kind)
-                       | Error error ->
-                           Error ("constructor argument 0" :: error))
-                  | Error error -> Error ("constructor argument 1" :: error))
-             | Error error -> Error ("constructor argument 2" :: error))
-        | JSONArray [|tag;arg0;arg1|] when
-            ((Js.Json.JSONString ("Ellipse"))[@explicit_arity ]) =
-              (Js.Json.classify tag)
-            ->
-            (match (fun number ->
-                      match Js.Json.classify number with
-                      | ((JSONNumber (number))[@explicit_arity ]) ->
-                          ((Belt.Result.Ok (number))[@explicit_arity ])
-                      | _ -> ((Error (["Expected a float"]))
-                          [@explicit_arity ])) arg1
-             with
-             | Belt.Result.Ok arg1 ->
-                 (match (fun number ->
-                           match Js.Json.classify number with
-                           | ((JSONNumber (number))[@explicit_arity ]) ->
-                               ((Belt.Result.Ok (number))[@explicit_arity ])
-                           | _ -> ((Error (["Expected a float"]))
-                               [@explicit_arity ])) arg0
-                  with
-                  | Belt.Result.Ok arg0 ->
-                      Belt.Result.Ok
-                        (Ellipse (arg0, arg1) : _NodeType__Svg__kind)
-                  | Error error -> Error ("constructor argument 0" :: error))
-             | Error error -> Error ("constructor argument 1" :: error))
-        | JSONArray [|tag;arg0;arg1|] when
-            ((Js.Json.JSONString ("Line"))[@explicit_arity ]) =
-              (Js.Json.classify tag)
-            ->
-            (match (fun number ->
-                      match Js.Json.classify number with
-                      | ((JSONNumber (number))[@explicit_arity ]) ->
-                          ((Belt.Result.Ok (number))[@explicit_arity ])
-                      | _ -> ((Error (["Expected a float"]))
-                          [@explicit_arity ])) arg1
-             with
-             | Belt.Result.Ok arg1 ->
-                 (match (fun number ->
-                           match Js.Json.classify number with
-                           | ((JSONNumber (number))[@explicit_arity ]) ->
-                               ((Belt.Result.Ok (number))[@explicit_arity ])
-                           | _ -> ((Error (["Expected a float"]))
-                               [@explicit_arity ])) arg0
-                  with
-                  | Belt.Result.Ok arg0 ->
-                      Belt.Result.Ok
-                        (Line (arg0, arg1) : _NodeType__Svg__kind)
-                  | Error error -> Error ("constructor argument 0" :: error))
-             | Error error -> Error ("constructor argument 1" :: error))
-        | JSONArray [|tag;arg0|] when
-            ((Js.Json.JSONString ("Text"))[@explicit_arity ]) =
-              (Js.Json.classify tag)
-            ->
-            (match (fun string ->
-                      match Js.Json.classify string with
-                      | ((JSONString (string))[@explicit_arity ]) ->
-                          ((Belt.Result.Ok (string))[@explicit_arity ])
-                      | _ -> ((Error (["expected a string"]))
-                          [@explicit_arity ])) arg0
-             with
-             | Belt.Result.Ok arg0 ->
-                 Belt.Result.Ok (Text (arg0) : _NodeType__Svg__kind)
-             | Error error -> Error ("constructor argument 0" :: error))
-        | _ -> ((Belt.Result.Error (["Expected an array"]))
-            [@explicit_arity ])
-    and (deserialize_NodeType__Svg__layer :
-      Js.Json.t -> (_NodeType__Svg__layer, string list) Belt.Result.t) =
-      fun record ->
-        match Js.Json.classify record with
-        | ((JSONObject (dict))[@explicit_arity ]) ->
-            let inner attr_shapes =
-              let inner attr_name =
-                let inner attr_id =
-                  Belt.Result.Ok
-                    { id = attr_id; name = attr_name; shapes = attr_shapes } in
-                match Js.Dict.get dict "id" with
-                | None -> ((Belt.Result.Error (["No attribute id"]))
-                    [@explicit_arity ])
-                | ((Some (json))[@explicit_arity ]) ->
-                    (match (fun string ->
-                              match Js.Json.classify string with
-                              | ((JSONString (string))[@explicit_arity ]) ->
-                                  ((Belt.Result.Ok (string))
-                                  [@explicit_arity ])
-                              | _ -> ((Error (["expected a string"]))
-                                  [@explicit_arity ])) json
-                     with
-                     | ((Belt.Result.Error (error))[@explicit_arity ]) ->
-                         ((Belt.Result.Error (("attribute id" :: error)))
-                         [@explicit_arity ])
-                     | ((Ok (data))[@explicit_arity ]) -> inner data) in
-              match Js.Dict.get dict "name" with
-              | None -> ((Belt.Result.Error (["No attribute name"]))
-                  [@explicit_arity ])
-              | ((Some (json))[@explicit_arity ]) ->
-                  (match (fun string ->
-                            match Js.Json.classify string with
-                            | ((JSONString (string))[@explicit_arity ]) ->
-                                ((Belt.Result.Ok (string))[@explicit_arity ])
-                            | _ -> ((Error (["expected a string"]))
-                                [@explicit_arity ])) json
-                   with
-                   | ((Belt.Result.Error (error))[@explicit_arity ]) ->
-                       ((Belt.Result.Error (("attribute name" :: error)))
-                       [@explicit_arity ])
-                   | ((Ok (data))[@explicit_arity ]) -> inner data) in
-            (match Js.Dict.get dict "shapes" with
-             | None -> ((Belt.Result.Error (["No attribute shapes"]))
-                 [@explicit_arity ])
-             | ((Some (json))[@explicit_arity ]) ->
-                 (match (fun list ->
-                           match Js.Json.classify list with
-                           | ((JSONArray (items))[@explicit_arity ]) ->
-                               let transformer =
-                                 deserialize_NodeType__Svg__shape in
-                               let rec loop i items =
-                                 match items with
-                                 | [] -> ((Belt.Result.Ok ([]))
-                                     [@explicit_arity ])
-                                 | one::rest ->
-                                     (match transformer one with
-                                      | ((Belt.Result.Error
-                                          (error))[@explicit_arity ]) ->
-                                          ((Belt.Result.Error
-                                              ((("list element " ^
-                                                   (string_of_int i)) ::
-                                                error)))
-                                          [@explicit_arity ])
-                                      | ((Belt.Result.Ok
-                                          (value))[@explicit_arity ]) ->
-                                          (match loop (i + 1) rest with
-                                           | ((Belt.Result.Error
-                                               (error))[@explicit_arity ]) ->
-                                               ((Belt.Result.Error (error))
-                                               [@explicit_arity ])
-                                           | ((Belt.Result.Ok
-                                               (rest))[@explicit_arity ]) ->
-                                               ((Belt.Result.Ok
-                                                   ((value :: rest)))
-                                               [@explicit_arity ]))) in
-                               loop 0 (Belt.List.fromArray items)
-                           | _ ->
-                               ((Belt.Result.Error (["expected an array"]))
-                               [@explicit_arity ])) json
-                  with
-                  | ((Belt.Result.Error (error))[@explicit_arity ]) ->
-                      ((Belt.Result.Error (("attribute shapes" :: error)))
-                      [@explicit_arity ])
-                  | ((Ok (data))[@explicit_arity ]) -> inner data))
-        | _ -> ((Belt.Result.Error (["Expected an object"]))
-            [@explicit_arity ])
-    and (deserialize_NodeType__Svg__point :
-      Js.Json.t -> (_NodeType__Svg__point, string list) Belt.Result.t) =
-      fun record ->
-        match Js.Json.classify record with
-        | ((JSONObject (dict))[@explicit_arity ]) ->
-            let inner attr_handleAfter =
-              let inner attr_handleBefore =
-                let inner attr_pos =
-                  Belt.Result.Ok
-                    {
-                      pos = attr_pos;
-                      handleBefore = attr_handleBefore;
-                      handleAfter = attr_handleAfter
-                    } in
-                match Js.Dict.get dict "pos" with
-                | None -> ((Belt.Result.Error (["No attribute pos"]))
-                    [@explicit_arity ])
-                | ((Some (json))[@explicit_arity ]) ->
-                    (match (fun json ->
-                              match Js.Json.classify json with
-                              | ((JSONArray
-                                  ([|arg0;arg1|]))[@explicit_arity ]) ->
-                                  (match (fun number ->
-                                            match Js.Json.classify number
-                                            with
-                                            | ((JSONNumber
-                                                (number))[@explicit_arity ])
-                                                -> ((Belt.Result.Ok (number))
-                                                [@explicit_arity ])
-                                            | _ ->
-                                                ((Error
-                                                    (["Expected a float"]))
-                                                [@explicit_arity ])) arg1
-                                   with
-                                   | Belt.Result.Ok arg1 ->
-                                       (match (fun number ->
-                                                 match Js.Json.classify
-                                                         number
-                                                 with
-                                                 | ((JSONNumber
-                                                     (number))[@explicit_arity
-                                                                ])
-                                                     ->
-                                                     ((Belt.Result.Ok
-                                                         (number))
-                                                     [@explicit_arity ])
-                                                 | _ ->
-                                                     ((Error
-                                                         (["Expected a float"]))
-                                                     [@explicit_arity ]))
-                                                arg0
-                                        with
-                                        | Belt.Result.Ok arg0 ->
-                                            Belt.Result.Ok (arg0, arg1)
-                                        | Error error ->
-                                            Error ("tuple element 0" ::
-                                              error))
-                                   | Error error ->
-                                       Error ("tuple element 1" :: error))
-                              | _ ->
-                                  ((Belt.Result.Error (["Expected an array"]))
-                                  [@explicit_arity ])) json
-                     with
-                     | ((Belt.Result.Error (error))[@explicit_arity ]) ->
-                         ((Belt.Result.Error (("attribute pos" :: error)))
-                         [@explicit_arity ])
-                     | ((Ok (data))[@explicit_arity ]) -> inner data) in
-              match Js.Dict.get dict "handleBefore" with
-              | None -> inner None
-              | ((Some (json))[@explicit_arity ]) ->
-                  (match ((fun transformer ->
-                             fun option ->
-                               match Js.Json.classify option with
-                               | JSONNull -> ((Belt.Result.Ok (None))
-                                   [@explicit_arity ])
-                               | _ ->
-                                   (match transformer option with
-                                    | ((Belt.Result.Error
-                                        (error))[@explicit_arity ]) ->
-                                        ((Belt.Result.Error
-                                            (("optional value" :: error)))
-                                        [@explicit_arity ])
-                                    | ((Ok (value))[@explicit_arity ]) ->
-                                        ((Ok
-                                            (((Some (value))
-                                              [@explicit_arity ])))
-                                        [@explicit_arity ])))
-                            (fun json ->
-                               match Js.Json.classify json with
-                               | ((JSONArray
-                                   ([|arg0;arg1|]))[@explicit_arity ]) ->
-                                   (match (fun number ->
-                                             match Js.Json.classify number
-                                             with
-                                             | ((JSONNumber
-                                                 (number))[@explicit_arity ])
-                                                 ->
-                                                 ((Belt.Result.Ok (number))
-                                                 [@explicit_arity ])
-                                             | _ ->
-                                                 ((Error
-                                                     (["Expected a float"]))
-                                                 [@explicit_arity ])) arg1
-                                    with
-                                    | Belt.Result.Ok arg1 ->
-                                        (match (fun number ->
-                                                  match Js.Json.classify
-                                                          number
-                                                  with
-                                                  | ((JSONNumber
-                                                      (number))[@explicit_arity
-                                                                 ])
-                                                      ->
-                                                      ((Belt.Result.Ok
-                                                          (number))
-                                                      [@explicit_arity ])
-                                                  | _ ->
-                                                      ((Error
-                                                          (["Expected a float"]))
-                                                      [@explicit_arity ]))
-                                                 arg0
-                                         with
-                                         | Belt.Result.Ok arg0 ->
-                                             Belt.Result.Ok (arg0, arg1)
-                                         | Error error ->
-                                             Error ("tuple element 0" ::
-                                               error))
-                                    | Error error ->
-                                        Error ("tuple element 1" :: error))
-                               | _ ->
-                                   ((Belt.Result.Error
-                                       (["Expected an array"]))
-                                   [@explicit_arity ]))) json
-                   with
-                   | ((Belt.Result.Error (error))[@explicit_arity ]) ->
-                       ((Belt.Result.Error
-                           (("attribute handleBefore" :: error)))
-                       [@explicit_arity ])
-                   | ((Ok (data))[@explicit_arity ]) -> inner data) in
-            (match Js.Dict.get dict "handleAfter" with
-             | None -> inner None
-             | ((Some (json))[@explicit_arity ]) ->
-                 (match ((fun transformer ->
-                            fun option ->
-                              match Js.Json.classify option with
-                              | JSONNull -> ((Belt.Result.Ok (None))
-                                  [@explicit_arity ])
-                              | _ ->
-                                  (match transformer option with
-                                   | ((Belt.Result.Error
-                                       (error))[@explicit_arity ]) ->
-                                       ((Belt.Result.Error
-                                           (("optional value" :: error)))
-                                       [@explicit_arity ])
-                                   | ((Ok (value))[@explicit_arity ]) ->
-                                       ((Ok
-                                           (((Some (value))
-                                             [@explicit_arity ])))
-                                       [@explicit_arity ])))
-                           (fun json ->
-                              match Js.Json.classify json with
-                              | ((JSONArray
-                                  ([|arg0;arg1|]))[@explicit_arity ]) ->
-                                  (match (fun number ->
-                                            match Js.Json.classify number
-                                            with
-                                            | ((JSONNumber
-                                                (number))[@explicit_arity ])
-                                                -> ((Belt.Result.Ok (number))
-                                                [@explicit_arity ])
-                                            | _ ->
-                                                ((Error
-                                                    (["Expected a float"]))
-                                                [@explicit_arity ])) arg1
-                                   with
-                                   | Belt.Result.Ok arg1 ->
-                                       (match (fun number ->
-                                                 match Js.Json.classify
-                                                         number
-                                                 with
-                                                 | ((JSONNumber
-                                                     (number))[@explicit_arity
-                                                                ])
-                                                     ->
-                                                     ((Belt.Result.Ok
-                                                         (number))
-                                                     [@explicit_arity ])
-                                                 | _ ->
-                                                     ((Error
-                                                         (["Expected a float"]))
-                                                     [@explicit_arity ]))
-                                                arg0
-                                        with
-                                        | Belt.Result.Ok arg0 ->
-                                            Belt.Result.Ok (arg0, arg1)
-                                        | Error error ->
-                                            Error ("tuple element 0" ::
-                                              error))
-                                   | Error error ->
-                                       Error ("tuple element 1" :: error))
-                              | _ ->
-                                  ((Belt.Result.Error (["Expected an array"]))
-                                  [@explicit_arity ]))) json
-                  with
-                  | ((Belt.Result.Error (error))[@explicit_arity ]) ->
-                      ((Belt.Result.Error
-                          (("attribute handleAfter" :: error)))
-                      [@explicit_arity ])
-                  | ((Ok (data))[@explicit_arity ]) -> inner data))
-        | _ -> ((Belt.Result.Error (["Expected an object"]))
-            [@explicit_arity ])
-    and (deserialize_NodeType__Svg__shape :
-      Js.Json.t -> (_NodeType__Svg__shape, string list) Belt.Result.t) =
-      fun record ->
-        match Js.Json.classify record with
-        | ((JSONObject (dict))[@explicit_arity ]) ->
-            let inner attr_kind =
-              let inner attr_stroke =
-                let inner attr_fill =
-                  let inner attr_pos =
-                    let inner attr_rotation =
-                      let inner attr_id =
-                        Belt.Result.Ok
-                          {
-                            id = attr_id;
-                            rotation = attr_rotation;
-                            pos = attr_pos;
-                            fill = attr_fill;
-                            stroke = attr_stroke;
-                            kind = attr_kind
-                          } in
-                      match Js.Dict.get dict "id" with
-                      | None -> ((Belt.Result.Error (["No attribute id"]))
-                          [@explicit_arity ])
-                      | ((Some (json))[@explicit_arity ]) ->
-                          (match (fun string ->
-                                    match Js.Json.classify string with
-                                    | ((JSONString
-                                        (string))[@explicit_arity ]) ->
-                                        ((Belt.Result.Ok (string))
-                                        [@explicit_arity ])
-                                    | _ -> ((Error (["expected a string"]))
-                                        [@explicit_arity ])) json
-                           with
-                           | ((Belt.Result.Error (error))[@explicit_arity ])
-                               ->
-                               ((Belt.Result.Error
-                                   (("attribute id" :: error)))
-                               [@explicit_arity ])
-                           | ((Ok (data))[@explicit_arity ]) -> inner data) in
-                    match Js.Dict.get dict "rotation" with
-                    | None ->
-                        ((Belt.Result.Error (["No attribute rotation"]))
-                        [@explicit_arity ])
-                    | ((Some (json))[@explicit_arity ]) ->
-                        (match (fun number ->
-                                  match Js.Json.classify number with
-                                  | ((JSONNumber (number))[@explicit_arity ])
-                                      -> ((Belt.Result.Ok (number))
-                                      [@explicit_arity ])
-                                  | _ -> ((Error (["Expected a float"]))
-                                      [@explicit_arity ])) json
-                         with
-                         | ((Belt.Result.Error (error))[@explicit_arity ]) ->
-                             ((Belt.Result.Error
-                                 (("attribute rotation" :: error)))
-                             [@explicit_arity ])
-                         | ((Ok (data))[@explicit_arity ]) -> inner data) in
-                  match Js.Dict.get dict "pos" with
-                  | None -> ((Belt.Result.Error (["No attribute pos"]))
-                      [@explicit_arity ])
-                  | ((Some (json))[@explicit_arity ]) ->
-                      (match (fun json ->
-                                match Js.Json.classify json with
-                                | ((JSONArray
-                                    ([|arg0;arg1|]))[@explicit_arity ]) ->
-                                    (match (fun number ->
-                                              match Js.Json.classify number
-                                              with
-                                              | ((JSONNumber
-                                                  (number))[@explicit_arity ])
-                                                  ->
-                                                  ((Belt.Result.Ok (number))
-                                                  [@explicit_arity ])
-                                              | _ ->
-                                                  ((Error
-                                                      (["Expected a float"]))
-                                                  [@explicit_arity ])) arg1
-                                     with
-                                     | Belt.Result.Ok arg1 ->
-                                         (match (fun number ->
-                                                   match Js.Json.classify
-                                                           number
-                                                   with
-                                                   | ((JSONNumber
-                                                       (number))[@explicit_arity
-                                                                  ])
-                                                       ->
-                                                       ((Belt.Result.Ok
-                                                           (number))
-                                                       [@explicit_arity ])
-                                                   | _ ->
-                                                       ((Error
-                                                           (["Expected a float"]))
-                                                       [@explicit_arity ]))
-                                                  arg0
-                                          with
-                                          | Belt.Result.Ok arg0 ->
-                                              Belt.Result.Ok (arg0, arg1)
-                                          | Error error ->
-                                              Error ("tuple element 0" ::
-                                                error))
-                                     | Error error ->
-                                         Error ("tuple element 1" :: error))
-                                | _ ->
-                                    ((Belt.Result.Error
-                                        (["Expected an array"]))
-                                    [@explicit_arity ])) json
-                       with
-                       | ((Belt.Result.Error (error))[@explicit_arity ]) ->
-                           ((Belt.Result.Error (("attribute pos" :: error)))
-                           [@explicit_arity ])
-                       | ((Ok (data))[@explicit_arity ]) -> inner data) in
-                match Js.Dict.get dict "fill" with
-                | None -> inner None
-                | ((Some (json))[@explicit_arity ]) ->
-                    (match ((fun transformer ->
-                               fun option ->
-                                 match Js.Json.classify option with
-                                 | JSONNull -> ((Belt.Result.Ok (None))
-                                     [@explicit_arity ])
-                                 | _ ->
-                                     (match transformer option with
-                                      | ((Belt.Result.Error
-                                          (error))[@explicit_arity ]) ->
-                                          ((Belt.Result.Error
-                                              (("optional value" :: error)))
-                                          [@explicit_arity ])
-                                      | ((Ok (value))[@explicit_arity ]) ->
-                                          ((Ok
-                                              (((Some (value))
-                                                [@explicit_arity ])))
-                                          [@explicit_arity ])))
-                              (fun string ->
-                                 match Js.Json.classify string with
-                                 | ((JSONString (string))[@explicit_arity ])
-                                     -> ((Belt.Result.Ok (string))
-                                     [@explicit_arity ])
-                                 | _ -> ((Error (["expected a string"]))
-                                     [@explicit_arity ]))) json
-                     with
-                     | ((Belt.Result.Error (error))[@explicit_arity ]) ->
-                         ((Belt.Result.Error (("attribute fill" :: error)))
-                         [@explicit_arity ])
-                     | ((Ok (data))[@explicit_arity ]) -> inner data) in
-              match Js.Dict.get dict "stroke" with
-              | None -> inner None
-              | ((Some (json))[@explicit_arity ]) ->
-                  (match ((fun transformer ->
-                             fun option ->
-                               match Js.Json.classify option with
-                               | JSONNull -> ((Belt.Result.Ok (None))
-                                   [@explicit_arity ])
-                               | _ ->
-                                   (match transformer option with
-                                    | ((Belt.Result.Error
-                                        (error))[@explicit_arity ]) ->
-                                        ((Belt.Result.Error
-                                            (("optional value" :: error)))
-                                        [@explicit_arity ])
-                                    | ((Ok (value))[@explicit_arity ]) ->
-                                        ((Ok
-                                            (((Some (value))
-                                              [@explicit_arity ])))
-                                        [@explicit_arity ])))
-                            (fun json ->
-                               match Js.Json.classify json with
-                               | ((JSONArray
-                                   ([|arg0;arg1|]))[@explicit_arity ]) ->
-                                   (match (fun number ->
-                                             match Js.Json.classify number
-                                             with
-                                             | ((JSONNumber
-                                                 (number))[@explicit_arity ])
-                                                 ->
-                                                 ((Belt.Result.Ok (number))
-                                                 [@explicit_arity ])
-                                             | _ ->
-                                                 ((Error
-                                                     (["Expected a float"]))
-                                                 [@explicit_arity ])) arg1
-                                    with
-                                    | Belt.Result.Ok arg1 ->
-                                        (match (fun string ->
-                                                  match Js.Json.classify
-                                                          string
-                                                  with
-                                                  | ((JSONString
-                                                      (string))[@explicit_arity
-                                                                 ])
-                                                      ->
-                                                      ((Belt.Result.Ok
-                                                          (string))
-                                                      [@explicit_arity ])
-                                                  | _ ->
-                                                      ((Error
-                                                          (["expected a string"]))
-                                                      [@explicit_arity ]))
-                                                 arg0
-                                         with
-                                         | Belt.Result.Ok arg0 ->
-                                             Belt.Result.Ok (arg0, arg1)
-                                         | Error error ->
-                                             Error ("tuple element 0" ::
-                                               error))
-                                    | Error error ->
-                                        Error ("tuple element 1" :: error))
-                               | _ ->
-                                   ((Belt.Result.Error
-                                       (["Expected an array"]))
-                                   [@explicit_arity ]))) json
-                   with
-                   | ((Belt.Result.Error (error))[@explicit_arity ]) ->
-                       ((Belt.Result.Error (("attribute stroke" :: error)))
-                       [@explicit_arity ])
-                   | ((Ok (data))[@explicit_arity ]) -> inner data) in
-            (match Js.Dict.get dict "kind" with
-             | None -> ((Belt.Result.Error (["No attribute kind"]))
-                 [@explicit_arity ])
-             | ((Some (json))[@explicit_arity ]) ->
-                 (match deserialize_NodeType__Svg__kind json with
-                  | ((Belt.Result.Error (error))[@explicit_arity ]) ->
-                      ((Belt.Result.Error (("attribute kind" :: error)))
-                      [@explicit_arity ])
-                  | ((Ok (data))[@explicit_arity ]) -> inner data))
-        | _ -> ((Belt.Result.Error (["Expected an object"]))
-            [@explicit_arity ])
-    and (deserialize_NodeType__Svg__t :
-      Js.Json.t -> (_NodeType__Svg__t, string list) Belt.Result.t) =
-      fun record ->
-        match Js.Json.classify record with
-        | ((JSONObject (dict))[@explicit_arity ]) ->
-            let inner attr_layers =
-              let inner attr_size =
-                Belt.Result.Ok { size = attr_size; layers = attr_layers } in
-              match Js.Dict.get dict "size" with
-              | None -> ((Belt.Result.Error (["No attribute size"]))
-                  [@explicit_arity ])
-              | ((Some (json))[@explicit_arity ]) ->
-                  (match (fun json ->
-                            match Js.Json.classify json with
-                            | ((JSONArray ([|arg0;arg1|]))[@explicit_arity ])
-                                ->
-                                (match (fun number ->
-                                          match Js.Json.classify number with
-                                          | ((JSONNumber
-                                              (number))[@explicit_arity ]) ->
-                                              ((Belt.Result.Ok
-                                                  ((int_of_float number)))
-                                              [@explicit_arity ])
-                                          | _ ->
-                                              ((Error (["Expected a float"]))
-                                              [@explicit_arity ])) arg1
-                                 with
-                                 | Belt.Result.Ok arg1 ->
-                                     (match (fun number ->
-                                               match Js.Json.classify number
-                                               with
-                                               | ((JSONNumber
-                                                   (number))[@explicit_arity
-                                                              ])
-                                                   ->
-                                                   ((Belt.Result.Ok
-                                                       ((int_of_float number)))
-                                                   [@explicit_arity ])
-                                               | _ ->
-                                                   ((Error
-                                                       (["Expected a float"]))
-                                                   [@explicit_arity ])) arg0
-                                      with
-                                      | Belt.Result.Ok arg0 ->
-                                          Belt.Result.Ok (arg0, arg1)
-                                      | Error error ->
-                                          Error ("tuple element 0" :: error))
-                                 | Error error ->
-                                     Error ("tuple element 1" :: error))
-                            | _ ->
-                                ((Belt.Result.Error (["Expected an array"]))
-                                [@explicit_arity ])) json
-                   with
-                   | ((Belt.Result.Error (error))[@explicit_arity ]) ->
-                       ((Belt.Result.Error (("attribute size" :: error)))
-                       [@explicit_arity ])
-                   | ((Ok (data))[@explicit_arity ]) -> inner data) in
-            (match Js.Dict.get dict "layers" with
-             | None -> ((Belt.Result.Error (["No attribute layers"]))
-                 [@explicit_arity ])
-             | ((Some (json))[@explicit_arity ]) ->
-                 (match (fun list ->
-                           match Js.Json.classify list with
-                           | ((JSONArray (items))[@explicit_arity ]) ->
-                               let transformer =
-                                 deserialize_NodeType__Svg__layer in
-                               let rec loop i items =
-                                 match items with
-                                 | [] -> ((Belt.Result.Ok ([]))
-                                     [@explicit_arity ])
-                                 | one::rest ->
-                                     (match transformer one with
-                                      | ((Belt.Result.Error
-                                          (error))[@explicit_arity ]) ->
-                                          ((Belt.Result.Error
-                                              ((("list element " ^
-                                                   (string_of_int i)) ::
-                                                error)))
-                                          [@explicit_arity ])
-                                      | ((Belt.Result.Ok
-                                          (value))[@explicit_arity ]) ->
-                                          (match loop (i + 1) rest with
-                                           | ((Belt.Result.Error
-                                               (error))[@explicit_arity ]) ->
-                                               ((Belt.Result.Error (error))
-                                               [@explicit_arity ])
-                                           | ((Belt.Result.Ok
-                                               (rest))[@explicit_arity ]) ->
-                                               ((Belt.Result.Ok
-                                                   ((value :: rest)))
-                                               [@explicit_arity ]))) in
-                               loop 0 (Belt.List.fromArray items)
-                           | _ ->
-                               ((Belt.Result.Error (["expected an array"]))
-                               [@explicit_arity ])) json
-                  with
-                  | ((Belt.Result.Error (error))[@explicit_arity ]) ->
-                      ((Belt.Result.Error (("attribute layers" :: error)))
-                      [@explicit_arity ])
-                  | ((Ok (data))[@explicit_arity ]) -> inner data))
-        | _ -> ((Belt.Result.Error (["Expected an object"]))
-            [@explicit_arity ])
     and (deserialize_Quill____range :
       Js.Json.t -> (_Quill__range, string list) Belt.Result.t) =
       fun value -> deserialize_View__Range__range value
@@ -2920,21 +2042,19 @@ module Version1 =
         | ChangeContents (arg0, arg1) ->
             Js.Json.array
               [|(Js.Json.string "ChangeContents");(serialize_Data__Node__id
-                                                     arg0);(serialize_Change____delta
+                                                     arg0);(serialize_Delta____delta
                                                               arg1)|]
         | SetContents (arg0, arg1) ->
             Js.Json.array
               [|(Js.Json.string "SetContents");(serialize_Data__Node__id arg0);(
-                serialize_NodeType____contents arg1)|]
+                serialize_Delta____delta arg1)|]
     and (serialize_Change____data : _Change__data -> Js.Json.t) =
       fun value ->
-        (serialize_Data____data serialize_NodeType____contents
+        (serialize_Data____data serialize_Delta____delta
            ((fun transformer ->
                function
                | ((Some (inner))[@explicit_arity ]) -> transformer inner
                | None -> Js.Json.null) serialize_NodeType____prefix)) value
-    and (serialize_Change____delta : _Change__delta -> Js.Json.t) =
-      fun value -> serialize_Delta____delta value
     and (serialize_Change____rebaseItem : _Change__rebaseItem -> Js.Json.t) =
       fun constructor ->
         match constructor with
@@ -2958,7 +2078,7 @@ module Version1 =
         | Contents (arg0, arg1) ->
             Js.Json.array
               [|(Js.Json.string "Contents");(serialize_Data__Node__id arg0);(
-                serialize_Change____delta arg1)|]
+                serialize_Delta____delta arg1)|]
     and serialize_Data____data :
       'arg0 'arg1 .
         ('arg0 -> Js.Json.t) ->
@@ -3079,24 +2199,6 @@ module Version1 =
                            transformer inner
                        | None -> Js.Json.null)) serialize_MetaData____sync)
                     record.sync))|])
-    and (serialize_NodeType____contents : _NodeType__contents -> Js.Json.t) =
-      fun constructor ->
-        match constructor with
-        | Normal arg0 ->
-            Js.Json.array
-              [|(Js.Json.string "Normal");(serialize_Delta____delta arg0)|]
-        | Code (arg0, arg1) ->
-            Js.Json.array
-              [|(Js.Json.string "Code");(Js.Json.string arg0);(Js.Json.string
-                                                                 arg1)|]
-        | Tweet arg0 ->
-            Js.Json.array [|(Js.Json.string "Tweet");(Js.Json.string arg0)|]
-        | Youtube arg0 ->
-            Js.Json.array
-              [|(Js.Json.string "Youtube");(Js.Json.string arg0)|]
-        | Diagram arg0 ->
-            Js.Json.array
-              [|(Js.Json.string "Diagram");(serialize_NodeType__Svg__t arg0)|]
     and (serialize_NodeType____prefix : _NodeType__prefix -> Js.Json.t) =
       fun constructor ->
         match constructor with
@@ -3115,145 +2217,11 @@ module Version1 =
         | Attribution -> Js.Json.array [|(Js.Json.string "Attribution")|]
     and (serialize_NodeType____t : _NodeType__t -> Js.Json.t) =
       fun value ->
-        (serialize_Data__Node__t serialize_NodeType____contents
+        (serialize_Data__Node__t serialize_Delta____delta
            ((fun transformer ->
                function
                | ((Some (inner))[@explicit_arity ]) -> transformer inner
                | None -> Js.Json.null) serialize_NodeType____prefix)) value
-    and (serialize_NodeType__Svg__kind : _NodeType__Svg__kind -> Js.Json.t) =
-      fun constructor ->
-        match constructor with
-        | Path arg0 ->
-            Js.Json.array
-              [|(Js.Json.string "Path");(((fun list ->
-                                             Js.Json.array
-                                               (Belt.List.toArray
-                                                  (Belt.List.map list
-                                                     serialize_NodeType__Svg__point))))
-                                           arg0)|]
-        | Rect (arg0, arg1, arg2) ->
-            Js.Json.array
-              [|(Js.Json.string "Rect");(Js.Json.number arg0);(Js.Json.number
-                                                                 arg1);(
-                Js.Json.number arg2)|]
-        | Ellipse (arg0, arg1) ->
-            Js.Json.array
-              [|(Js.Json.string "Ellipse");(Js.Json.number arg0);(Js.Json.number
-                                                                    arg1)|]
-        | Line (arg0, arg1) ->
-            Js.Json.array
-              [|(Js.Json.string "Line");(Js.Json.number arg0);(Js.Json.number
-                                                                 arg1)|]
-        | Text arg0 ->
-            Js.Json.array [|(Js.Json.string "Text");(Js.Json.string arg0)|]
-    and (serialize_NodeType__Svg__layer : _NodeType__Svg__layer -> Js.Json.t)
-      =
-      fun record ->
-        Js.Json.object_
-          (Js.Dict.fromArray
-             [|("id", (Js.Json.string record.id));("name",
-                                                    (Js.Json.string
-                                                       record.name));
-               ("shapes",
-                 (((fun list ->
-                      Js.Json.array
-                        (Belt.List.toArray
-                           (Belt.List.map list serialize_NodeType__Svg__shape))))
-                    record.shapes))|])
-    and (serialize_NodeType__Svg__point : _NodeType__Svg__point -> Js.Json.t)
-      =
-      fun record ->
-        Js.Json.object_
-          (Js.Dict.fromArray
-             [|("pos",
-                 (((fun (arg0, arg1) ->
-                      Js.Json.array
-                        [|(Js.Json.number arg0);(Js.Json.number arg1)|]))
-                    record.pos));("handleBefore",
-                                   ((((fun transformer ->
-                                         function
-                                         | ((Some (inner))[@explicit_arity ])
-                                             -> transformer inner
-                                         | None -> Js.Json.null))
-                                       (fun (arg0, arg1) ->
-                                          Js.Json.array
-                                            [|(Js.Json.number arg0);(
-                                              Js.Json.number arg1)|]))
-                                      record.handleBefore));("handleAfter",
-                                                              ((((fun
-                                                                    transformer
-                                                                    ->
-                                                                    function
-                                                                    | 
-                                                                    ((Some
-                                                                    (inner))
-                                                                    [@explicit_arity
-                                                                    ]) ->
-                                                                    transformer
-                                                                    inner
-                                                                    | 
-                                                                    None ->
-                                                                    Js.Json.null))
-                                                                  (fun
-                                                                    (arg0,
-                                                                    arg1) ->
-                                                                    Js.Json.array
-                                                                    [|(
-                                                                    Js.Json.number
-                                                                    arg0);(
-                                                                    Js.Json.number
-                                                                    arg1)|]))
-                                                                 record.handleAfter))|])
-    and (serialize_NodeType__Svg__shape : _NodeType__Svg__shape -> Js.Json.t)
-      =
-      fun record ->
-        Js.Json.object_
-          (Js.Dict.fromArray
-             [|("id", (Js.Json.string record.id));("rotation",
-                                                    (Js.Json.number
-                                                       record.rotation));
-               ("pos",
-                 (((fun (arg0, arg1) ->
-                      Js.Json.array
-                        [|(Js.Json.number arg0);(Js.Json.number arg1)|]))
-                    record.pos));("fill",
-                                   ((((fun transformer ->
-                                         function
-                                         | ((Some (inner))[@explicit_arity ])
-                                             -> transformer inner
-                                         | None -> Js.Json.null))
-                                       Js.Json.string) record.fill));
-               ("stroke",
-                 ((((fun transformer ->
-                       function
-                       | ((Some (inner))[@explicit_arity ]) ->
-                           transformer inner
-                       | None -> Js.Json.null))
-                     (fun (arg0, arg1) ->
-                        Js.Json.array
-                          [|(Js.Json.string arg0);(Js.Json.number arg1)|]))
-                    record.stroke));("kind",
-                                      (serialize_NodeType__Svg__kind
-                                         record.kind))|])
-    and (serialize_NodeType__Svg__t : _NodeType__Svg__t -> Js.Json.t) =
-      fun record ->
-        Js.Json.object_
-          (Js.Dict.fromArray
-             [|("size",
-                 (((fun (arg0, arg1) ->
-                      Js.Json.array
-                        [|(((fun int -> Js.Json.number (float_of_int int)))
-                             arg0);(((fun int ->
-                                        Js.Json.number (float_of_int int)))
-                                      arg1)|])) record.size));("layers",
-                                                                (((fun list
-                                                                    ->
-                                                                    Js.Json.array
-                                                                    (Belt.List.toArray
-                                                                    (Belt.List.map
-                                                                    list
-                                                                    serialize_NodeType__Svg__layer))))
-                                                                   record.layers))|])
     and (serialize_Quill____range : _Quill__range -> Js.Json.t) =
       fun value -> serialize_View__Range__range value
     and serialize_Sync____changeInner :

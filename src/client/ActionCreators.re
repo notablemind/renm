@@ -91,7 +91,7 @@ let createAfter = (store, node) => {
     Data.Node.create(
       ~id=nid,
       ~parent=pid,
-      ~contents=NodeType.Normal(Delta.fromString("\n")),
+      ~contents=Delta.fromString("\n"),
       ~prefix=None,
       ~children=[],
     );
@@ -109,7 +109,7 @@ let backspace = (store, node, currentValue) => {
   switch (currentValue) {
   | None => store.act([Remove(node.id, prevId)])
   | Some(contents) =>
-    store.act([JoinUp(node.id, Normal(contents), prevId)])
+    store.act([JoinUp(node.id, contents, prevId)])
   };
   Some(prevId);
 };

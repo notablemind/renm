@@ -17,12 +17,11 @@ let makeFileWithNodes = (~title, ~id, ~nodes: list(Data.Node.t('a, 'b))) => {
 };
 
 let makeEmptyFile = (~title, ~id) => {
-  let meta = newMeta(~title, ~id);
   makeFileWithNodes(~title, ~id, ~nodes=[
     Data.Node.create(
       ~id="root",
       ~parent="root",
-      ~contents=NodeType.Normal(Delta.fromString(title)),
+      ~contents=Delta.fromString(title),
       ~children=[],
       ~prefix=None
     )
