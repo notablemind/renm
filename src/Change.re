@@ -60,6 +60,7 @@ type change =
   /* nextPid, idx, id */
   | MoveNode(Node.id, int, Node.id)
   | ChangeContents(Node.id, Delta.delta)
+  | SetPrefix(Node.id, option(NodeType.prefix))
   | SetContents(Node.id, Delta.delta);
 
 open Lets;
@@ -79,6 +80,7 @@ let events = (data: Map.String.t(NodeType.t), change) =>
     let%Try node = data->Map.String.get(id)->Opt.orError("No node " ++ id);
     Ok([Event.Node(id), Event.Node(node.parent), Event.Node(nextPid)]);
   | ChangeContents(id, _)
+  | SetPrefix(id, _)
   | SetContents(id, _) => Ok([Event.Node(id)])
   };
 
@@ -171,6 +173,16 @@ let apply = (data: data, change) =>
   switch (change) {
   | Trash(id, time) => Result.Error(MissingNode(id))
   | UnTrash(id) => Result.Error(MissingNode(id))
+
+  | SetPrefix(id, prefix) =>
+    let%Lets.TryWrap node =
+      data.nodes->Map.String.get(id)->Lets.Opt.orError(MissingNode(id));
+
+    (
+      {...data, nodes: data.nodes->Map.String.set(id, {...node, prefix})},
+      SetPrefix(id, node.prefix),
+      Nothing,
+    );
 
   | SetContents(id, contents) =>
     let%Lets.TryWrap node =

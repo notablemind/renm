@@ -297,6 +297,45 @@
                     null
                   ],
                   [
+                    "SetPrefix",
+                    [
+                      [
+                        "Reference",
+                        [
+                          "Public",
+                          [
+                            "Data",
+                            ["Node"],
+                            "id"
+                          ]
+                        ],
+                        []
+                      ],
+                      [
+                        "Reference",
+                        [
+                          "Builtin",
+                          "option"
+                        ],
+                        [
+                          [
+                            "Reference",
+                            [
+                              "Public",
+                              [
+                                "NodeType",
+                                [],
+                                "prefix"
+                              ]
+                            ],
+                            []
+                          ]
+                        ]
+                      ]
+                    ],
+                    null
+                  ],
+                  [
                     "SetContents",
                     [
                       [
@@ -1321,32 +1360,7 @@
             "t"
           ],
           [
-            [
-              [
-                {
-                  "txt": "migrate",
-                  "loc": {
-                    "loc_start": {
-                      "pos_fname": "_none_",
-                      "pos_lnum": 1,
-                      "pos_bol": 0,
-                      "pos_cnum": -1
-                    },
-                    "loc_end": {
-                      "pos_fname": "_none_",
-                      "pos_lnum": 1,
-                      "pos_bol": 0,
-                      "pos_cnum": -1
-                    },
-                    "loc_ghost": true
-                  }
-                },
-                [
-                  "PStr",
-                  "let _ =\n  fun contents ->\n    match contents with\n    | ((Normal delta)[@explicit_arity ]) -> delta\n    | _ -> Delta.fromString ((\"\\n\")[@reason.raw_literal \"\\\\n\"])"
-                ]
-              ]
-            ],
+            [],
             {
               "name": "t",
               "variables": [],

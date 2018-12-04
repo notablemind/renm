@@ -9,6 +9,7 @@ module Version1 =
       | AddNode of int * _NodeType__t 
       | MoveNode of _Data__Node__id * int * _Data__Node__id 
       | ChangeContents of _Data__Node__id * _Delta__delta 
+      | SetPrefix of _Data__Node__id * _NodeType__prefix option 
       | SetContents of _Data__Node__id * _Delta__delta 
     and _Change__data = (_Delta__delta, _NodeType__prefix option) _Data__data
     and _Change__rebaseItem = Change.rebaseItem =
@@ -220,6 +221,34 @@ module Version1 =
                   | Belt.Result.Ok arg0 ->
                       Belt.Result.Ok
                         (ChangeContents (arg0, arg1) : _Change__change)
+                  | Error error -> Error ("constructor argument 0" :: error))
+             | Error error -> Error ("constructor argument 1" :: error))
+        | JSONArray [|tag;arg0;arg1|] when
+            ((Js.Json.JSONString ("SetPrefix"))[@explicit_arity ]) =
+              (Js.Json.classify tag)
+            ->
+            (match ((fun transformer ->
+                       fun option ->
+                         match Js.Json.classify option with
+                         | JSONNull -> ((Belt.Result.Ok (None))
+                             [@explicit_arity ])
+                         | _ ->
+                             (match transformer option with
+                              | ((Belt.Result.Error
+                                  (error))[@explicit_arity ]) ->
+                                  ((Belt.Result.Error
+                                      (("optional value" :: error)))
+                                  [@explicit_arity ])
+                              | ((Ok (value))[@explicit_arity ]) ->
+                                  ((Ok (((Some (value))[@explicit_arity ])))
+                                  [@explicit_arity ])))
+                      deserialize_NodeType____prefix) arg1
+             with
+             | Belt.Result.Ok arg1 ->
+                 (match deserialize_Data__Node__id arg0 with
+                  | Belt.Result.Ok arg0 ->
+                      Belt.Result.Ok
+                        (SetPrefix (arg0, arg1) : _Change__change)
                   | Error error -> Error ("constructor argument 0" :: error))
              | Error error -> Error ("constructor argument 1" :: error))
         | JSONArray [|tag;arg0;arg1|] when
@@ -2045,6 +2074,15 @@ module Version1 =
               [|(Js.Json.string "ChangeContents");(serialize_Data__Node__id
                                                      arg0);(serialize_Delta____delta
                                                               arg1)|]
+        | SetPrefix (arg0, arg1) ->
+            Js.Json.array
+              [|(Js.Json.string "SetPrefix");(serialize_Data__Node__id arg0);(
+                (((fun transformer ->
+                     function
+                     | ((Some (inner))[@explicit_arity ]) ->
+                         transformer inner
+                     | None -> Js.Json.null)) serialize_NodeType____prefix)
+                  arg1)|]
         | SetContents (arg0, arg1) ->
             Js.Json.array
               [|(Js.Json.string "SetContents");(serialize_Data__Node__id arg0);(
