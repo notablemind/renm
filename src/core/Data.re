@@ -26,6 +26,7 @@ module Node = {
     modified: date,
     childrenModified: date,
     children: list(string),
+    numberChildren: bool,
     /* contentsy-stuff */
     contents: 'contents,
     tags: Set.String.t,
@@ -41,6 +42,7 @@ module Node = {
     tags: Set.String.empty,
     created: Js.Date.now(),
     completed: false,
+    numberChildren: false,
     modified: Js.Date.now(),
     childrenModified: Js.Date.now(),
     children,

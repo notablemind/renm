@@ -36,6 +36,7 @@ module Version1 =
       modified: _Data__date ;
       childrenModified: _Data__date ;
       children: string list ;
+      numberChildren: bool ;
       contents: 'contents ;
       tags: _Belt_SetString__t ;
       prefix: 'prefix }
@@ -67,9 +68,7 @@ module Version1 =
       lastModified: float ;
       sync: _MetaData__sync option }
     and _NodeType__prefix = NodeType.prefix =
-      | Todo of bool 
-      | Rating of int 
-      | Sentiment of int 
+      | Todo 
       | Attribution 
     and _NodeType__t =
       (_Delta__delta, _NodeType__prefix option) _Data__Node__t
@@ -438,35 +437,58 @@ module Version1 =
                 let inner attr_prefix =
                   let inner attr_tags =
                     let inner attr_contents =
-                      let inner attr_children =
-                        let inner attr_childrenModified =
-                          let inner attr_modified =
-                            let inner attr_trashed =
-                              let inner attr_completed =
-                                let inner attr_created =
-                                  let inner attr_author =
-                                    let inner attr_parent =
-                                      let inner attr_id =
-                                        Belt.Result.Ok
-                                          {
-                                            id = attr_id;
-                                            parent = attr_parent;
-                                            author = attr_author;
-                                            created = attr_created;
-                                            completed = attr_completed;
-                                            trashed = attr_trashed;
-                                            modified = attr_modified;
-                                            childrenModified =
-                                              attr_childrenModified;
-                                            children = attr_children;
-                                            contents = attr_contents;
-                                            tags = attr_tags;
-                                            prefix = attr_prefix
-                                          } in
-                                      match Js.Dict.get dict "id" with
+                      let inner attr_numberChildren =
+                        let inner attr_children =
+                          let inner attr_childrenModified =
+                            let inner attr_modified =
+                              let inner attr_trashed =
+                                let inner attr_completed =
+                                  let inner attr_created =
+                                    let inner attr_author =
+                                      let inner attr_parent =
+                                        let inner attr_id =
+                                          Belt.Result.Ok
+                                            {
+                                              id = attr_id;
+                                              parent = attr_parent;
+                                              author = attr_author;
+                                              created = attr_created;
+                                              completed = attr_completed;
+                                              trashed = attr_trashed;
+                                              modified = attr_modified;
+                                              childrenModified =
+                                                attr_childrenModified;
+                                              children = attr_children;
+                                              numberChildren =
+                                                attr_numberChildren;
+                                              contents = attr_contents;
+                                              tags = attr_tags;
+                                              prefix = attr_prefix
+                                            } in
+                                        match Js.Dict.get dict "id" with
+                                        | None ->
+                                            ((Belt.Result.Error
+                                                (["No attribute id"]))
+                                            [@explicit_arity ])
+                                        | ((Some (json))[@explicit_arity ])
+                                            ->
+                                            (match deserialize_Data__Node__id
+                                                     json
+                                             with
+                                             | ((Belt.Result.Error
+                                                 (error))[@explicit_arity ])
+                                                 ->
+                                                 ((Belt.Result.Error
+                                                     (("attribute id" ::
+                                                       error)))
+                                                 [@explicit_arity ])
+                                             | ((Ok
+                                                 (data))[@explicit_arity ])
+                                                 -> inner data) in
+                                      match Js.Dict.get dict "parent" with
                                       | None ->
                                           ((Belt.Result.Error
-                                              (["No attribute id"]))
+                                              (["No attribute parent"]))
                                           [@explicit_arity ])
                                       | ((Some (json))[@explicit_arity ]) ->
                                           (match deserialize_Data__Node__id
@@ -475,223 +497,244 @@ module Version1 =
                                            | ((Belt.Result.Error
                                                (error))[@explicit_arity ]) ->
                                                ((Belt.Result.Error
-                                                   (("attribute id" ::
+                                                   (("attribute parent" ::
                                                      error)))
                                                [@explicit_arity ])
                                            | ((Ok (data))[@explicit_arity ])
                                                -> inner data) in
-                                    match Js.Dict.get dict "parent" with
+                                    match Js.Dict.get dict "author" with
                                     | None ->
                                         ((Belt.Result.Error
-                                            (["No attribute parent"]))
+                                            (["No attribute author"]))
                                         [@explicit_arity ])
                                     | ((Some (json))[@explicit_arity ]) ->
-                                        (match deserialize_Data__Node__id
+                                        (match (fun string ->
+                                                  match Js.Json.classify
+                                                          string
+                                                  with
+                                                  | ((JSONString
+                                                      (string))[@explicit_arity
+                                                                 ])
+                                                      ->
+                                                      ((Belt.Result.Ok
+                                                          (string))
+                                                      [@explicit_arity ])
+                                                  | _ ->
+                                                      ((Error
+                                                          (["expected a string"]))
+                                                      [@explicit_arity ]))
                                                  json
                                          with
                                          | ((Belt.Result.Error
                                              (error))[@explicit_arity ]) ->
                                              ((Belt.Result.Error
-                                                 (("attribute parent" ::
+                                                 (("attribute author" ::
                                                    error)))
                                              [@explicit_arity ])
                                          | ((Ok (data))[@explicit_arity ]) ->
                                              inner data) in
-                                  match Js.Dict.get dict "author" with
+                                  match Js.Dict.get dict "created" with
                                   | None ->
                                       ((Belt.Result.Error
-                                          (["No attribute author"]))
+                                          (["No attribute created"]))
                                       [@explicit_arity ])
                                   | ((Some (json))[@explicit_arity ]) ->
-                                      (match (fun string ->
-                                                match Js.Json.classify string
-                                                with
-                                                | ((JSONString
-                                                    (string))[@explicit_arity
-                                                               ])
-                                                    ->
-                                                    ((Belt.Result.Ok (string))
-                                                    [@explicit_arity ])
-                                                | _ ->
-                                                    ((Error
-                                                        (["expected a string"]))
-                                                    [@explicit_arity ])) json
+                                      (match deserialize_Data____date json
                                        with
                                        | ((Belt.Result.Error
                                            (error))[@explicit_arity ]) ->
                                            ((Belt.Result.Error
-                                               (("attribute author" ::
+                                               (("attribute created" ::
                                                  error)))
                                            [@explicit_arity ])
                                        | ((Ok (data))[@explicit_arity ]) ->
                                            inner data) in
-                                match Js.Dict.get dict "created" with
+                                match Js.Dict.get dict "completed" with
                                 | None ->
                                     ((Belt.Result.Error
-                                        (["No attribute created"]))
+                                        (["No attribute completed"]))
                                     [@explicit_arity ])
                                 | ((Some (json))[@explicit_arity ]) ->
-                                    (match deserialize_Data____date json with
+                                    (match (fun bool ->
+                                              match Js.Json.classify bool
+                                              with
+                                              | JSONTrue ->
+                                                  ((Belt.Result.Ok (true))
+                                                  [@explicit_arity ])
+                                              | JSONFalse ->
+                                                  ((Belt.Result.Ok (false))
+                                                  [@explicit_arity ])
+                                              | _ ->
+                                                  ((Belt.Result.Error
+                                                      (["Expected a bool"]))
+                                                  [@explicit_arity ])) json
+                                     with
                                      | ((Belt.Result.Error
                                          (error))[@explicit_arity ]) ->
                                          ((Belt.Result.Error
-                                             (("attribute created" :: error)))
+                                             (("attribute completed" ::
+                                               error)))
                                          [@explicit_arity ])
                                      | ((Ok (data))[@explicit_arity ]) ->
                                          inner data) in
-                              match Js.Dict.get dict "completed" with
-                              | None ->
-                                  ((Belt.Result.Error
-                                      (["No attribute completed"]))
-                                  [@explicit_arity ])
+                              match Js.Dict.get dict "trashed" with
+                              | None -> inner None
                               | ((Some (json))[@explicit_arity ]) ->
-                                  (match (fun bool ->
-                                            match Js.Json.classify bool with
-                                            | JSONTrue ->
-                                                ((Belt.Result.Ok (true))
-                                                [@explicit_arity ])
-                                            | JSONFalse ->
-                                                ((Belt.Result.Ok (false))
-                                                [@explicit_arity ])
-                                            | _ ->
-                                                ((Belt.Result.Error
-                                                    (["Expected a bool"]))
-                                                [@explicit_arity ])) json
-                                   with
-                                   | ((Belt.Result.Error
-                                       (error))[@explicit_arity ]) ->
-                                       ((Belt.Result.Error
-                                           (("attribute completed" :: error)))
-                                       [@explicit_arity ])
-                                   | ((Ok (data))[@explicit_arity ]) ->
-                                       inner data) in
-                            match Js.Dict.get dict "trashed" with
-                            | None -> inner None
-                            | ((Some (json))[@explicit_arity ]) ->
-                                (match ((fun transformer ->
-                                           fun option ->
-                                             match Js.Json.classify option
-                                             with
-                                             | JSONNull ->
-                                                 ((Belt.Result.Ok (None))
-                                                 [@explicit_arity ])
-                                             | _ ->
-                                                 (match transformer option
-                                                  with
-                                                  | ((Belt.Result.Error
-                                                      (error))[@explicit_arity
-                                                                ])
-                                                      ->
-                                                      ((Belt.Result.Error
-                                                          (("optional value"
-                                                            :: error)))
-                                                      [@explicit_arity ])
-                                                  | ((Ok
-                                                      (value))[@explicit_arity
-                                                                ])
-                                                      ->
-                                                      ((Ok
-                                                          (((Some (value))
-                                                            [@explicit_arity
-                                                              ])))
-                                                      [@explicit_arity ])))
-                                          deserialize_Data____date) json
-                                 with
-                                 | ((Belt.Result.Error
-                                     (error))[@explicit_arity ]) ->
-                                     ((Belt.Result.Error
-                                         (("attribute trashed" :: error)))
-                                     [@explicit_arity ])
-                                 | ((Ok (data))[@explicit_arity ]) ->
-                                     inner data) in
-                          match Js.Dict.get dict "modified" with
-                          | None ->
-                              ((Belt.Result.Error (["No attribute modified"]))
-                              [@explicit_arity ])
-                          | ((Some (json))[@explicit_arity ]) ->
-                              (match deserialize_Data____date json with
-                               | ((Belt.Result.Error
-                                   (error))[@explicit_arity ]) ->
-                                   ((Belt.Result.Error
-                                       (("attribute modified" :: error)))
-                                   [@explicit_arity ])
-                               | ((Ok (data))[@explicit_arity ]) ->
-                                   inner data) in
-                        match Js.Dict.get dict "childrenModified" with
-                        | None ->
-                            ((Belt.Result.Error
-                                (["No attribute childrenModified"]))
-                            [@explicit_arity ])
-                        | ((Some (json))[@explicit_arity ]) ->
-                            (match deserialize_Data____date json with
-                             | ((Belt.Result.Error
-                                 (error))[@explicit_arity ]) ->
-                                 ((Belt.Result.Error
-                                     (("attribute childrenModified" ::
-                                       error)))
-                                 [@explicit_arity ])
-                             | ((Ok (data))[@explicit_arity ]) -> inner data) in
-                      match Js.Dict.get dict "children" with
-                      | None ->
-                          ((Belt.Result.Error (["No attribute children"]))
-                          [@explicit_arity ])
-                      | ((Some (json))[@explicit_arity ]) ->
-                          (match (fun list ->
-                                    match Js.Json.classify list with
-                                    | ((JSONArray (items))[@explicit_arity ])
-                                        ->
-                                        let transformer string =
-                                          match Js.Json.classify string with
-                                          | ((JSONString
-                                              (string))[@explicit_arity ]) ->
-                                              ((Belt.Result.Ok (string))
-                                              [@explicit_arity ])
-                                          | _ ->
-                                              ((Error (["expected a string"]))
-                                              [@explicit_arity ]) in
-                                        let rec loop i items =
-                                          match items with
-                                          | [] -> ((Belt.Result.Ok ([]))
-                                              [@explicit_arity ])
-                                          | one::rest ->
-                                              (match transformer one with
-                                               | ((Belt.Result.Error
-                                                   (error))[@explicit_arity ])
-                                                   ->
-                                                   ((Belt.Result.Error
-                                                       ((("list element " ^
-                                                            (string_of_int i))
-                                                         :: error)))
+                                  (match ((fun transformer ->
+                                             fun option ->
+                                               match Js.Json.classify option
+                                               with
+                                               | JSONNull ->
+                                                   ((Belt.Result.Ok (None))
                                                    [@explicit_arity ])
-                                               | ((Belt.Result.Ok
-                                                   (value))[@explicit_arity ])
-                                                   ->
-                                                   (match loop (i + 1) rest
+                                               | _ ->
+                                                   (match transformer option
                                                     with
                                                     | ((Belt.Result.Error
                                                         (error))[@explicit_arity
                                                                   ])
                                                         ->
                                                         ((Belt.Result.Error
-                                                            (error))
+                                                            (("optional value"
+                                                              :: error)))
                                                         [@explicit_arity ])
-                                                    | ((Belt.Result.Ok
-                                                        (rest))[@explicit_arity
-                                                                 ])
+                                                    | ((Ok
+                                                        (value))[@explicit_arity
+                                                                  ])
                                                         ->
-                                                        ((Belt.Result.Ok
-                                                            ((value :: rest)))
-                                                        [@explicit_arity ]))) in
-                                        loop 0 (Belt.List.fromArray items)
+                                                        ((Ok
+                                                            (((Some (value))
+                                                              [@explicit_arity
+                                                                ])))
+                                                        [@explicit_arity ])))
+                                            deserialize_Data____date) json
+                                   with
+                                   | ((Belt.Result.Error
+                                       (error))[@explicit_arity ]) ->
+                                       ((Belt.Result.Error
+                                           (("attribute trashed" :: error)))
+                                       [@explicit_arity ])
+                                   | ((Ok (data))[@explicit_arity ]) ->
+                                       inner data) in
+                            match Js.Dict.get dict "modified" with
+                            | None ->
+                                ((Belt.Result.Error
+                                    (["No attribute modified"]))
+                                [@explicit_arity ])
+                            | ((Some (json))[@explicit_arity ]) ->
+                                (match deserialize_Data____date json with
+                                 | ((Belt.Result.Error
+                                     (error))[@explicit_arity ]) ->
+                                     ((Belt.Result.Error
+                                         (("attribute modified" :: error)))
+                                     [@explicit_arity ])
+                                 | ((Ok (data))[@explicit_arity ]) ->
+                                     inner data) in
+                          match Js.Dict.get dict "childrenModified" with
+                          | None ->
+                              ((Belt.Result.Error
+                                  (["No attribute childrenModified"]))
+                              [@explicit_arity ])
+                          | ((Some (json))[@explicit_arity ]) ->
+                              (match deserialize_Data____date json with
+                               | ((Belt.Result.Error
+                                   (error))[@explicit_arity ]) ->
+                                   ((Belt.Result.Error
+                                       (("attribute childrenModified" ::
+                                         error)))
+                                   [@explicit_arity ])
+                               | ((Ok (data))[@explicit_arity ]) ->
+                                   inner data) in
+                        match Js.Dict.get dict "children" with
+                        | None ->
+                            ((Belt.Result.Error (["No attribute children"]))
+                            [@explicit_arity ])
+                        | ((Some (json))[@explicit_arity ]) ->
+                            (match (fun list ->
+                                      match Js.Json.classify list with
+                                      | ((JSONArray
+                                          (items))[@explicit_arity ]) ->
+                                          let transformer string =
+                                            match Js.Json.classify string
+                                            with
+                                            | ((JSONString
+                                                (string))[@explicit_arity ])
+                                                -> ((Belt.Result.Ok (string))
+                                                [@explicit_arity ])
+                                            | _ ->
+                                                ((Error
+                                                    (["expected a string"]))
+                                                [@explicit_arity ]) in
+                                          let rec loop i items =
+                                            match items with
+                                            | [] -> ((Belt.Result.Ok ([]))
+                                                [@explicit_arity ])
+                                            | one::rest ->
+                                                (match transformer one with
+                                                 | ((Belt.Result.Error
+                                                     (error))[@explicit_arity
+                                                               ])
+                                                     ->
+                                                     ((Belt.Result.Error
+                                                         ((("list element " ^
+                                                              (string_of_int
+                                                                 i)) ::
+                                                           error)))
+                                                     [@explicit_arity ])
+                                                 | ((Belt.Result.Ok
+                                                     (value))[@explicit_arity
+                                                               ])
+                                                     ->
+                                                     (match loop (i + 1) rest
+                                                      with
+                                                      | ((Belt.Result.Error
+                                                          (error))[@explicit_arity
+                                                                    ])
+                                                          ->
+                                                          ((Belt.Result.Error
+                                                              (error))
+                                                          [@explicit_arity ])
+                                                      | ((Belt.Result.Ok
+                                                          (rest))[@explicit_arity
+                                                                   ])
+                                                          ->
+                                                          ((Belt.Result.Ok
+                                                              ((value ::
+                                                                rest)))
+                                                          [@explicit_arity ]))) in
+                                          loop 0 (Belt.List.fromArray items)
+                                      | _ ->
+                                          ((Belt.Result.Error
+                                              (["expected an array"]))
+                                          [@explicit_arity ])) json
+                             with
+                             | ((Belt.Result.Error
+                                 (error))[@explicit_arity ]) ->
+                                 ((Belt.Result.Error
+                                     (("attribute children" :: error)))
+                                 [@explicit_arity ])
+                             | ((Ok (data))[@explicit_arity ]) -> inner data) in
+                      match Js.Dict.get dict "numberChildren" with
+                      | None ->
+                          ((Belt.Result.Error
+                              (["No attribute numberChildren"]))
+                          [@explicit_arity ])
+                      | ((Some (json))[@explicit_arity ]) ->
+                          (match (fun bool ->
+                                    match Js.Json.classify bool with
+                                    | JSONTrue -> ((Belt.Result.Ok (true))
+                                        [@explicit_arity ])
+                                    | JSONFalse -> ((Belt.Result.Ok (false))
+                                        [@explicit_arity ])
                                     | _ ->
                                         ((Belt.Result.Error
-                                            (["expected an array"]))
+                                            (["Expected a bool"]))
                                         [@explicit_arity ])) json
                            with
                            | ((Belt.Result.Error (error))[@explicit_arity ])
                                ->
                                ((Belt.Result.Error
-                                   (("attribute children" :: error)))
+                                   (("attribute numberChildren" :: error)))
                                [@explicit_arity ])
                            | ((Ok (data))[@explicit_arity ]) -> inner data) in
                     match Js.Dict.get dict "contents" with
@@ -1083,52 +1126,10 @@ module Version1 =
       Js.Json.t -> (_NodeType__prefix, string list) Belt.Result.t) =
       fun constructor ->
         match Js.Json.classify constructor with
-        | JSONArray [|tag;arg0|] when
+        | JSONArray [|tag|] when
             ((Js.Json.JSONString ("Todo"))[@explicit_arity ]) =
               (Js.Json.classify tag)
-            ->
-            (match (fun bool ->
-                      match Js.Json.classify bool with
-                      | JSONTrue -> ((Belt.Result.Ok (true))
-                          [@explicit_arity ])
-                      | JSONFalse -> ((Belt.Result.Ok (false))
-                          [@explicit_arity ])
-                      | _ -> ((Belt.Result.Error (["Expected a bool"]))
-                          [@explicit_arity ])) arg0
-             with
-             | Belt.Result.Ok arg0 ->
-                 Belt.Result.Ok (Todo (arg0) : _NodeType__prefix)
-             | Error error -> Error ("constructor argument 0" :: error))
-        | JSONArray [|tag;arg0|] when
-            ((Js.Json.JSONString ("Rating"))[@explicit_arity ]) =
-              (Js.Json.classify tag)
-            ->
-            (match (fun number ->
-                      match Js.Json.classify number with
-                      | ((JSONNumber (number))[@explicit_arity ]) ->
-                          ((Belt.Result.Ok ((int_of_float number)))
-                          [@explicit_arity ])
-                      | _ -> ((Error (["Expected a float"]))
-                          [@explicit_arity ])) arg0
-             with
-             | Belt.Result.Ok arg0 ->
-                 Belt.Result.Ok (Rating (arg0) : _NodeType__prefix)
-             | Error error -> Error ("constructor argument 0" :: error))
-        | JSONArray [|tag;arg0|] when
-            ((Js.Json.JSONString ("Sentiment"))[@explicit_arity ]) =
-              (Js.Json.classify tag)
-            ->
-            (match (fun number ->
-                      match Js.Json.classify number with
-                      | ((JSONNumber (number))[@explicit_arity ]) ->
-                          ((Belt.Result.Ok ((int_of_float number)))
-                          [@explicit_arity ])
-                      | _ -> ((Error (["Expected a float"]))
-                          [@explicit_arity ])) arg0
-             with
-             | Belt.Result.Ok arg0 ->
-                 Belt.Result.Ok (Sentiment (arg0) : _NodeType__prefix)
-             | Error error -> Error ("constructor argument 0" :: error))
+            -> Belt.Result.Ok (Todo : _NodeType__prefix)
         | JSONArray [|tag|] when
             ((Js.Json.JSONString ("Attribution"))[@explicit_arity ]) =
               (Js.Json.classify tag)
@@ -2134,11 +2135,11 @@ module Version1 =
                           Js.Json.array
                             (Belt.List.toArray
                                (Belt.List.map list Js.Json.string))))
-                        record.children));("contents",
-                                            (contentsTransformer
-                                               record.contents));("tags",
-                                                                   (serialize_Belt_SetString____t
-                                                                    record.tags));
+                        record.children));("numberChildren",
+                                            (Js.Json.boolean
+                                               record.numberChildren));
+                   ("contents", (contentsTransformer record.contents));
+                   ("tags", (serialize_Belt_SetString____t record.tags));
                    ("prefix", (prefixTransformer record.prefix))|])
     and (serialize_Data__Tag__id : _Data__Tag__id -> Js.Json.t) =
       fun value -> Js.Json.string value
@@ -2202,18 +2203,7 @@ module Version1 =
     and (serialize_NodeType____prefix : _NodeType__prefix -> Js.Json.t) =
       fun constructor ->
         match constructor with
-        | Todo arg0 ->
-            Js.Json.array [|(Js.Json.string "Todo");(Js.Json.boolean arg0)|]
-        | Rating arg0 ->
-            Js.Json.array
-              [|(Js.Json.string "Rating");(((fun int ->
-                                               Js.Json.number
-                                                 (float_of_int int))) arg0)|]
-        | Sentiment arg0 ->
-            Js.Json.array
-              [|(Js.Json.string "Sentiment");(((fun int ->
-                                                  Js.Json.number
-                                                    (float_of_int int))) arg0)|]
+        | Todo -> Js.Json.array [|(Js.Json.string "Todo")|]
         | Attribution -> Js.Json.array [|(Js.Json.string "Attribution")|]
     and (serialize_NodeType____t : _NodeType__t -> Js.Json.t) =
       fun value ->

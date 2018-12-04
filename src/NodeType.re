@@ -1,15 +1,16 @@
 
 type prefix =
-  | Todo(bool)
-  | Rating(int)
-  | Sentiment(int)
+  /* just shows the "completed" attribute of the node */
+  | Todo
+  /* | Rating(int)
+  | Sentiment(int) */
   /* This is for "commenting"-like functionality.
      it puts your face in front of the node, so ppl know it was you.
      Also probably the date when it was posted.
       */
   | Attribution;
 
-module Svg = {
+/* module Svg = {
   type point = {
     pos: (float, float),
     handleBefore: option((float, float)),
@@ -41,13 +42,7 @@ module Svg = {
     size: (int, int),
     layers: list(layer),
   };
-};
-
-[@migrate contents => switch contents {
-  | Normal(delta) => delta
-  | _ => Delta.fromString("\n")
-}]
-/* type contents = Delta.delta; */
+}; */
 
 /*
 this is superceeded by having custom quill format things
@@ -58,7 +53,5 @@ type widgets =
   | NodeLink(string)
   | PersonLink(string)
   | AttachmentLink(string); */
-
-/* TODO how to have combined changes? */
 
 type t = Data.Node.t(Delta.delta, option(prefix));

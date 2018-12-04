@@ -869,6 +869,17 @@
                     ]
                   ],
                   [
+                    "numberChildren",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "bool"
+                      ],
+                      []
+                    ]
+                  ],
+                  [
                     "contents",
                     [
                       "Variable",
@@ -1290,44 +1301,7 @@
                 [
                   [
                     "Todo",
-                    [
-                      [
-                        "Reference",
-                        [
-                          "Builtin",
-                          "bool"
-                        ],
-                        []
-                      ]
-                    ],
-                    null
-                  ],
-                  [
-                    "Rating",
-                    [
-                      [
-                        "Reference",
-                        [
-                          "Builtin",
-                          "int"
-                        ],
-                        []
-                      ]
-                    ],
-                    null
-                  ],
-                  [
-                    "Sentiment",
-                    [
-                      [
-                        "Reference",
-                        [
-                          "Builtin",
-                          "int"
-                        ],
-                        []
-                      ]
-                    ],
+                    [],
                     null
                   ],
                   [
