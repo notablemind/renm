@@ -14,10 +14,17 @@ type t('contents, 'prefix, 'selection) = {
   redo: unit => unit,
 };
 
-
 let getFileName = (store, id) => {
   switch (store.session().allFiles->Hashtbl.find(id)) {
     | exception Not_found => None
     | {title, nodeCount} => Some(title ++ " " ++ string_of_int(nodeCount))
   }
+};
+
+let getNode = (store, id) => {
+  store.data()->Data.get(id);
+};
+
+let activeNode = (store) => {
+  store->getNode(store.session().view.active);
 };

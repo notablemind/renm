@@ -1,10 +1,18 @@
 
 [@bs.module] external fuzzysearch: (string, string) => bool = "";
+type match = {. "score": int, "term": string, "query": string, "highlightedTerm": string};
+[@bs.module] external fuzzy: (~term: string, ~query: string) => match = "fuzzy.js";
+[@bs.module] external fuzzySort: (match, match) => int = "fuzzy.js";
+
+let fuzzyScore = (~term, ~query) => fuzzy(~term, ~query)##score->float_of_int;
+
+[%bs.raw "window.fuzzyScore = fuzzyScore"];
 
 type option = {
   title: string,
   description: string,
-  action: unit => unit
+  action: unit => unit,
+  sort: float,
 };
 
 type state = {
@@ -52,16 +60,32 @@ module Styles = {
   ])
 };
 
+let sort = items => {
+  items |> Js.Array.sortInPlaceWith((a, b) => int_of_float(b.sort -. a.sort))
+};
+
+let addScores = (items, text) => {
+  items->Array.keepMap(item => {
+    if (fuzzysearch(text, item.title->Js.String.toLowerCase)) {
+      Some({...item, sort: fuzzyScore(~term=item.title, ~query=text) +. 5.})
+    } else if (fuzzysearch(text, item.description->Js.String.toLowerCase)) {
+      Some({...item, sort: fuzzyScore(~term=item.description, ~query=text)})
+     } else {
+       None
+     }
+  })
+};
+
 let make = (~placeholder, ~getResults, ~onClose, _) => {
   ...component,
-  initialState: () => {search: "", selected: 0, results: getResults("")},
+  initialState: () => {search: "", selected: 0, results: getResults("")->sort},
   reducer: (action, state) => ReasonReact.Update(switch action {
     | Up => {...state, selected: state.selected <= 0 ? max(0, Array.length(state.results) - 1) : state.selected - 1}
     | Down => {...state, selected: state.selected >= Array.length(state.results) - 1 ? 0 : state.selected + 1}
     | SetText(search) => {
       /* ...state, */
       search,
-      results: getResults(search),
+      results: getResults(search)->sort,
       selected: 0,
     }
   }),

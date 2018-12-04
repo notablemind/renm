@@ -141,6 +141,7 @@ module Commands = {
     let clear = {
       SuperMenu.title: "Prefix: clear",
       description: "Clear the node prefix",
+      sort: 0.,
       action: () => {
         store.act(view.selection->Set.String.toList->List.map(id => 
           Actions.SetPrefix(id, None)
@@ -150,6 +151,7 @@ module Commands = {
     let attribution = {
       SuperMenu.title: "Prefix: attribution",
       description: "Make this a 'comment' item",
+      sort: 0.,
       action: () => {
         store.act(view.selection->Set.String.toList->List.map(id => 
           Actions.SetPrefix(id, Some(Attribution))
@@ -159,6 +161,7 @@ module Commands = {
     let checkbox = {
       SuperMenu.title: "Prefix: checkbox",
       description: "Make this a 'todo' item",
+      sort: 0.,
       action: () => {
         store.act(view.selection->Set.String.toList->List.map(id => 
           Actions.SetPrefix(id, Some(Todo))
@@ -183,16 +186,18 @@ module Commands = {
 };
 
 let getCommands = (store: ClientStore.t('a, 'b, 'c), send, text) => {
+  let text = text->Js.String.toLowerCase;
   let items = [|
     {
       SuperMenu.title: "Link to File",
       description: "Hyperlink the current text to another (maybe new) file",
+      sort: 0.,
       action: () => {
         send(ShowDialog(FileLink))
       }
     },
   |]->Array.concat(Commands.prefixes(store, send));
-  items->Array.keep(item => SuperMenu.fuzzysearch(text, item.title) || SuperMenu.fuzzysearch(text, item.description))
+  items->SuperMenu.addScores(text)
 };
 
 let fileCommands = (store: ClientStore.t('a, 'b, 'c), ~onSelect, ~onCreate, text) => {
@@ -202,6 +207,7 @@ let fileCommands = (store: ClientStore.t('a, 'b, 'c), ~onSelect, ~onCreate, text
       [{
         SuperMenu.title: meta.title,
         description: meta.id,
+        sort: SuperMenu.fuzzyScore(~term=meta.title, ~query=text),
         action: () => {
           Js.log2("Hi", meta);
 
@@ -213,11 +219,13 @@ let fileCommands = (store: ClientStore.t('a, 'b, 'c), ~onSelect, ~onCreate, text
     }
   }, files, [text == "" ? {
     SuperMenu.title: "[new file]",
+    sort: 0.,
     description: "Type the name you want to give to the new file",
     action: () => ()
   } : {
     SuperMenu.title: "Create file \"" ++ text ++ "\"",
     description: "",
+    sort: 0.,
     action: () => onCreate(text)
   }])->List.toArray
 };

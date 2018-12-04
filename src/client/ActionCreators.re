@@ -4,6 +4,21 @@ open ClientStore;
 
 open Actions;
 
+let shiftSelect = (store, node: Data.Node.t('a, 'b)) => {
+  let module O = Lets.OptConsume;
+  let%O active = store->ClientStore.activeNode;
+  if (active.parent == node.parent) {
+    let%O parent = store->ClientStore.getNode(node.parent);
+    let%O xa = TreeTraversal.childPos(parent.children, active.id);
+    let%O xn = TreeTraversal.childPos(parent.children, node.id);
+    let small = min(xa, xn);
+    let large = max(xa, xn);
+    let rec loop = i => i > large ? store.session().view.selection :
+      loop(i + 1)->Set.String.add(parent.children->List.getExn(i));
+    store.actView(View.SetSelection(loop(small)))
+  }
+};
+
 let right = (store, node) => {
   let%Opt nextId =
     TreeTraversal.down(

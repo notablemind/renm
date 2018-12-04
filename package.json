@@ -24,6 +24,7 @@
     "fast-deep-equal": "^2.0.1",
     "file-loader": "^2.0.0",
     "fpack": "^0.6.5",
+    "fuzzy.js": "^0.1.0",
     "fuzzysearch": "^1.0.3",
     "html-loader": "^0.5.5",
     "let-anything": "1.0.3",

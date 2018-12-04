@@ -182,7 +182,11 @@ let make =
               evt =>
                 if (ReactEvent.Mouse.metaKey(evt)) {
                   ReactEvent.Mouse.preventDefault(evt);
-                  store.actView(AddToSelection(node.id));
+                  if (ReactEvent.Mouse.shiftKey(evt)) {
+                    ActionCreators.shiftSelect(store, node)
+                  } else {
+                    store.actView(AddToSelection(node.id));
+                  }
                 } else {
                   store.actView(SetActive(node.id, Default));
                 }
