@@ -144,33 +144,6 @@ module F =
         Config.rebase(change, other.rebase)
       );
 
-  let getRedoChange = (history, sessionId) => {
-    let rec loop = (history, rebases, redoneChanges) =>
-      switch (history) {
-      | [] => None
-      | [one, ...rest] when redoneChanges->Set.String.has(one.inner.changeId) =>
-        loop(rest, rebases, redoneChanges)
-      | [one, ...rest] when one.inner.sessionInfo.sessionId != sessionId =>
-        loop(rest, [one, ...rebases], redoneChanges)
-      | [{inner: {link: Some(Redo(id))}}, ...rest] =>
-        loop(rest, rebases, redoneChanges->Set.String.add(id))
-      | [{inner: {link: Some(Undo(_))}} as one, ...rest] =>
-        /* Js.log((one, rebases, redoneChanges)) */
-        Some((
-          rebaseMany(one, rebases),
-          one.inner.changeId,
-          one.inner.sessionInfo.preSelection,
-          one.inner.sessionInfo.postSelection,
-        ))
-      | [one, ...rest] =>
-        /* Nothing left is undone recently enough... */
-        /* We could make it so you just rebase past the things you haven't done tho */
-        /* But that would be weird */
-        None
-      };
-    loop(history, [], Set.String.empty);
-  };
-
   let selectionPair = one => (
     one.inner.sessionInfo.preSelection,
     one.inner.sessionInfo.postSelection,
@@ -267,6 +240,33 @@ module F =
     };
 
     Some(change)
+  };
+
+  let getRedoChange = (history, sessionId) => {
+    let rec loop = (history, rebases, redoneChanges) =>
+      switch (history) {
+      | [] => None
+      | [one, ...rest] when redoneChanges->Set.String.has(one.inner.changeId) =>
+        loop(rest, rebases, redoneChanges)
+      | [one, ...rest] when one.inner.sessionInfo.sessionId != sessionId =>
+        loop(rest, [one, ...rebases], redoneChanges)
+      | [{inner: {link: Some(Redo(id))}}, ...rest] =>
+        loop(rest, rebases, redoneChanges->Set.String.add(id))
+      | [{inner: {link: Some(Undo(_))}} as one, ...rest] =>
+        /* Js.log((one, rebases, redoneChanges)) */
+        Some((
+          rebaseMany(one, rebases),
+          one.inner.changeId,
+          one.inner.sessionInfo.preSelection,
+          one.inner.sessionInfo.postSelection,
+        ))
+      | [one, ...rest] =>
+        /* Nothing left is undone recently enough... */
+        /* We could make it so you just rebase past the things you haven't done tho */
+        /* But that would be weird */
+        None
+      };
+    loop(history, [], Set.String.empty);
   };
 
   let getRedoChange = (~sessionId, ~changeId, ~author, changes) => {
