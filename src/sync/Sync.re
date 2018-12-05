@@ -138,8 +138,6 @@ module F =
     };
   };
 
-  /* let commit_ =  */
-
   let rebaseMany = (one, changes) =>
     changes
     ->List.reduce(one.revert, (change, other) =>
@@ -173,11 +171,16 @@ module F =
     loop(history, [], Set.String.empty);
   };
 
+  let selectionPair = one => (
+    one.inner.sessionInfo.preSelection,
+    one.inner.sessionInfo.postSelection,
+  );
+
   /** TODO test this */
   let getUndoChangeset = (history, sessionId) => {
     let rec loop = (history, rebases, undoneChanges, changeSet) =>
       switch (history) {
-      | [] => []
+      | [] => ([], false)
       | [one, ...rest] when undoneChanges->Set.String.has(one.inner.changeId) =>
         loop(rest, rebases, undoneChanges, changeSet)
       | [one, ...rest] when one.inner.sessionInfo.sessionId != sessionId =>
@@ -186,43 +189,44 @@ module F =
         let undones = Set.String.fromArray(List.toArray(ids));
         let alls = undoneChanges->Set.String.union(undones);
         loop(rest, rebases, alls, changeSet);
+
+      | [{inner: {changeId}} as one, ...rest] when Some(Some(changeId)) == changeSet =>
+        ([(
+          rebaseMany(one, rebases),
+          (one.inner.changeId, selectionPair(one)),
+        )], true)
+
       | [one, ...rest] =>
         switch (changeSet) {
-        | None => [
-            (
+        | None =>
+        switch (one.inner.sessionInfo.changeset) {
+          | None => 
+            ([(
               rebaseMany(one, rebases),
-              (
-                one.inner.changeId,
-                (
-                  one.inner.sessionInfo.preSelection,
-                  one.inner.sessionInfo.postSelection,
-                ),
-              ),
-            ),
-            ...loop(
-                 rest,
-                 rebases,
-                 undoneChanges,
-                 Some(one.inner.sessionInfo.changeset),
-               ),
-          ]
+              (one.inner.changeId, selectionPair(one)),
+            )], true)
+          | Some(_) =>
+            /* Umm do I need to do this if one.inner.sessionInfo.changeset is None? */
+            let (rest, completed) =
+              loop(rest, rebases, undoneChanges, Some(one.inner.sessionInfo.changeset));
+            let thisOne = (
+              rebaseMany(one, rebases),
+              (one.inner.changeId, selectionPair(one)),
+            );
+            ([thisOne, ...rest], completed)
+        }
         | Some(changeset) =>
           if (changeset != one.inner.sessionInfo.changeset || changeset == None) {
-            [];
+            ([], true);
           } else {
-            [
+            let (rest, completed) = loop(rest, rebases, undoneChanges, Some(changeset));
+            ([
               (
                 rebaseMany(one, rebases),
-                (
-                  one.inner.changeId,
-                  (
-                    one.inner.sessionInfo.preSelection,
-                    one.inner.sessionInfo.postSelection,
-                  ),
-                ),
+                (one.inner.changeId, selectionPair(one)),
               ),
-              ...loop(rest, rebases, undoneChanges, Some(changeset)),
-            ];
+              ...rest,
+            ], completed);
           }
         }
       };
@@ -231,11 +235,14 @@ module F =
 
 
   let getUndoChange = (~sessionId, ~changeId, ~author, changes) => {
-    let (changes, idsAndSelections) =
-      getUndoChangeset(
+    let (changeResult, completed) = getUndoChangeset(
         changes,
         sessionId,
-      )->List.unzip;
+      );
+    let%Lets.Opt () = completed ? Some(()) : None;
+
+    let (changes, idsAndSelections) =
+      changeResult->List.unzip;
     let (changeIds, selections) = List.unzip(idsAndSelections);
 
     let change = changes->Config.mergeChanges;

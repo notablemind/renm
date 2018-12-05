@@ -6,7 +6,12 @@ let showChange = (change: World.thisChange) =>
     style=ReactDOMRe.Style.(
       make(~fontFamily="monospace", ~whiteSpace="pre-wrap", ())
     )>
-    {str(change.inner.changeId ++ "\n")}
+    <div style=ReactDOMRe.Style.(make(~color="red", ()))>
+      {str(change.inner.changeId ++ "\n" ++ switch (change.inner.sessionInfo.changeset) {
+        | None => ""
+        | Some(cid) => "ChangeSet: " ++ cid
+      })}
+    </div>
     {
       str(
         Js.Json.stringify(

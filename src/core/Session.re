@@ -10,6 +10,7 @@ type session = {
   allFiles: Hashtbl.t(string, MetaData.t),
   sessionId: string,
   changeNum: int,
+  /* (changeSetId, time of first change, nodeId) */
   changeSet: option((string, float, string)),
   view: View.view,
   sharedViewData: View.sharedViewData,
@@ -66,11 +67,10 @@ let updateChangeSet = (~changeId, session, action) => {
     ...session,
     changeSet:
       switch (session.changeSet, action) {
-      | (Some((session, time, id)), Actions.ChangeContents(cid, _))
-          when id == cid && now -. time < changeSetTimeout =>
-        Some((session, now, id))
+      | (Some((changeSetId, time, currentNodeId)), Actions.ChangeContents(nodeId, _))
+          when currentNodeId == nodeId && now -. time < changeSetTimeout =>
+        Some((changeSetId, now, nodeId))
       | (_, ChangeContents(id, _)) =>
-        /* Js.log3("New changeset", changeSet, now); */
         Some((changeId, now, id))
       | (_, _) => None
       },
@@ -92,21 +92,12 @@ let makeSelection = (session, sel) => (
 );
 
 let makeSessionInfo = (~changeId, ~preSelection, ~postSelection, session) => {
-  /* let (changeId, session) = getChangeId(session); */
-  /* let preSelection = makeSelection(session, preSelection);
-     let postSelection = makeSelection(session, postSelection); */
-
-  (
-    /* changeId,
-    session, */
-    {
-      Sync.sessionId: session.sessionId,
-      changeset: session.changeSet->Lets.Opt.map(((cid, _, _)) => cid),
-      author: "jared",
-      preSelection,
-      postSelection,
-    },
-  );
+  Sync.sessionId: session.sessionId,
+  changeset:
+    session.changeSet->Lets.Opt.map(((changeSetId, _, _)) => changeSetId),
+  author: "jared",
+  preSelection,
+  postSelection,
 };
 
 let makeChange = (~changeId, ~preSelection, ~postSelection, session, change, link) => {
