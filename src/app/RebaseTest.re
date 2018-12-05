@@ -18,9 +18,16 @@ module ShowServer = {
       <div>
         <div> {renderNode(server, server.current.root)} </div>
         <div>
-          {server.history->StoreInOne.History.itemsSince
-          (None)->List.map
-          (DebugStoreView.showChange)->List.toArray->ReasonReact.array}
+          <DebugStoreView.Resolve
+            promise={server.history->StoreInOne.History.itemsSince(None)}
+            render={
+              items =>
+                items
+                ->List.map(DebugStoreView.showChange)
+                ->List.toArray
+                ->ReasonReact.array
+            }
+          />
         </div>
       </div>,
   };
@@ -79,7 +86,7 @@ let make = _children => {
       let id = StoreInOne.History.latestId(store.world.history);
       let unsynced = store.world.syncing;
 
-      let (server, result) =
+      let%Lets.Async.Consume (server, result) =
         StoreInOne.processSyncRequest(root, id, unsynced->StoreInOne.Queue.toList);
       Js.log2(server, result);
 

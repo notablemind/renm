@@ -157,13 +157,14 @@ let applyChange = (file, change, ports, dontSendToSession) => {
 };
 
 let onUndo = (file, ports, sessionId) => {
+  let%Lets.Async.Consume history = file.world.history->StoreInOne.History.itemsSince(None);
   let%Lets.OptConsume change =
     World.getUndoChange(
       ~sessionId,
       ~author="worker",
       ~changeId=workerId ++ string_of_int(nextChangeNum()),
       file.world.unsynced->StoreInOne.Queue.toRevList
-      @ file.world.history->StoreInOne.History.itemsSince(None)->List.reverse,
+      @ history->List.reverse,
     );
 
   applyChange(file, change, ports, None);

@@ -43,6 +43,30 @@ let showChange = (change: World.thisChange) =>
     }
   </div>;
 
+module Resolve = {
+  let component = ReasonReact.reducerComponentWithRetainedProps("Resolve");
+  let make = (~promise, ~render, _children) => {
+    ...component,
+    initialState: () => None,
+    retainedProps: promise,
+    didMount: self => {
+      let%Lets.Async.Consume v = promise;
+      self.send(v);
+    },
+    didUpdate: ({oldSelf, newSelf}) => {
+      if (oldSelf.retainedProps !== newSelf.retainedProps) {
+        let%Lets.Async.Consume v = newSelf.retainedProps;
+        newSelf.send(v);
+      }
+    },
+    reducer: (value, _) => ReasonReact.Update(Some(value)),
+    render: self => switch (self.state) {
+      | None => ReasonReact.string("Loading...")
+      | Some(v) => render(v)
+    }
+  };
+};
+
 let component = ReasonReact.reducerComponent("DebugStoreView");
 
 let make = (~store: StoreInOne.t, _children) => {
@@ -90,7 +114,10 @@ let make = (~store: StoreInOne.t, _children) => {
       </div>
       <div>
         <h4> {ReasonReact.string("History")} </h4>
-        {history->StoreInOne.History.itemsSince (None)->List.map (showChange)->List.toArray->ReasonReact.array}
+        <Resolve
+          promise={history->StoreInOne.History.itemsSince(None)}
+          render={history => history->List.map (showChange)->List.toArray->ReasonReact.array}
+        />
       </div>
     </div>,
 };

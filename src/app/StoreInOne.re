@@ -13,8 +13,8 @@ module type HistoryT = {
   /** Will return them in "oldest first" order */
   let itemsSince:
     (t('change, 'rebase, 'selection), option(string)) =>
-    list(Sync.change('change, 'rebase, 'selection));
-  let moreItems: (t('change, 'rebase, 'selection), ~limit: int, string) => list(Sync.change('change, 'rebase, 'selection));
+    Js.Promise.t(list(Sync.change('change, 'rebase, 'selection)));
+  /* let moreItems: (t('change, 'rebase, 'selection), ~limit: int, string) => list(Sync.change('change, 'rebase, 'selection)); */
 };
 
 module History: HistoryT = {
@@ -23,7 +23,7 @@ module History: HistoryT = {
   let latestId = t => List.head(t)->Lets.Opt.map(c => c.Sync.inner.changeId);
   let append = (t, items) => List.reverse(items) @ t;
   let itemsSince = (t, id) =>
-    switch (id) {
+    Js.Promise.resolve(switch (id) {
     | None => List.reverse(t)
     | Some(id) =>
       let rec loop = (items, collector) =>
@@ -33,12 +33,19 @@ module History: HistoryT = {
         | [one, ...rest] => loop(rest, [one, ...collector])
         };
       loop(t, []);
-    };
+    });
   let empty = [];
-  let moreItems = (t, ~limit, id) => {
+  /* let moreItems = (t, ~limit, id) => {
     []
+  }; */
+};
+
+/* module History = {
+  type t;
+  let itemsSince = (t, id) => {
   };
 };
+type history = History.t; */
 
 type history =
   History.t(World.MultiChange.change, World.MultiChange.rebaseItem, World.MultiChange.selection);
@@ -48,7 +55,7 @@ type server = {
 };
 
 let processSyncRequest = (server, id, changes) => {
-    let items = History.itemsSince(server.history, id);
+    let%Lets.Async.Wrap items = History.itemsSince(server.history, id);
     switch (World.processSyncRequest(server.current, items, changes)) {
       | `Commit(current) =>
         let server = {
@@ -269,13 +276,16 @@ let undo = store => {
   let (changeId, session) = Session.getChangeId(session);
   let session = {...session, changeSet: None};
 
+  let%Lets.Async.Consume allOfHistory =
+    store.world.history->History.itemsSince(None);
+
   let%Lets.OptConsume change =
     World.getUndoChange(
       ~sessionId=session.sessionId,
       ~author="fixme",
       ~changeId,
       store.world.unsynced->Queue.toRevList
-      @ store.world.history->History.itemsSince(None)->List.reverse,
+      @ allOfHistory->List.reverse,
     );
 
   let (session, viewEvents) =
