@@ -30,6 +30,11 @@
           "name": "rebaseItem"
         },
         {
+          "moduleName": "World",
+          "modulePath": ["MultiChange"],
+          "name": "fullChange"
+        },
+        {
           "moduleName": "NodeType",
           "modulePath": [],
           "name": "t"
@@ -1475,6 +1480,76 @@
           [
             "Sync",
             [],
+            "change"
+          ],
+          [
+            [],
+            {
+              "name": "change",
+              "variables": [
+                [
+                  "Variable",
+                  "change"
+                ],
+                [
+                  "Variable",
+                  "rebase"
+                ],
+                [
+                  "Variable",
+                  "selection"
+                ]
+              ],
+              "body": [
+                "Record",
+                [
+                  [
+                    "inner",
+                    [
+                      "Reference",
+                      [
+                        "Public",
+                        [
+                          "Sync",
+                          [],
+                          "changeInner"
+                        ]
+                      ],
+                      [
+                        [
+                          "Variable",
+                          "change"
+                        ],
+                        [
+                          "Variable",
+                          "selection"
+                        ]
+                      ]
+                    ]
+                  ],
+                  [
+                    "revert",
+                    [
+                      "Variable",
+                      "change"
+                    ]
+                  ],
+                  [
+                    "rebase",
+                    [
+                      "Variable",
+                      "rebase"
+                    ]
+                  ]
+                ]
+              ]
+            }
+          ]
+        ],
+        [
+          [
+            "Sync",
+            [],
             "changeInner"
           ],
           [
@@ -2332,6 +2407,72 @@
                     ]
                   ],
                   []
+                ]
+              ]
+            }
+          ]
+        ],
+        [
+          [
+            "World",
+            ["MultiChange"],
+            "fullChange"
+          ],
+          [
+            [],
+            {
+              "name": "fullChange",
+              "variables": [],
+              "body": [
+                "Expr",
+                [
+                  "Reference",
+                  [
+                    "Public",
+                    [
+                      "Sync",
+                      [],
+                      "change"
+                    ]
+                  ],
+                  [
+                    [
+                      "Reference",
+                      [
+                        "Public",
+                        [
+                          "World",
+                          ["MultiChange"],
+                          "change"
+                        ]
+                      ],
+                      []
+                    ],
+                    [
+                      "Reference",
+                      [
+                        "Public",
+                        [
+                          "World",
+                          ["MultiChange"],
+                          "rebaseItem"
+                        ]
+                      ],
+                      []
+                    ],
+                    [
+                      "Reference",
+                      [
+                        "Public",
+                        [
+                          "World",
+                          ["MultiChange"],
+                          "selection"
+                        ]
+                      ],
+                      []
+                    ]
+                  ]
                 ]
               ]
             }

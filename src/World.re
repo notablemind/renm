@@ -5,6 +5,9 @@ module MultiChange = {
   type change = list(Change.change);
   type rebaseItem = list(Change.rebaseItem);
   type selection = (string, Set.String.t, (int, int));
+
+  type fullChange = Sync.change(change, rebaseItem, selection);
+
   type error = Change.error;
   let mergeChanges = changes: change => changes->List.reduce([], List.concat);
   let rebase = (changes, items) =>

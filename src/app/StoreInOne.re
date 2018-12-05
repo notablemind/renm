@@ -14,6 +14,7 @@ module type HistoryT = {
   let itemsSince:
     (t('change, 'rebase, 'selection), option(string)) =>
     list(Sync.change('change, 'rebase, 'selection));
+  let moreItems: (t('change, 'rebase, 'selection), ~limit: int, string) => list(Sync.change('change, 'rebase, 'selection));
 };
 
 module History: HistoryT = {
@@ -34,8 +35,10 @@ module History: HistoryT = {
       loop(t, []);
     };
   let empty = [];
+  let moreItems = (t, ~limit, id) => {
+    []
+  };
 };
-
 
 type history =
   History.t(World.MultiChange.change, World.MultiChange.rebaseItem, World.MultiChange.selection);

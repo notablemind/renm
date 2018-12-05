@@ -9,6 +9,7 @@
     {"file": "./src/app/MetaData.re", "type": "t", "publicName": "metaData"},
     {"file": "./src/core/View.re", "type": "sharedViewData"},
     {"file": "./src/World.re", "type": "MultiChange.rebaseItem", "publicName": "rebaseItem"},
+    {"file": "./src/World.re", "type": "MultiChange.fullChange", "publicName": "historyItem"},
     {"file": "./src/NodeType.re", "type": "t", "publicName": "node"}
   ],
   "custom": []

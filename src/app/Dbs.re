@@ -41,6 +41,19 @@ let homeDb: Persistance.levelup(string) =
 
 let getFileDb: string => Persistance.levelup(unit) =
   id => getDb("nm:doc:" ++ id);
+
+let getHistoryDb: Persistance.levelup(unit) => Persistance.levelup(World.thisChange) =
+  fileDb =>
+    fileDb
+    ->Persistance.subleveldown(
+        "history",
+        getEncoder(
+          "World__MultiChange__fullChange",
+          WorkerProtocolSerde.serializeHistoryItem,
+          WorkerProtocolSerde.deserializeHistoryItem,
+        ),
+      );
+
 let getNodesDb: Persistance.levelup(unit) => Persistance.levelup(NodeType.t) =
   fileDb =>
     fileDb

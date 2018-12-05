@@ -75,6 +75,12 @@ module Version1 =
     and _NodeType__t =
       (_Delta__delta, _NodeType__prefix option) _Data__Node__t
     and _Quill__range = _View__Range__range
+    and ('change, 'rebase, 'selection) _Sync__change =
+      ('change, 'rebase, 'selection) Sync.change =
+      {
+      inner: ('change, 'selection) _Sync__changeInner ;
+      revert: 'change ;
+      rebase: 'rebase }
     and ('change, 'selection) _Sync__changeInner =
       ('change, 'selection) Sync.changeInner =
       {
@@ -127,6 +133,9 @@ module Version1 =
       | RemoteCursors of _View__cursor list 
     and _World__MultiChange__change = _Change__change list
     and _World__MultiChange__data = _Change__data
+    and _World__MultiChange__fullChange =
+      (_World__MultiChange__change, _World__MultiChange__rebaseItem,
+        _World__MultiChange__selection) _Sync__change
     and _World__MultiChange__rebaseItem = _Change__rebaseItem list
     and _World__MultiChange__selection =
       (string * _Belt_SetString__t * (int * int))
@@ -1206,6 +1215,66 @@ module Version1 =
     and (deserialize_Quill____range :
       Js.Json.t -> (_Quill__range, string list) Belt.Result.t) =
       fun value -> deserialize_View__Range__range value
+    and deserialize_Sync____change :
+      'arg0 'arg1 'arg2 .
+        (Js.Json.t -> ('arg0, string list) Belt.Result.t) ->
+          (Js.Json.t -> ('arg1, string list) Belt.Result.t) ->
+            (Js.Json.t -> ('arg2, string list) Belt.Result.t) ->
+              Js.Json.t ->
+                (('arg0, 'arg1, 'arg2) _Sync__change, string list)
+                  Belt.Result.t
+      = fun (type arg2) -> fun (type arg1) -> fun (type arg0) ->
+      fun changeTransformer ->
+        fun rebaseTransformer ->
+          fun selectionTransformer ->
+            fun record ->
+              match Js.Json.classify record with
+              | ((JSONObject (dict))[@explicit_arity ]) ->
+                  let inner attr_rebase =
+                    let inner attr_revert =
+                      let inner attr_inner =
+                        Belt.Result.Ok
+                          {
+                            inner = attr_inner;
+                            revert = attr_revert;
+                            rebase = attr_rebase
+                          } in
+                      match Js.Dict.get dict "inner" with
+                      | None -> ((Belt.Result.Error (["No attribute inner"]))
+                          [@explicit_arity ])
+                      | ((Some (json))[@explicit_arity ]) ->
+                          (match (deserialize_Sync____changeInner
+                                    changeTransformer selectionTransformer)
+                                   json
+                           with
+                           | ((Belt.Result.Error (error))[@explicit_arity ])
+                               ->
+                               ((Belt.Result.Error
+                                   (("attribute inner" :: error)))
+                               [@explicit_arity ])
+                           | ((Ok (data))[@explicit_arity ]) -> inner data) in
+                    match Js.Dict.get dict "revert" with
+                    | None -> ((Belt.Result.Error (["No attribute revert"]))
+                        [@explicit_arity ])
+                    | ((Some (json))[@explicit_arity ]) ->
+                        (match changeTransformer json with
+                         | ((Belt.Result.Error (error))[@explicit_arity ]) ->
+                             ((Belt.Result.Error
+                                 (("attribute revert" :: error)))
+                             [@explicit_arity ])
+                         | ((Ok (data))[@explicit_arity ]) -> inner data) in
+                  (match Js.Dict.get dict "rebase" with
+                   | None -> ((Belt.Result.Error (["No attribute rebase"]))
+                       [@explicit_arity ])
+                   | ((Some (json))[@explicit_arity ]) ->
+                       (match rebaseTransformer json with
+                        | ((Belt.Result.Error (error))[@explicit_arity ]) ->
+                            ((Belt.Result.Error
+                                (("attribute rebase" :: error)))
+                            [@explicit_arity ])
+                        | ((Ok (data))[@explicit_arity ]) -> inner data))
+              | _ -> ((Belt.Result.Error (["Expected an object"]))
+                  [@explicit_arity ])
     and deserialize_Sync____changeInner :
       'arg0 'arg1 .
         (Js.Json.t -> ('arg0, string list) Belt.Result.t) ->
@@ -1966,6 +2035,14 @@ module Version1 =
     and (deserialize_World__MultiChange__data :
       Js.Json.t -> (_World__MultiChange__data, string list) Belt.Result.t) =
       fun value -> deserialize_Change____data value
+    and (deserialize_World__MultiChange__fullChange :
+      Js.Json.t ->
+        (_World__MultiChange__fullChange, string list) Belt.Result.t)
+      =
+      fun value ->
+        (deserialize_Sync____change deserialize_World__MultiChange__change
+           deserialize_World__MultiChange__rebaseItem
+           deserialize_World__MultiChange__selection) value
     and (deserialize_World__MultiChange__rebaseItem :
       Js.Json.t ->
         (_World__MultiChange__rebaseItem, string list) Belt.Result.t)
@@ -2278,6 +2355,25 @@ module Version1 =
                | None -> Js.Json.null) serialize_NodeType____prefix)) value
     and (serialize_Quill____range : _Quill__range -> Js.Json.t) =
       fun value -> serialize_View__Range__range value
+    and serialize_Sync____change :
+      'arg0 'arg1 'arg2 .
+        ('arg0 -> Js.Json.t) ->
+          ('arg1 -> Js.Json.t) ->
+            ('arg2 -> Js.Json.t) ->
+              ('arg0, 'arg1, 'arg2) _Sync__change -> Js.Json.t
+      =
+      fun changeTransformer ->
+        fun rebaseTransformer ->
+          fun selectionTransformer ->
+            fun record ->
+              Js.Json.object_
+                (Js.Dict.fromArray
+                   [|("inner",
+                       ((serialize_Sync____changeInner changeTransformer
+                           selectionTransformer) record.inner));("revert",
+                                                                  (changeTransformer
+                                                                    record.revert));
+                     ("rebase", (rebaseTransformer record.rebase))|])
     and serialize_Sync____changeInner :
       'arg0 'arg1 .
         ('arg0 -> Js.Json.t) ->
@@ -2476,6 +2572,12 @@ module Version1 =
     and (serialize_World__MultiChange__data :
       _World__MultiChange__data -> Js.Json.t) =
       fun value -> serialize_Change____data value
+    and (serialize_World__MultiChange__fullChange :
+      _World__MultiChange__fullChange -> Js.Json.t) =
+      fun value ->
+        (serialize_Sync____change serialize_World__MultiChange__change
+           serialize_World__MultiChange__rebaseItem
+           serialize_World__MultiChange__selection) value
     and (serialize_World__MultiChange__rebaseItem :
       _World__MultiChange__rebaseItem -> Js.Json.t) =
       fun value ->
@@ -2613,6 +2715,26 @@ and deserializeRebaseItem data =
       (match version with
        | 1 ->
            (match Version1.deserialize_World__MultiChange__rebaseItem data
+            with
+            | ((Belt.Result.Error (error))[@explicit_arity ]) ->
+                ((Belt.Result.Error (error))[@explicit_arity ])
+            | ((Ok (data))[@explicit_arity ]) -> ((Belt.Result.Ok (data))
+                [@explicit_arity ]))
+       | _ ->
+           ((Belt.Result.Error
+               (["Unexpected version " ^ (string_of_int version)]))
+           [@explicit_arity ]))
+let serializeHistoryItem data =
+  wrapWithVersion currentVersion
+    (Version1.serialize_World__MultiChange__fullChange data)
+and deserializeHistoryItem data =
+  match parseVersion data with
+  | ((Belt.Result.Error (err))[@explicit_arity ]) ->
+      ((Belt.Result.Error ([err]))[@explicit_arity ])
+  | ((Ok (version, data))[@implicit_arity ]) ->
+      (match version with
+       | 1 ->
+           (match Version1.deserialize_World__MultiChange__fullChange data
             with
             | ((Belt.Result.Error (error))[@explicit_arity ]) ->
                 ((Belt.Result.Error (error))[@explicit_arity ])
