@@ -50,7 +50,7 @@ type file = {
 
 
 
-  mutable world: StoreInOne.world,
+  mutable world: StoreInOne.Client.world,
   mutable cursors: Hashtbl.t(string, (string, View.Range.range)),
   db: Persistance.levelup(unit),
 };
@@ -228,7 +228,7 @@ let loadFile = id => {
   let%Lets.Async nodeMap = MetaDataPersist.loadNodes(db);
 
   let world =
-    StoreInOne.make(
+    StoreInOne.Client.make(
       {...Data.emptyData(~root="root"), nodes: nodeMap},
       StoreInOne.History.empty,
     );
