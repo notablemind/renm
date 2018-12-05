@@ -1,3 +1,5 @@
+[@@@ocaml.warning "-34"]
+
 module Version1 =
   struct
     type 'value _Belt_MapString__t = 'value Belt_MapString.t

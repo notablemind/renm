@@ -29,8 +29,8 @@ let make = _ => {
     Js.log(sharedViewData);
     Js.log(world);
 
-    let store: StoreInOne.Client.t = {
-      StoreInOne.Client.session: {
+    let store: StoreInOne.MonoClient.t = {
+      StoreInOne.MonoClient.session: {
         ...
           Session.createSession(
             ~metaData=MetaData.blankMetaData(),
@@ -47,5 +47,5 @@ let make = _ => {
     store;
   },
   reducer: ((), _) => ReasonReact.NoUpdate,
-  render: ({state}) => <Tree store=state->StoreInOne.Client.clientStore />,
+  render: ({state}) => <Tree store=state->StoreInOne.MonoClient.clientStore />,
 };

@@ -35,9 +35,9 @@ module ShowServer = {
 
 type state = {
   root: StoreInOne.Server.server,
-  a: StoreInOne.Client.t,
-  b: StoreInOne.Client.t,
-  c: StoreInOne.Client.t,
+  a: StoreInOne.MonoClient.t,
+  b: StoreInOne.MonoClient.t,
+  c: StoreInOne.MonoClient.t,
 };
 
 let component = ReasonReact.reducerComponent("RebaseTest");
@@ -72,17 +72,17 @@ let make = _children => {
     root: (
       {history: baseWorld.history, current: baseWorld.current}: StoreInOne.Server.server
     ),
-    a: StoreInOne.Client.fromWorld(~metaData=MetaData.blankMetaData(), ~sessionId="a", ~world=baseWorld),
-    b: StoreInOne.Client.fromWorld(~metaData=MetaData.blankMetaData(), ~sessionId="b", ~world=baseWorld),
-    c: StoreInOne.Client.fromWorld(~metaData=MetaData.blankMetaData(), ~sessionId="c", ~world=baseWorld),
+    a: StoreInOne.MonoClient.fromWorld(~metaData=MetaData.blankMetaData(), ~sessionId="a", ~world=baseWorld),
+    b: StoreInOne.MonoClient.fromWorld(~metaData=MetaData.blankMetaData(), ~sessionId="b", ~world=baseWorld),
+    c: StoreInOne.MonoClient.fromWorld(~metaData=MetaData.blankMetaData(), ~sessionId="c", ~world=baseWorld),
   },
   reducer: (state, _) => ReasonReact.Update(state),
   render: ({state: {root, a, b, c}} as self) => {
-    let startSync = (store: StoreInOne.Client.t) => {
+    let startSync = (store: StoreInOne.MonoClient.t) => {
       let world = prepareSync(store.world);
       store.world = world;
     };
-    let finishSync = (store: StoreInOne.Client.t) => {
+    let finishSync = (store: StoreInOne.MonoClient.t) => {
       let id = StoreInOne.History.latestId(store.world.history);
       let unsynced = store.world.syncing;
 
@@ -139,7 +139,7 @@ let make = _children => {
         [SharedTypes.Event.Update, ...events],
       );
     };
-    let doSync = (store: StoreInOne.Client.t) => {
+    let doSync = (store: StoreInOne.MonoClient.t) => {
       startSync(store);
       finishSync(store);
     };
@@ -166,21 +166,21 @@ let make = _children => {
         <button onClick={_ev => doSync(a)}>
           {ReasonReact.string("Sync")}
         </button>
-        <Tree store=a->StoreInOne.Client.clientStore />
+        <Tree store=a->StoreInOne.MonoClient.clientStore />
         <DebugStoreView store=a />
       </div>
       <div className=Css.(style([flex(1)]))>
         <button onClick={_ev => doSync(b)}>
           {ReasonReact.string("Sync")}
         </button>
-        <Tree store=b->StoreInOne.Client.clientStore />
+        <Tree store=b->StoreInOne.MonoClient.clientStore />
         <DebugStoreView store=b />
       </div>
       <div className=Css.(style([flex(1)]))>
         <button onClick={_ev => doSync(c)}>
           {ReasonReact.string("Sync")}
         </button>
-        <Tree store=c->StoreInOne.Client.clientStore />
+        <Tree store=c->StoreInOne.MonoClient.clientStore />
         <DebugStoreView store=c />
       </div>
     </div>;

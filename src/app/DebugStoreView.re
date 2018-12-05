@@ -69,7 +69,7 @@ module Resolve = {
 
 let component = ReasonReact.reducerComponent("DebugStoreView");
 
-let make = (~store: StoreInOne.Client.t, _children) => {
+let make = (~store: StoreInOne.MonoClient.t, _children) => {
   ...component,
   initialState: () => (
     store.world.unsynced,

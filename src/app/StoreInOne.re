@@ -1,4 +1,4 @@
-open SharedTypes;
+/* open SharedTypes; */
 
 module type HistoryT = {
   type t('change, 'rebase, 'selection);
@@ -154,6 +154,15 @@ module Client = {
     {...world, current, unsynced: Queue.append(world.unsynced, change)};
   };
 
+  /* let rebaseChanges = (origChanges, baseChanges) =>
+    origChanges
+    ->List.map(change =>
+        baseChanges
+        ->List.reduce(change, (current, base) =>
+            World.MultiChange.rebase(current, base.Sync.rebase)
+          )
+      ); */
+
   let commit = (world: world): world => {
     let (snapshot, unsynced) =
       if (world.unsynced == Queue.empty) {
@@ -168,15 +177,6 @@ module Client = {
       syncing: Queue.empty,
     };
   };
-
-  let rebaseChanges = (origChanges, baseChanges) =>
-    origChanges
-    ->List.map(change =>
-        baseChanges
-        ->List.reduce(change, (current, base) =>
-            World.MultiChange.rebase(current, base.Sync.rebase)
-          )
-      );
 
   let applyRebase = (world: world, changes, rebases): world => {
     /* open Lets; */
@@ -194,13 +194,12 @@ module Client = {
     };
   };
 
+};
 
-  type t = {
-    mutable world: world,
-    mutable session: Session.session,
-  };
+/* TODO this probably duplicates a lot of stuff from SharedWorker */
+module MonoClient = {
 
-  let create =
+  /* let create =
       (~metaData, ~sessionId, ~root, ~nodes: list(Data.Node.t('contents, 'prefix))) => {
     let nodeMap = Data.makeNodeMap(nodes);
     {
@@ -210,16 +209,22 @@ module Client = {
           History.empty,
         ),
     };
+  }; */
+
+  type t = {
+    mutable world: Client.world,
+    mutable session: Session.session,
   };
 
+  /* onlu ysed by rebasetest */
   let fromWorld = (~metaData, ~sessionId, ~world) => {
     session: Session.createSession(~metaData, ~root=world.current.root, ~sessionId),
     world,
   };
 
-  let editNode = (store, id) => [Event.Node(id), Event.View(Node(id))];
+  /* let editNode = (store, id) => [Event.Node(id), Event.View(Node(id))]; */
 
-  let viewNode = (store, id) => [Event.View(Node(id))];
+  /* let viewNode = (store, id) => [Event.View(Node(id))]; */
 
   let onChange = (store, session, events) => {
     Subscription.trigger(
@@ -243,12 +248,12 @@ module Client = {
   };
 
 
-  let apply = (world: world, changes) => {
+  let apply = (world: Client.world, changes) => {
     let%Lets.Try changeEvents =
       Change.eventsForChanges(world.current.nodes, changes.Sync.apply);
 
     let%Lets.Try world =
-      try%Lets.Try (applyChange(world, changes)) {
+      try%Lets.Try (Client.applyChange(world, changes)) {
       | _ => Error("Failed to apply change")
       };
 
@@ -347,5 +352,6 @@ module Client = {
     undo: () => store->undo,
     redo: () => store->redo,
   };
+
 
 };

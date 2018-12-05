@@ -319,7 +319,7 @@ let make = (~setupWorker, _) => {
     let sender = ref(None);
     setupWorker(docId, (store, sendMessage) => {
       Js.log2("Setting up worker", store.ClientStore.session().metaData.id);
-      [%bs.raw "window.store = store"];
+      [%bs.raw "window.store = store"]->ignore;
       sender := Some(sendMessage);
       self.send(Store(store, sendMessage));
     });
