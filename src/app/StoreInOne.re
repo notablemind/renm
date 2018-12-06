@@ -56,6 +56,15 @@ module Server = {
     current: World.MultiChange.data,
   };
 
+  let persistChangedNodes = (current, changes) => {
+    let%Lets.TryWrap events = Change.eventsForChanges(current.Data.nodes, changes->List.map(change => change.Sync.inner.apply)->List.toArray->List.concatMany);
+    let _nodes = events->List.keepMap(item => switch item {
+      | SharedTypes.Event.Node(id) => Some(id)
+      | _ => None
+    });
+    /* TODO */
+  };
+
   let processSyncRequest = (server, id, changes) => {
       let%Lets.Async.Wrap items = History.itemsSince(server.history, id);
       switch (World.processSyncRequest(server.current, items, changes)) {
@@ -64,12 +73,14 @@ module Server = {
             history: History.append(server.history, changes),
             current,
           };
+          persistChangedNodes(server.current, changes)->ignore;
           (server, `Commit)
         | `Rebase(current, rebasedChanges, rebases) =>
-        let server = {
-          history: History.append(server.history, rebasedChanges),
-          current,
-        };
+          let server = {
+            history: History.append(server.history, rebasedChanges),
+            current,
+          };
+          persistChangedNodes(server.current, rebasedChanges)->ignore;
           (server, `Rebase(items @ rebasedChanges, rebases))
       }
   };
