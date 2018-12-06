@@ -64,8 +64,8 @@ type change =
   | SetCompleted(Node.id, bool)
   | SetContents(Node.id, Delta.delta)
 
-  | AddTagToNode(Node.id, Tag.id)
-  | RemoveTagFromNode(Node.id, Tag.id)
+  | AddTagToNodes(Tag.id, list(Node.id))
+  | RemoveTagFromNodes(Tag.id, list(Node.id))
 
   | CreateTag(Tag.t)
   | ModifyTag(Tag.t)
@@ -94,9 +94,10 @@ let events = (data: Map.String.t(NodeType.t), change) =>
   | ChangeContents(id, _)
   | SetPrefix(id, _)
   | SetCompleted(id, _)
-  | AddTagToNode(id, _)
-  | RemoveTagFromNode(id, _)
   | SetContents(id, _) => Ok([Event.Node(id)])
+
+  | AddTagToNodes(_, nodes)
+  | RemoveTagFromNodes(_, nodes) => Ok(nodes->List.map(id => Event.Node(id)))
 
   | DeleteTag(tag) => Ok([]) /* TODO are there any events here? */
 
@@ -220,23 +221,23 @@ let apply = (data: data, change) =>
       Nothing
     ))
 
-  | AddTagToNode(id, tid) =>
+  | AddTagToNodes(tid, nodes) =>
     let%Lets.TryWrap node =
       data.nodes->Map.String.get(id)->Lets.Opt.orError(MissingNode(id));
 
     (
       {...data, nodes: data.nodes->Map.String.set(id, {...node, tags: node.tags->Set.String.add(tid)})},
-      SetCompleted(id, node.completed),
+      RemoveTagFromNodes(tid, nodes),
       Nothing,
     );
 
-  | RemoveTagFromNode(id, tid) =>
+  | RemoveTagFromNodes(tid, nodes) =>
     let%Lets.TryWrap node =
       data.nodes->Map.String.get(id)->Lets.Opt.orError(MissingNode(id));
 
     (
       {...data, nodes: data.nodes->Map.String.set(id, {...node, tags: node.tags->Set.String.remove(tid)})},
-      SetCompleted(id, node.completed),
+      AddTagToNodes(tid, nodes),
       Nothing,
     );
 
