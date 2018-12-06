@@ -88,6 +88,9 @@ let handleMessage = (~state, ~port, ~message: WorkerProtocol.serverMessage) =>
     state.session.allFiles->Hashtbl.replace(meta.id, meta);
     state.session.subs->Subscription.trigger([SharedTypes.Event.MetaData(meta.id)])
 
+  | UserChange(user) =>
+    state.session = {...state.session, user}
+
   | TabChange(change) =>
     /* TODO need to make sure that selections are updated correctly... */
     let%Lets.TryLog events =

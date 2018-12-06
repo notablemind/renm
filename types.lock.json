@@ -20,6 +20,11 @@
           "name": "t"
         },
         {
+          "moduleName": "StoreInOne",
+          "modulePath": ["Server"],
+          "name": "serverFile"
+        },
+        {
           "moduleName": "View",
           "modulePath": [],
           "name": "sharedViewData"
@@ -33,6 +38,11 @@
           "moduleName": "World",
           "modulePath": ["MultiChange"],
           "name": "fullChange"
+        },
+        {
+          "moduleName": "Session",
+          "modulePath": [],
+          "name": "auth"
         },
         {
           "moduleName": "NodeType",
@@ -718,6 +728,34 @@
                       ],
                       []
                     ]
+                  ],
+                  [
+                    "contributors",
+                    [
+                      "Reference",
+                      [
+                        "Public",
+                        [
+                          "Belt_MapString",
+                          [],
+                          "t"
+                        ]
+                      ],
+                      [
+                        [
+                          "Reference",
+                          [
+                            "Public",
+                            [
+                              "Data",
+                              [],
+                              "user"
+                            ]
+                          ],
+                          []
+                        ]
+                      ]
+                    ]
                   ]
                 ]
               ]
@@ -744,6 +782,115 @@
                     "float"
                   ],
                   []
+                ]
+              ]
+            }
+          ]
+        ],
+        [
+          [
+            "Data",
+            [],
+            "source"
+          ],
+          [
+            [],
+            {
+              "name": "source",
+              "variables": [],
+              "body": [
+                "Variant",
+                [
+                  [
+                    "Google",
+                    [
+                      [
+                        "Reference",
+                        [
+                          "Builtin",
+                          "string"
+                        ],
+                        []
+                      ]
+                    ],
+                    null
+                  ]
+                ]
+              ]
+            }
+          ]
+        ],
+        [
+          [
+            "Data",
+            [],
+            "user"
+          ],
+          [
+            [],
+            {
+              "name": "user",
+              "variables": [],
+              "body": [
+                "Record",
+                [
+                  [
+                    "id",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "string"
+                      ],
+                      []
+                    ]
+                  ],
+                  [
+                    "name",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "string"
+                      ],
+                      []
+                    ]
+                  ],
+                  [
+                    "source",
+                    [
+                      "Reference",
+                      [
+                        "Public",
+                        [
+                          "Data",
+                          [],
+                          "source"
+                        ]
+                      ],
+                      []
+                    ]
+                  ],
+                  [
+                    "profilePic",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "option"
+                      ],
+                      [
+                        [
+                          "Reference",
+                          [
+                            "Builtin",
+                            "string"
+                          ],
+                          []
+                        ]
+                      ]
+                    ]
+                  ]
                 ]
               ]
             }
@@ -1240,6 +1387,17 @@
                       ],
                       []
                     ]
+                  ],
+                  [
+                    "etag",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "string"
+                      ],
+                      []
+                    ]
                   ]
                 ]
               ]
@@ -1471,6 +1629,327 @@
                     ]
                   ],
                   []
+                ]
+              ]
+            }
+          ]
+        ],
+        [
+          [
+            "Session",
+            [],
+            "auth"
+          ],
+          [
+            [],
+            {
+              "name": "auth",
+              "variables": [],
+              "body": [
+                "Record",
+                [
+                  [
+                    "userId",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "string"
+                      ],
+                      []
+                    ]
+                  ],
+                  [
+                    "google",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "option"
+                      ],
+                      [
+                        [
+                          "Reference",
+                          [
+                            "Public",
+                            [
+                              "Session",
+                              [],
+                              "google"
+                            ]
+                          ],
+                          []
+                        ]
+                      ]
+                    ]
+                  ]
+                ]
+              ]
+            }
+          ]
+        ],
+        [
+          [
+            "Session",
+            [],
+            "google"
+          ],
+          [
+            [
+              [
+                {
+                  "txt": "ocaml.doc",
+                  "loc": {
+                    "loc_start": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_end": {
+                      "pos_fname": "_none_",
+                      "pos_lnum": 1,
+                      "pos_bol": 0,
+                      "pos_cnum": -1
+                    },
+                    "loc_ghost": true
+                  }
+                },
+                [
+                  "PStr",
+                  "let _ =\n  \"\\nSessions persist across file opens. Each client instance (e.g. tab) gets its own session,\\nwhich lives for the life of the tab.\\n\""
+                ]
+              ]
+            ],
+            {
+              "name": "google",
+              "variables": [],
+              "body": [
+                "Record",
+                [
+                  [
+                    "googleId",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "string"
+                      ],
+                      []
+                    ]
+                  ],
+                  [
+                    "userName",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "string"
+                      ],
+                      []
+                    ]
+                  ],
+                  [
+                    "token",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "string"
+                      ],
+                      []
+                    ]
+                  ],
+                  [
+                    "expires",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "float"
+                      ],
+                      []
+                    ]
+                  ]
+                ]
+              ]
+            }
+          ]
+        ],
+        [
+          [
+            "StoreInOne",
+            [],
+            "history"
+          ],
+          [
+            [],
+            {
+              "name": "history",
+              "variables": [],
+              "body": [
+                "Expr",
+                [
+                  "Reference",
+                  [
+                    "Public",
+                    [
+                      "StoreInOne",
+                      ["History"],
+                      "t"
+                    ]
+                  ],
+                  [
+                    [
+                      "Reference",
+                      [
+                        "Public",
+                        [
+                          "World",
+                          ["MultiChange"],
+                          "change"
+                        ]
+                      ],
+                      []
+                    ],
+                    [
+                      "Reference",
+                      [
+                        "Public",
+                        [
+                          "World",
+                          ["MultiChange"],
+                          "rebaseItem"
+                        ]
+                      ],
+                      []
+                    ],
+                    [
+                      "Reference",
+                      [
+                        "Public",
+                        [
+                          "World",
+                          ["MultiChange"],
+                          "selection"
+                        ]
+                      ],
+                      []
+                    ]
+                  ]
+                ]
+              ]
+            }
+          ]
+        ],
+        [
+          [
+            "StoreInOne",
+            ["History"],
+            "t"
+          ],
+          [
+            [],
+            {
+              "name": "t",
+              "variables": [
+                [
+                  "Variable",
+                  "change"
+                ],
+                [
+                  "Variable",
+                  "rebase"
+                ],
+                [
+                  "Variable",
+                  "selection"
+                ]
+              ],
+              "body": [
+                "Expr",
+                [
+                  "Reference",
+                  [
+                    "Builtin",
+                    "list"
+                  ],
+                  [
+                    [
+                      "Reference",
+                      [
+                        "Public",
+                        [
+                          "Sync",
+                          [],
+                          "change"
+                        ]
+                      ],
+                      [
+                        [
+                          "Variable",
+                          "change"
+                        ],
+                        [
+                          "Variable",
+                          "rebase"
+                        ],
+                        [
+                          "Variable",
+                          "selection"
+                        ]
+                      ]
+                    ]
+                  ]
+                ]
+              ]
+            }
+          ]
+        ],
+        [
+          [
+            "StoreInOne",
+            ["Server"],
+            "serverFile"
+          ],
+          [
+            [],
+            {
+              "name": "serverFile",
+              "variables": [],
+              "body": [
+                "Record",
+                [
+                  [
+                    "history",
+                    [
+                      "Reference",
+                      [
+                        "Public",
+                        [
+                          "StoreInOne",
+                          [],
+                          "history"
+                        ]
+                      ],
+                      []
+                    ]
+                  ],
+                  [
+                    "data",
+                    [
+                      "Reference",
+                      [
+                        "Public",
+                        [
+                          "World",
+                          ["MultiChange"],
+                          "data"
+                        ]
+                      ],
+                      []
+                    ]
+                  ]
                 ]
               ]
             }
@@ -2060,6 +2539,29 @@
                     null
                   ],
                   [
+                    "Login",
+                    [
+                      [
+                        "Reference",
+                        [
+                          "Public",
+                          [
+                            "Session",
+                            [],
+                            "google"
+                          ]
+                        ],
+                        []
+                      ]
+                    ],
+                    null
+                  ],
+                  [
+                    "Logout",
+                    [],
+                    null
+                  ],
+                  [
                     "Change",
                     [
                       [
@@ -2172,6 +2674,24 @@
               "body": [
                 "Variant",
                 [
+                  [
+                    "UserChange",
+                    [
+                      [
+                        "Reference",
+                        [
+                          "Public",
+                          [
+                            "Session",
+                            [],
+                            "auth"
+                          ]
+                        ],
+                        []
+                      ]
+                    ],
+                    null
+                  ],
                   [
                     "LoadFile",
                     [

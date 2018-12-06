@@ -6,6 +6,7 @@ let rec fromFixture = (pid, item) =>
         Data.Node.create(
           ~id,
           ~parent=pid,
+          ~author="Test",
           ~contents=Delta.fromString(text),
           ~children=[],
           ~prefix=None,
@@ -20,6 +21,7 @@ let rec fromFixture = (pid, item) =>
         Data.Node.create(
           ~id,
           ~parent=pid,
+          ~author="Test",
           ~contents=Delta.fromString(text),
           ~children=List.map(childNodes, fst),
           ~prefix=None,
@@ -55,7 +57,7 @@ let (root, nodes) =
 
 let nodeMap =
   List.reduce(nodes, Map.String.empty, (map, node) =>
-    Map.String.set(map, node.id, node)
+    Map.String.set(map, node.Data.Node.id, node)
   );
 
 let data = {...Data.emptyData(~root), nodes: nodeMap};
@@ -67,6 +69,7 @@ let leaf = (id, parent, text) =>
   Data.Node.create(
     ~id,
     ~parent,
+    ~author="Test",
     ~contents=Delta.fromString(text),
     ~children=[],
     ~prefix=None,

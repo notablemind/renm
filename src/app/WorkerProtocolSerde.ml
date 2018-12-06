@@ -1,5 +1,4 @@
 [@@@ocaml.warning "-34"]
-
 module Version1 =
   struct
     type 'value _Belt_MapString__t = 'value Belt_MapString.t
@@ -25,8 +24,17 @@ module Version1 =
       {
       nodes: ('contents, 'prefix) _Data__Node__t _Belt_MapString__t ;
       tags: _Data__Tag__t _Belt_MapString__t ;
-      root: _Data__Node__id }
+      root: _Data__Node__id ;
+      contributors: _Data__user _Belt_MapString__t }
     and _Data__date = float
+    and _Data__source = Data.source =
+      | Google of string 
+    and _Data__user = Data.user =
+      {
+      id: string ;
+      name: string ;
+      source: _Data__source ;
+      profilePic: string option }
     and _Data__Node__id = string
     and ('contents, 'prefix) _Data__Node__t =
       ('contents, 'prefix) Data.Node.t =
@@ -61,7 +69,8 @@ module Version1 =
     and _MetaData__sync = MetaData.sync =
       {
       remote: _MetaData__remote ;
-      lastSyncTime: float }
+      lastSyncTime: float ;
+      etag: string }
     and _MetaData__t = MetaData.t =
       {
       id: string ;
@@ -77,6 +86,25 @@ module Version1 =
     and _NodeType__t =
       (_Delta__delta, _NodeType__prefix option) _Data__Node__t
     and _Quill__range = _View__Range__range
+    and _Session__auth = Session.auth =
+      {
+      userId: string ;
+      google: _Session__google option }
+    and _Session__google = Session.google =
+      {
+      googleId: string ;
+      userName: string ;
+      token: string ;
+      expires: float }
+    and _StoreInOne__history =
+      (_World__MultiChange__change, _World__MultiChange__rebaseItem,
+        _World__MultiChange__selection) _StoreInOne__History__t
+    and ('change, 'rebase, 'selection) _StoreInOne__History__t =
+      ('change, 'rebase, 'selection) _Sync__change list
+    and _StoreInOne__Server__serverFile = StoreInOne.Server.serverFile =
+      {
+      history: _StoreInOne__history ;
+      data: _World__MultiChange__data }
     and ('change, 'rebase, 'selection) _Sync__change =
       ('change, 'rebase, 'selection) Sync.change =
       {
@@ -119,6 +147,8 @@ module Version1 =
       | Init of string * string option 
       | Open of string option 
       | Close 
+      | Login of _Session__google 
+      | Logout 
       | Change of _WorkerProtocol__changeInner 
       | ChangeTitle of string 
       | CreateFile of string * string 
@@ -126,6 +156,7 @@ module Version1 =
       | RedoRequest 
       | SelectionChanged of _Data__Node__id * _Quill__range 
     and _WorkerProtocol__serverMessage = WorkerProtocol.serverMessage =
+      | UserChange of _Session__auth 
       | LoadFile of _MetaData__t * _WorkerProtocol__data * _View__cursor list
       
       | AllFiles of _MetaData__t list 
@@ -422,47 +453,64 @@ module Version1 =
           fun record ->
             match Js.Json.classify record with
             | ((JSONObject (dict))[@explicit_arity ]) ->
-                let inner attr_root =
-                  let inner attr_tags =
-                    let inner attr_nodes =
-                      Belt.Result.Ok
-                        {
-                          nodes = attr_nodes;
-                          tags = attr_tags;
-                          root = attr_root
-                        } in
-                    match Js.Dict.get dict "nodes" with
-                    | None -> ((Belt.Result.Error (["No attribute nodes"]))
+                let inner attr_contributors =
+                  let inner attr_root =
+                    let inner attr_tags =
+                      let inner attr_nodes =
+                        Belt.Result.Ok
+                          {
+                            nodes = attr_nodes;
+                            tags = attr_tags;
+                            root = attr_root;
+                            contributors = attr_contributors
+                          } in
+                      match Js.Dict.get dict "nodes" with
+                      | None -> ((Belt.Result.Error (["No attribute nodes"]))
+                          [@explicit_arity ])
+                      | ((Some (json))[@explicit_arity ]) ->
+                          (match (deserialize_Belt_MapString____t
+                                    (deserialize_Data__Node__t
+                                       contentsTransformer prefixTransformer))
+                                   json
+                           with
+                           | ((Belt.Result.Error (error))[@explicit_arity ])
+                               ->
+                               ((Belt.Result.Error
+                                   (("attribute nodes" :: error)))
+                               [@explicit_arity ])
+                           | ((Ok (data))[@explicit_arity ]) -> inner data) in
+                    match Js.Dict.get dict "tags" with
+                    | None -> ((Belt.Result.Error (["No attribute tags"]))
                         [@explicit_arity ])
                     | ((Some (json))[@explicit_arity ]) ->
                         (match (deserialize_Belt_MapString____t
-                                  (deserialize_Data__Node__t
-                                     contentsTransformer prefixTransformer))
-                                 json
+                                  deserialize_Data__Tag__t) json
                          with
                          | ((Belt.Result.Error (error))[@explicit_arity ]) ->
                              ((Belt.Result.Error
-                                 (("attribute nodes" :: error)))
+                                 (("attribute tags" :: error)))
                              [@explicit_arity ])
                          | ((Ok (data))[@explicit_arity ]) -> inner data) in
-                  match Js.Dict.get dict "tags" with
-                  | None -> ((Belt.Result.Error (["No attribute tags"]))
+                  match Js.Dict.get dict "root" with
+                  | None -> ((Belt.Result.Error (["No attribute root"]))
                       [@explicit_arity ])
                   | ((Some (json))[@explicit_arity ]) ->
-                      (match (deserialize_Belt_MapString____t
-                                deserialize_Data__Tag__t) json
-                       with
+                      (match deserialize_Data__Node__id json with
                        | ((Belt.Result.Error (error))[@explicit_arity ]) ->
-                           ((Belt.Result.Error (("attribute tags" :: error)))
+                           ((Belt.Result.Error (("attribute root" :: error)))
                            [@explicit_arity ])
                        | ((Ok (data))[@explicit_arity ]) -> inner data) in
-                (match Js.Dict.get dict "root" with
-                 | None -> ((Belt.Result.Error (["No attribute root"]))
+                (match Js.Dict.get dict "contributors" with
+                 | None ->
+                     ((Belt.Result.Error (["No attribute contributors"]))
                      [@explicit_arity ])
                  | ((Some (json))[@explicit_arity ]) ->
-                     (match deserialize_Data__Node__id json with
+                     (match (deserialize_Belt_MapString____t
+                               deserialize_Data____user) json
+                      with
                       | ((Belt.Result.Error (error))[@explicit_arity ]) ->
-                          ((Belt.Result.Error (("attribute root" :: error)))
+                          ((Belt.Result.Error
+                              (("attribute contributors" :: error)))
                           [@explicit_arity ])
                       | ((Ok (data))[@explicit_arity ]) -> inner data))
             | _ -> ((Belt.Result.Error (["Expected an object"]))
@@ -475,6 +523,117 @@ module Version1 =
            | ((JSONNumber (number))[@explicit_arity ]) ->
                ((Belt.Result.Ok (number))[@explicit_arity ])
            | _ -> ((Error (["Expected a float"]))[@explicit_arity ])) value
+    and (deserialize_Data____source :
+      Js.Json.t -> (_Data__source, string list) Belt.Result.t) =
+      fun constructor ->
+        match Js.Json.classify constructor with
+        | JSONArray [|tag;arg0|] when
+            ((Js.Json.JSONString ("Google"))[@explicit_arity ]) =
+              (Js.Json.classify tag)
+            ->
+            (match (fun string ->
+                      match Js.Json.classify string with
+                      | ((JSONString (string))[@explicit_arity ]) ->
+                          ((Belt.Result.Ok (string))[@explicit_arity ])
+                      | _ -> ((Error (["expected a string"]))
+                          [@explicit_arity ])) arg0
+             with
+             | Belt.Result.Ok arg0 ->
+                 Belt.Result.Ok (Google (arg0) : _Data__source)
+             | Error error -> Error ("constructor argument 0" :: error))
+        | _ -> ((Belt.Result.Error (["Expected an array"]))
+            [@explicit_arity ])
+    and (deserialize_Data____user :
+      Js.Json.t -> (_Data__user, string list) Belt.Result.t) =
+      fun record ->
+        match Js.Json.classify record with
+        | ((JSONObject (dict))[@explicit_arity ]) ->
+            let inner attr_profilePic =
+              let inner attr_source =
+                let inner attr_name =
+                  let inner attr_id =
+                    Belt.Result.Ok
+                      {
+                        id = attr_id;
+                        name = attr_name;
+                        source = attr_source;
+                        profilePic = attr_profilePic
+                      } in
+                  match Js.Dict.get dict "id" with
+                  | None -> ((Belt.Result.Error (["No attribute id"]))
+                      [@explicit_arity ])
+                  | ((Some (json))[@explicit_arity ]) ->
+                      (match (fun string ->
+                                match Js.Json.classify string with
+                                | ((JSONString (string))[@explicit_arity ])
+                                    -> ((Belt.Result.Ok (string))
+                                    [@explicit_arity ])
+                                | _ -> ((Error (["expected a string"]))
+                                    [@explicit_arity ])) json
+                       with
+                       | ((Belt.Result.Error (error))[@explicit_arity ]) ->
+                           ((Belt.Result.Error (("attribute id" :: error)))
+                           [@explicit_arity ])
+                       | ((Ok (data))[@explicit_arity ]) -> inner data) in
+                match Js.Dict.get dict "name" with
+                | None -> ((Belt.Result.Error (["No attribute name"]))
+                    [@explicit_arity ])
+                | ((Some (json))[@explicit_arity ]) ->
+                    (match (fun string ->
+                              match Js.Json.classify string with
+                              | ((JSONString (string))[@explicit_arity ]) ->
+                                  ((Belt.Result.Ok (string))
+                                  [@explicit_arity ])
+                              | _ -> ((Error (["expected a string"]))
+                                  [@explicit_arity ])) json
+                     with
+                     | ((Belt.Result.Error (error))[@explicit_arity ]) ->
+                         ((Belt.Result.Error (("attribute name" :: error)))
+                         [@explicit_arity ])
+                     | ((Ok (data))[@explicit_arity ]) -> inner data) in
+              match Js.Dict.get dict "source" with
+              | None -> ((Belt.Result.Error (["No attribute source"]))
+                  [@explicit_arity ])
+              | ((Some (json))[@explicit_arity ]) ->
+                  (match deserialize_Data____source json with
+                   | ((Belt.Result.Error (error))[@explicit_arity ]) ->
+                       ((Belt.Result.Error (("attribute source" :: error)))
+                       [@explicit_arity ])
+                   | ((Ok (data))[@explicit_arity ]) -> inner data) in
+            (match Js.Dict.get dict "profilePic" with
+             | None -> inner None
+             | ((Some (json))[@explicit_arity ]) ->
+                 (match ((fun transformer ->
+                            fun option ->
+                              match Js.Json.classify option with
+                              | JSONNull -> ((Belt.Result.Ok (None))
+                                  [@explicit_arity ])
+                              | _ ->
+                                  (match transformer option with
+                                   | ((Belt.Result.Error
+                                       (error))[@explicit_arity ]) ->
+                                       ((Belt.Result.Error
+                                           (("optional value" :: error)))
+                                       [@explicit_arity ])
+                                   | ((Ok (value))[@explicit_arity ]) ->
+                                       ((Ok
+                                           (((Some (value))
+                                             [@explicit_arity ])))
+                                       [@explicit_arity ])))
+                           (fun string ->
+                              match Js.Json.classify string with
+                              | ((JSONString (string))[@explicit_arity ]) ->
+                                  ((Belt.Result.Ok (string))
+                                  [@explicit_arity ])
+                              | _ -> ((Error (["expected a string"]))
+                                  [@explicit_arity ]))) json
+                  with
+                  | ((Belt.Result.Error (error))[@explicit_arity ]) ->
+                      ((Belt.Result.Error (("attribute profilePic" :: error)))
+                      [@explicit_arity ])
+                  | ((Ok (data))[@explicit_arity ]) -> inner data))
+        | _ -> ((Belt.Result.Error (["Expected an object"]))
+            [@explicit_arity ])
     and (deserialize_Data__Node__id :
       Js.Json.t -> (_Data__Node__id, string list) Belt.Result.t) =
       fun value ->
@@ -994,33 +1153,53 @@ module Version1 =
       fun record ->
         match Js.Json.classify record with
         | ((JSONObject (dict))[@explicit_arity ]) ->
-            let inner attr_lastSyncTime =
-              let inner attr_remote =
-                Belt.Result.Ok
-                  { remote = attr_remote; lastSyncTime = attr_lastSyncTime } in
-              match Js.Dict.get dict "remote" with
-              | None -> ((Belt.Result.Error (["No attribute remote"]))
+            let inner attr_etag =
+              let inner attr_lastSyncTime =
+                let inner attr_remote =
+                  Belt.Result.Ok
+                    {
+                      remote = attr_remote;
+                      lastSyncTime = attr_lastSyncTime;
+                      etag = attr_etag
+                    } in
+                match Js.Dict.get dict "remote" with
+                | None -> ((Belt.Result.Error (["No attribute remote"]))
+                    [@explicit_arity ])
+                | ((Some (json))[@explicit_arity ]) ->
+                    (match deserialize_MetaData____remote json with
+                     | ((Belt.Result.Error (error))[@explicit_arity ]) ->
+                         ((Belt.Result.Error (("attribute remote" :: error)))
+                         [@explicit_arity ])
+                     | ((Ok (data))[@explicit_arity ]) -> inner data) in
+              match Js.Dict.get dict "lastSyncTime" with
+              | None -> ((Belt.Result.Error (["No attribute lastSyncTime"]))
                   [@explicit_arity ])
               | ((Some (json))[@explicit_arity ]) ->
-                  (match deserialize_MetaData____remote json with
+                  (match (fun number ->
+                            match Js.Json.classify number with
+                            | ((JSONNumber (number))[@explicit_arity ]) ->
+                                ((Belt.Result.Ok (number))[@explicit_arity ])
+                            | _ -> ((Error (["Expected a float"]))
+                                [@explicit_arity ])) json
+                   with
                    | ((Belt.Result.Error (error))[@explicit_arity ]) ->
-                       ((Belt.Result.Error (("attribute remote" :: error)))
+                       ((Belt.Result.Error
+                           (("attribute lastSyncTime" :: error)))
                        [@explicit_arity ])
                    | ((Ok (data))[@explicit_arity ]) -> inner data) in
-            (match Js.Dict.get dict "lastSyncTime" with
-             | None -> ((Belt.Result.Error (["No attribute lastSyncTime"]))
+            (match Js.Dict.get dict "etag" with
+             | None -> ((Belt.Result.Error (["No attribute etag"]))
                  [@explicit_arity ])
              | ((Some (json))[@explicit_arity ]) ->
-                 (match (fun number ->
-                           match Js.Json.classify number with
-                           | ((JSONNumber (number))[@explicit_arity ]) ->
-                               ((Belt.Result.Ok (number))[@explicit_arity ])
-                           | _ -> ((Error (["Expected a float"]))
+                 (match (fun string ->
+                           match Js.Json.classify string with
+                           | ((JSONString (string))[@explicit_arity ]) ->
+                               ((Belt.Result.Ok (string))[@explicit_arity ])
+                           | _ -> ((Error (["expected a string"]))
                                [@explicit_arity ])) json
                   with
                   | ((Belt.Result.Error (error))[@explicit_arity ]) ->
-                      ((Belt.Result.Error
-                          (("attribute lastSyncTime" :: error)))
+                      ((Belt.Result.Error (("attribute etag" :: error)))
                       [@explicit_arity ])
                   | ((Ok (data))[@explicit_arity ]) -> inner data))
         | _ -> ((Belt.Result.Error (["Expected an object"]))
@@ -1217,6 +1396,219 @@ module Version1 =
     and (deserialize_Quill____range :
       Js.Json.t -> (_Quill__range, string list) Belt.Result.t) =
       fun value -> deserialize_View__Range__range value
+    and (deserialize_Session____auth :
+      Js.Json.t -> (_Session__auth, string list) Belt.Result.t) =
+      fun record ->
+        match Js.Json.classify record with
+        | ((JSONObject (dict))[@explicit_arity ]) ->
+            let inner attr_google =
+              let inner attr_userId =
+                Belt.Result.Ok { userId = attr_userId; google = attr_google } in
+              match Js.Dict.get dict "userId" with
+              | None -> ((Belt.Result.Error (["No attribute userId"]))
+                  [@explicit_arity ])
+              | ((Some (json))[@explicit_arity ]) ->
+                  (match (fun string ->
+                            match Js.Json.classify string with
+                            | ((JSONString (string))[@explicit_arity ]) ->
+                                ((Belt.Result.Ok (string))[@explicit_arity ])
+                            | _ -> ((Error (["expected a string"]))
+                                [@explicit_arity ])) json
+                   with
+                   | ((Belt.Result.Error (error))[@explicit_arity ]) ->
+                       ((Belt.Result.Error (("attribute userId" :: error)))
+                       [@explicit_arity ])
+                   | ((Ok (data))[@explicit_arity ]) -> inner data) in
+            (match Js.Dict.get dict "google" with
+             | None -> inner None
+             | ((Some (json))[@explicit_arity ]) ->
+                 (match ((fun transformer ->
+                            fun option ->
+                              match Js.Json.classify option with
+                              | JSONNull -> ((Belt.Result.Ok (None))
+                                  [@explicit_arity ])
+                              | _ ->
+                                  (match transformer option with
+                                   | ((Belt.Result.Error
+                                       (error))[@explicit_arity ]) ->
+                                       ((Belt.Result.Error
+                                           (("optional value" :: error)))
+                                       [@explicit_arity ])
+                                   | ((Ok (value))[@explicit_arity ]) ->
+                                       ((Ok
+                                           (((Some (value))
+                                             [@explicit_arity ])))
+                                       [@explicit_arity ])))
+                           deserialize_Session____google) json
+                  with
+                  | ((Belt.Result.Error (error))[@explicit_arity ]) ->
+                      ((Belt.Result.Error (("attribute google" :: error)))
+                      [@explicit_arity ])
+                  | ((Ok (data))[@explicit_arity ]) -> inner data))
+        | _ -> ((Belt.Result.Error (["Expected an object"]))
+            [@explicit_arity ])
+    and (deserialize_Session____google :
+      Js.Json.t -> (_Session__google, string list) Belt.Result.t) =
+      fun record ->
+        match Js.Json.classify record with
+        | ((JSONObject (dict))[@explicit_arity ]) ->
+            let inner attr_expires =
+              let inner attr_token =
+                let inner attr_userName =
+                  let inner attr_googleId =
+                    Belt.Result.Ok
+                      {
+                        googleId = attr_googleId;
+                        userName = attr_userName;
+                        token = attr_token;
+                        expires = attr_expires
+                      } in
+                  match Js.Dict.get dict "googleId" with
+                  | None -> ((Belt.Result.Error (["No attribute googleId"]))
+                      [@explicit_arity ])
+                  | ((Some (json))[@explicit_arity ]) ->
+                      (match (fun string ->
+                                match Js.Json.classify string with
+                                | ((JSONString (string))[@explicit_arity ])
+                                    -> ((Belt.Result.Ok (string))
+                                    [@explicit_arity ])
+                                | _ -> ((Error (["expected a string"]))
+                                    [@explicit_arity ])) json
+                       with
+                       | ((Belt.Result.Error (error))[@explicit_arity ]) ->
+                           ((Belt.Result.Error
+                               (("attribute googleId" :: error)))
+                           [@explicit_arity ])
+                       | ((Ok (data))[@explicit_arity ]) -> inner data) in
+                match Js.Dict.get dict "userName" with
+                | None -> ((Belt.Result.Error (["No attribute userName"]))
+                    [@explicit_arity ])
+                | ((Some (json))[@explicit_arity ]) ->
+                    (match (fun string ->
+                              match Js.Json.classify string with
+                              | ((JSONString (string))[@explicit_arity ]) ->
+                                  ((Belt.Result.Ok (string))
+                                  [@explicit_arity ])
+                              | _ -> ((Error (["expected a string"]))
+                                  [@explicit_arity ])) json
+                     with
+                     | ((Belt.Result.Error (error))[@explicit_arity ]) ->
+                         ((Belt.Result.Error
+                             (("attribute userName" :: error)))
+                         [@explicit_arity ])
+                     | ((Ok (data))[@explicit_arity ]) -> inner data) in
+              match Js.Dict.get dict "token" with
+              | None -> ((Belt.Result.Error (["No attribute token"]))
+                  [@explicit_arity ])
+              | ((Some (json))[@explicit_arity ]) ->
+                  (match (fun string ->
+                            match Js.Json.classify string with
+                            | ((JSONString (string))[@explicit_arity ]) ->
+                                ((Belt.Result.Ok (string))[@explicit_arity ])
+                            | _ -> ((Error (["expected a string"]))
+                                [@explicit_arity ])) json
+                   with
+                   | ((Belt.Result.Error (error))[@explicit_arity ]) ->
+                       ((Belt.Result.Error (("attribute token" :: error)))
+                       [@explicit_arity ])
+                   | ((Ok (data))[@explicit_arity ]) -> inner data) in
+            (match Js.Dict.get dict "expires" with
+             | None -> ((Belt.Result.Error (["No attribute expires"]))
+                 [@explicit_arity ])
+             | ((Some (json))[@explicit_arity ]) ->
+                 (match (fun number ->
+                           match Js.Json.classify number with
+                           | ((JSONNumber (number))[@explicit_arity ]) ->
+                               ((Belt.Result.Ok (number))[@explicit_arity ])
+                           | _ -> ((Error (["Expected a float"]))
+                               [@explicit_arity ])) json
+                  with
+                  | ((Belt.Result.Error (error))[@explicit_arity ]) ->
+                      ((Belt.Result.Error (("attribute expires" :: error)))
+                      [@explicit_arity ])
+                  | ((Ok (data))[@explicit_arity ]) -> inner data))
+        | _ -> ((Belt.Result.Error (["Expected an object"]))
+            [@explicit_arity ])
+    and (deserialize_StoreInOne____history :
+      Js.Json.t -> (_StoreInOne__history, string list) Belt.Result.t) =
+      fun value ->
+        (deserialize_StoreInOne__History__t
+           deserialize_World__MultiChange__change
+           deserialize_World__MultiChange__rebaseItem
+           deserialize_World__MultiChange__selection) value
+    and deserialize_StoreInOne__History__t :
+      'arg0 'arg1 'arg2 .
+        (Js.Json.t -> ('arg0, string list) Belt.Result.t) ->
+          (Js.Json.t -> ('arg1, string list) Belt.Result.t) ->
+            (Js.Json.t -> ('arg2, string list) Belt.Result.t) ->
+              Js.Json.t ->
+                (('arg0, 'arg1, 'arg2) _StoreInOne__History__t, string list)
+                  Belt.Result.t
+      = fun (type arg2) -> fun (type arg1) -> fun (type arg0) ->
+      fun changeTransformer ->
+        fun rebaseTransformer ->
+          fun selectionTransformer ->
+            fun value ->
+              (fun list ->
+                 match Js.Json.classify list with
+                 | ((JSONArray (items))[@explicit_arity ]) ->
+                     let transformer =
+                       deserialize_Sync____change changeTransformer
+                         rebaseTransformer selectionTransformer in
+                     let rec loop i items =
+                       match items with
+                       | [] -> ((Belt.Result.Ok ([]))[@explicit_arity ])
+                       | one::rest ->
+                           (match transformer one with
+                            | ((Belt.Result.Error (error))[@explicit_arity ])
+                                ->
+                                ((Belt.Result.Error
+                                    ((("list element " ^ (string_of_int i))
+                                      :: error)))
+                                [@explicit_arity ])
+                            | ((Belt.Result.Ok (value))[@explicit_arity ]) ->
+                                (match loop (i + 1) rest with
+                                 | ((Belt.Result.Error
+                                     (error))[@explicit_arity ]) ->
+                                     ((Belt.Result.Error (error))
+                                     [@explicit_arity ])
+                                 | ((Belt.Result.Ok
+                                     (rest))[@explicit_arity ]) ->
+                                     ((Belt.Result.Ok ((value :: rest)))
+                                     [@explicit_arity ]))) in
+                     loop 0 (Belt.List.fromArray items)
+                 | _ -> ((Belt.Result.Error (["expected an array"]))
+                     [@explicit_arity ])) value
+    and (deserialize_StoreInOne__Server__serverFile :
+      Js.Json.t ->
+        (_StoreInOne__Server__serverFile, string list) Belt.Result.t)
+      =
+      fun record ->
+        match Js.Json.classify record with
+        | ((JSONObject (dict))[@explicit_arity ]) ->
+            let inner attr_data =
+              let inner attr_history =
+                Belt.Result.Ok { history = attr_history; data = attr_data } in
+              match Js.Dict.get dict "history" with
+              | None -> ((Belt.Result.Error (["No attribute history"]))
+                  [@explicit_arity ])
+              | ((Some (json))[@explicit_arity ]) ->
+                  (match deserialize_StoreInOne____history json with
+                   | ((Belt.Result.Error (error))[@explicit_arity ]) ->
+                       ((Belt.Result.Error (("attribute history" :: error)))
+                       [@explicit_arity ])
+                   | ((Ok (data))[@explicit_arity ]) -> inner data) in
+            (match Js.Dict.get dict "data" with
+             | None -> ((Belt.Result.Error (["No attribute data"]))
+                 [@explicit_arity ])
+             | ((Some (json))[@explicit_arity ]) ->
+                 (match deserialize_World__MultiChange__data json with
+                  | ((Belt.Result.Error (error))[@explicit_arity ]) ->
+                      ((Belt.Result.Error (("attribute data" :: error)))
+                      [@explicit_arity ])
+                  | ((Ok (data))[@explicit_arity ]) -> inner data))
+        | _ -> ((Belt.Result.Error (["Expected an object"]))
+            [@explicit_arity ])
     and deserialize_Sync____change :
       'arg0 'arg1 'arg2 .
         (Js.Json.t -> ('arg0, string list) Belt.Result.t) ->
@@ -1744,6 +2136,18 @@ module Version1 =
               (Js.Json.classify tag)
             -> Belt.Result.Ok (Close : _WorkerProtocol__message)
         | JSONArray [|tag;arg0|] when
+            ((Js.Json.JSONString ("Login"))[@explicit_arity ]) =
+              (Js.Json.classify tag)
+            ->
+            (match deserialize_Session____google arg0 with
+             | Belt.Result.Ok arg0 ->
+                 Belt.Result.Ok (Login (arg0) : _WorkerProtocol__message)
+             | Error error -> Error ("constructor argument 0" :: error))
+        | JSONArray [|tag|] when
+            ((Js.Json.JSONString ("Logout"))[@explicit_arity ]) =
+              (Js.Json.classify tag)
+            -> Belt.Result.Ok (Logout : _WorkerProtocol__message)
+        | JSONArray [|tag;arg0|] when
             ((Js.Json.JSONString ("Change"))[@explicit_arity ]) =
               (Js.Json.classify tag)
             ->
@@ -1818,6 +2222,15 @@ module Version1 =
       =
       fun constructor ->
         match Js.Json.classify constructor with
+        | JSONArray [|tag;arg0|] when
+            ((Js.Json.JSONString ("UserChange"))[@explicit_arity ]) =
+              (Js.Json.classify tag)
+            ->
+            (match deserialize_Session____auth arg0 with
+             | Belt.Result.Ok arg0 ->
+                 Belt.Result.Ok
+                   (UserChange (arg0) : _WorkerProtocol__serverMessage)
+             | Error error -> Error ("constructor argument 0" :: error))
         | JSONArray [|tag;arg0;arg1;arg2|] when
             ((Js.Json.JSONString ("LoadFile"))[@explicit_arity ]) =
               (Js.Json.classify tag)
@@ -2240,9 +2653,41 @@ module Version1 =
                                                                  ((serialize_Belt_MapString____t
                                                                     serialize_Data__Tag__t)
                                                                     record.tags));
-                   ("root", (serialize_Data__Node__id record.root))|])
+                   ("root", (serialize_Data__Node__id record.root));("contributors",
+                                                                    ((serialize_Belt_MapString____t
+                                                                    serialize_Data____user)
+                                                                    record.contributors))|])
     and (serialize_Data____date : _Data__date -> Js.Json.t) =
       fun value -> Js.Json.number value
+    and (serialize_Data____source : _Data__source -> Js.Json.t) =
+      fun constructor ->
+        match constructor with
+        | Google arg0 ->
+            Js.Json.array [|(Js.Json.string "Google");(Js.Json.string arg0)|]
+    and (serialize_Data____user : _Data__user -> Js.Json.t) =
+      fun record ->
+        Js.Json.object_
+          (Js.Dict.fromArray
+             [|("id", (Js.Json.string record.id));("name",
+                                                    (Js.Json.string
+                                                       record.name));
+               ("source", (serialize_Data____source record.source));("profilePic",
+                                                                    ((((fun
+                                                                    transformer
+                                                                    ->
+                                                                    function
+                                                                    | 
+                                                                    ((Some
+                                                                    (inner))
+                                                                    [@explicit_arity
+                                                                    ]) ->
+                                                                    transformer
+                                                                    inner
+                                                                    | 
+                                                                    None ->
+                                                                    Js.Json.null))
+                                                                    Js.Json.string)
+                                                                    record.profilePic))|])
     and (serialize_Data__Node__id : _Data__Node__id -> Js.Json.t) =
       fun value -> Js.Json.string value
     and serialize_Data__Node__t :
@@ -2320,7 +2765,8 @@ module Version1 =
         Js.Json.object_
           (Js.Dict.fromArray
              [|("remote", (serialize_MetaData____remote record.remote));
-               ("lastSyncTime", (Js.Json.number record.lastSyncTime))|])
+               ("lastSyncTime", (Js.Json.number record.lastSyncTime));
+               ("etag", (Js.Json.string record.etag))|])
     and (serialize_MetaData____t : _MetaData__t -> Js.Json.t) =
       fun record ->
         Js.Json.object_
@@ -2357,6 +2803,66 @@ module Version1 =
                | None -> Js.Json.null) serialize_NodeType____prefix)) value
     and (serialize_Quill____range : _Quill__range -> Js.Json.t) =
       fun value -> serialize_View__Range__range value
+    and (serialize_Session____auth : _Session__auth -> Js.Json.t) =
+      fun record ->
+        Js.Json.object_
+          (Js.Dict.fromArray
+             [|("userId", (Js.Json.string record.userId));("google",
+                                                            ((((fun
+                                                                  transformer
+                                                                  ->
+                                                                  function
+                                                                  | ((Some
+                                                                    (inner))
+                                                                    [@explicit_arity
+                                                                    ]) ->
+                                                                    transformer
+                                                                    inner
+                                                                  | None ->
+                                                                    Js.Json.null))
+                                                                serialize_Session____google)
+                                                               record.google))|])
+    and (serialize_Session____google : _Session__google -> Js.Json.t) =
+      fun record ->
+        Js.Json.object_
+          (Js.Dict.fromArray
+             [|("googleId", (Js.Json.string record.googleId));("userName",
+                                                                (Js.Json.string
+                                                                   record.userName));
+               ("token", (Js.Json.string record.token));("expires",
+                                                          (Js.Json.number
+                                                             record.expires))|])
+    and (serialize_StoreInOne____history : _StoreInOne__history -> Js.Json.t)
+      =
+      fun value ->
+        (serialize_StoreInOne__History__t
+           serialize_World__MultiChange__change
+           serialize_World__MultiChange__rebaseItem
+           serialize_World__MultiChange__selection) value
+    and serialize_StoreInOne__History__t :
+      'arg0 'arg1 'arg2 .
+        ('arg0 -> Js.Json.t) ->
+          ('arg1 -> Js.Json.t) ->
+            ('arg2 -> Js.Json.t) ->
+              ('arg0, 'arg1, 'arg2) _StoreInOne__History__t -> Js.Json.t
+      =
+      fun changeTransformer ->
+        fun rebaseTransformer ->
+          fun selectionTransformer ->
+            fun value ->
+              (fun list ->
+                 Js.Json.array
+                   (Belt.List.toArray
+                      (Belt.List.map list
+                         (serialize_Sync____change changeTransformer
+                            rebaseTransformer selectionTransformer)))) value
+    and (serialize_StoreInOne__Server__serverFile :
+      _StoreInOne__Server__serverFile -> Js.Json.t) =
+      fun record ->
+        Js.Json.object_
+          (Js.Dict.fromArray
+             [|("history", (serialize_StoreInOne____history record.history));
+               ("data", (serialize_World__MultiChange__data record.data))|])
     and serialize_Sync____change :
       'arg0 'arg1 'arg2 .
         ('arg0 -> Js.Json.t) ->
@@ -2499,6 +3005,10 @@ module Version1 =
                                               | None -> Js.Json.null))
                                             Js.Json.string) arg0)|]
         | Close -> Js.Json.array [|(Js.Json.string "Close")|]
+        | Login arg0 ->
+            Js.Json.array
+              [|(Js.Json.string "Login");(serialize_Session____google arg0)|]
+        | Logout -> Js.Json.array [|(Js.Json.string "Logout")|]
         | Change arg0 ->
             Js.Json.array
               [|(Js.Json.string "Change");(serialize_WorkerProtocol____changeInner
@@ -2521,6 +3031,9 @@ module Version1 =
       _WorkerProtocol__serverMessage -> Js.Json.t) =
       fun constructor ->
         match constructor with
+        | UserChange arg0 ->
+            Js.Json.array
+              [|(Js.Json.string "UserChange");(serialize_Session____auth arg0)|]
         | LoadFile (arg0, arg1, arg2) ->
             Js.Json.array
               [|(Js.Json.string "LoadFile");(serialize_MetaData____t arg0);(
@@ -2687,6 +3200,26 @@ and deserializeMetaData data =
            ((Belt.Result.Error
                (["Unexpected version " ^ (string_of_int version)]))
            [@explicit_arity ]))
+let serializeServerFile data =
+  wrapWithVersion currentVersion
+    (Version1.serialize_StoreInOne__Server__serverFile data)
+and deserializeServerFile data =
+  match parseVersion data with
+  | ((Belt.Result.Error (err))[@explicit_arity ]) ->
+      ((Belt.Result.Error ([err]))[@explicit_arity ])
+  | ((Ok (version, data))[@implicit_arity ]) ->
+      (match version with
+       | 1 ->
+           (match Version1.deserialize_StoreInOne__Server__serverFile data
+            with
+            | ((Belt.Result.Error (error))[@explicit_arity ]) ->
+                ((Belt.Result.Error (error))[@explicit_arity ])
+            | ((Ok (data))[@explicit_arity ]) -> ((Belt.Result.Ok (data))
+                [@explicit_arity ]))
+       | _ ->
+           ((Belt.Result.Error
+               (["Unexpected version " ^ (string_of_int version)]))
+           [@explicit_arity ]))
 let serializeSharedViewData data =
   wrapWithVersion currentVersion
     (Version1.serialize_View____sharedViewData data)
@@ -2738,6 +3271,24 @@ and deserializeHistoryItem data =
        | 1 ->
            (match Version1.deserialize_World__MultiChange__fullChange data
             with
+            | ((Belt.Result.Error (error))[@explicit_arity ]) ->
+                ((Belt.Result.Error (error))[@explicit_arity ])
+            | ((Ok (data))[@explicit_arity ]) -> ((Belt.Result.Ok (data))
+                [@explicit_arity ]))
+       | _ ->
+           ((Belt.Result.Error
+               (["Unexpected version " ^ (string_of_int version)]))
+           [@explicit_arity ]))
+let serializeAuth data =
+  wrapWithVersion currentVersion (Version1.serialize_Session____auth data)
+and deserializeAuth data =
+  match parseVersion data with
+  | ((Belt.Result.Error (err))[@explicit_arity ]) ->
+      ((Belt.Result.Error ([err]))[@explicit_arity ])
+  | ((Ok (version, data))[@implicit_arity ]) ->
+      (match version with
+       | 1 ->
+           (match Version1.deserialize_Session____auth data with
             | ((Belt.Result.Error (error))[@explicit_arity ]) ->
                 ((Belt.Result.Error (error))[@explicit_arity ])
             | ((Ok (data))[@explicit_arity ]) -> ((Belt.Result.Ok (data))

@@ -8,6 +8,7 @@ type remote =
 type sync = {
   remote,
   lastSyncTime: float,
+  etag: string,
 };
 
 type t = {

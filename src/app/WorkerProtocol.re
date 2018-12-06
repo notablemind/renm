@@ -7,6 +7,8 @@ type message =
   | Init(string, option(string))
   | Open(option(string))
   | Close
+  | Login(Session.google)
+  | Logout
   | Change(changeInner)
   | ChangeTitle(string)
   /* id, title */
@@ -16,6 +18,7 @@ type message =
   | SelectionChanged(Data.Node.id, Quill.range);
 
 type serverMessage =
+  | UserChange(Session.auth)
   /* metadata, current file data, cursors */
   | LoadFile(MetaData.t, data, list(View.cursor))
   | AllFiles(list(MetaData.t))

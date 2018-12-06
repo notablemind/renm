@@ -16,11 +16,12 @@ let makeFileWithNodes = (~title, ~id, ~nodes: list(Data.Node.t('a, 'b))) => {
   Js.Promise.resolve(meta)
 };
 
-let makeEmptyFile = (~title, ~id) => {
+let makeEmptyFile = (~title, ~id, ~author) => {
   makeFileWithNodes(~title, ~id, ~nodes=[
     Data.Node.create(
       ~id="root",
       ~parent="root",
+      ~author,
       ~contents=Delta.fromString(title),
       ~children=[],
       ~prefix=None

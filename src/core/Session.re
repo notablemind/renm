@@ -5,11 +5,24 @@ Sessions persist across file opens. Each client instance (e.g. tab) gets its own
 which lives for the life of the tab.
 */
 
+type google = {
+  googleId: string,
+  userName: string,
+  token: string,
+  expires: float,
+};
+
+type auth = {
+  userId: string,
+  google: option(google)
+};
+
 type session = {
   metaData: MetaData.t,
   allFiles: Hashtbl.t(string, MetaData.t),
   sessionId: string,
   changeNum: int,
+  user: auth,
   /* (changeSetId, time of first change, nodeId) */
   changeSet: option((string, float, string)),
   view: View.view,
@@ -27,6 +40,7 @@ let subscribeToMetadata = (session, fn) => {
 };
 
 let createSession = (~metaData, ~sessionId, ~root) => {
+  user: {userId: "uninitialized", google: None},
   metaData,
   sessionId,
   allFiles: Hashtbl.create(1),
@@ -95,7 +109,7 @@ let makeSessionInfo = (~changeId, ~preSelection, ~postSelection, session) => {
   Sync.sessionId: session.sessionId,
   changeset:
     session.changeSet->Lets.Opt.map(((changeSetId, _, _)) => changeSetId),
-  author: "jared",
+  author: session.user.userId,
   preSelection,
   postSelection,
 };

@@ -156,12 +156,12 @@ let applyChange = (file, change, ports, dontSendToSession) => {
   let%Lets.Async.Consume () = MetaDataPersist.save(file.meta);
 };
 
-let onUndo = (file, ports, sessionId) => {
+let onUndo = (file, auth, ports, sessionId) => {
   let%Lets.Async.Consume history = file.world.history->StoreInOne.History.itemsSince(None);
   let%Lets.OptConsume change =
     World.getUndoChange(
       ~sessionId,
-      ~author="worker",
+      ~author=auth.Session.userId,
       ~changeId=workerId ++ string_of_int(nextChangeNum()),
       file.world.unsynced->StoreInOne.Queue.toRevList
       @ history->List.reverse,
@@ -170,11 +170,11 @@ let onUndo = (file, ports, sessionId) => {
   applyChange(file, change, ports, None);
 };
 
-let onRedo = (file, ports, sessionId) => {
+let onRedo = (file, auth, ports, sessionId) => {
   let%Lets.OptConsume change = World.getRedoChange(
     ~sessionId,
     ~changeId=workerId ++ string_of_int(nextChangeNum()),
-    ~author="worker",
+    ~author=auth.Session.userId,
     file.world.unsynced->StoreInOne.Queue.toRevList,
   );
 
@@ -250,13 +250,18 @@ let getFile = (docId) => {
   })
 };
 
-let filePromises = Hashtbl.create(10);
 
-let getCachedFile = (sessionId, ports, docId) => {
-  let%Lets.Async file = switch (Hashtbl.find(filePromises, docId)) {
+type sharedState = {
+  filePromises: Hashtbl.t(option(string), Js.Promise.t(file)),
+  ports: HashMap.String.t((string, port)),
+  mutable auth: Session.auth,
+};
+
+let getCachedFile = (state, sessionId, docId) => {
+  let%Lets.Async file = switch (Hashtbl.find(state.filePromises, docId)) {
     | exception Not_found =>
       let promise = getFile(docId);
-      filePromises->Hashtbl.replace(docId, promise);
+      state.filePromises->Hashtbl.replace(docId, promise);
       promise
     | promise => promise
   };
@@ -264,37 +269,57 @@ let getCachedFile = (sessionId, ports, docId) => {
     ...file.meta,
     lastOpened: Js.Date.now()
   };
-  sendMetaDataChange(~excludeSession=sessionId, ports, file.meta);
+  sendMetaDataChange(~excludeSession=sessionId, state.ports, file.meta);
   let%Lets.Async () = MetaDataPersist.save(file.meta);
   Js.Promise.resolve(file)
 };
 
-let rec handleMessage = (port, file, ports, sessionId, evt) =>
+let authKey = "nm:auth";
+
+let saveAuth = auth => {
+  LocalStorage.setItem(authKey, Js.Json.stringify(
+    WorkerProtocolSerde.serializeAuth(auth)
+  ));
+  auth
+};
+
+let rec handleMessage = (state, port, file, sessionId, evt) =>
   switch (parseMessage(evt##data)) {
   | Ok(message) =>
     switch (message) {
     | WorkerProtocol.Change(change) =>
-      applyChange(file, change, ports, Some(sessionId));
-    | UndoRequest => onUndo(file, ports, sessionId)
-    | RedoRequest => onRedo(file, ports, sessionId)
+      applyChange(file, change, state.ports, Some(sessionId));
+    | UndoRequest => onUndo(file, state.auth, state.ports, sessionId)
+    | RedoRequest => onRedo(file, state.auth, state.ports, sessionId)
     | CreateFile(id, title) =>
-      let%Lets.Async.Consume meta = MetaDataPersist.makeEmptyFile(~id, ~title);
-      sendToPorts(ports, WorkerProtocol.MetaDataUpdate(meta))
+      let%Lets.Async.Consume meta = MetaDataPersist.makeEmptyFile(~id, ~title, ~author=state.auth.userId);
+      sendToPorts(state.ports, WorkerProtocol.MetaDataUpdate(meta))
     | Close =>
       file.cursors->Hashtbl.remove(sessionId);
-      ports->HashMap.String.remove(sessionId);
-      sendCursors(file.cursors, ports, sessionId, file.meta.id);
+      state.ports->HashMap.String.remove(sessionId);
+      sendCursors(file.cursors, state.ports, sessionId, file.meta.id);
     | SelectionChanged(nodeId, range) =>
       /* Js.log2(nodeId, range); */
       Hashtbl.replace(file.cursors, sessionId, (nodeId, range));
-      sendCursors(file.cursors, ports, sessionId, file.meta.id);
+      sendCursors(file.cursors, state.ports, sessionId, file.meta.id);
+
+    | Logout =>
+      state.auth = {...state.auth, google: None};
+      saveAuth(state.auth)->ignore;
+      sendToPorts(~excludeSession=sessionId, state.ports, WorkerProtocol.UserChange(state.auth))
+
+    | Login(google) =>
+      state.auth = {...state.auth, google: Some(google)}
+      saveAuth(state.auth)->ignore
+      sendToPorts(~excludeSession=sessionId, state.ports, WorkerProtocol.UserChange(state.auth))
+
     | Open(id) =>
       file.cursors->Hashtbl.remove(sessionId);
-      sendCursors(file.cursors, ports, sessionId, file.meta.id);
+      sendCursors(file.cursors, state.ports, sessionId, file.meta.id);
 
-      let%Lets.Async.Consume file = getCachedFile(sessionId, ports, id);
-      ports->HashMap.String.set(sessionId, (file.meta.id, port));
-      port->onmessage(handleMessage(port, file, ports, sessionId));
+      let%Lets.Async.Consume file = getCachedFile(state, sessionId, id);
+      state.ports->HashMap.String.set(sessionId, (file.meta.id, port));
+      port->onmessage(handleMessage(state, port, file, sessionId));
       port
       ->postMessage(
           messageToJson(
@@ -313,8 +338,25 @@ let rec handleMessage = (port, file, ports, sessionId, evt) =>
   };
 
 
+let loadAuth = () => {
+  let%Lets.Opt raw = LocalStorage.getJson(authKey);
+  switch (WorkerProtocolSerde.deserializeAuth(raw)) {
+    | Error(_) => None
+    | Ok(a) => Some(a)
+  }
+};
 
-let ports = HashMap.String.make(~hintSize=5);
+let state = {
+  filePromises: Hashtbl.create(10),
+  auth: switch (loadAuth()) {
+    | None => saveAuth({
+      userId: Utils.newId(),
+      google: None
+    })
+    | Some(auth) => auth
+  },
+  ports: HashMap.String.make(~hintSize=5)
+};
 
 addEventListener("connect", e => {
   let%Lets.OptForce port = e##ports[0];
@@ -325,10 +367,11 @@ addEventListener("connect", e => {
       | Ok(Close) => ()
       | Ok(Init(sessionId, fileId)) =>
         /* TODO fileid */
-        let%Lets.Async.Consume file = getCachedFile(sessionId, ports, fileId);
+        let%Lets.Async.Consume file = getCachedFile(state, sessionId, fileId);
         let%Lets.Async.Consume allFiles = Dbs.metasDb->Persistance.getAll;
-        ports->HashMap.String.set(sessionId, (file.meta.id, port));
-        port->onmessage(handleMessage(port, file, ports, sessionId));
+        state.ports->HashMap.String.set(sessionId, (file.meta.id, port));
+        port->onmessage(handleMessage(state, port, file, sessionId));
+        port->postMessage(messageToJson(UserChange(state.auth)))
         port
         ->postMessage(
             messageToJson(

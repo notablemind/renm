@@ -1,8 +1,8 @@
 module ShowServer = {
   let renderContents = (contents: Delta.delta) =>
     ReasonReact.string(Delta.getText(contents));
-  let rec renderNode = (server: StoreInOne.Server.server, id) => {
-    let%Lets.OptForce node = server.current.nodes->Map.String.get(id);
+  let rec renderNode = (server: StoreInOne.Server.serverFile, id) => {
+    let%Lets.OptForce node = server.data.nodes->Map.String.get(id);
     <div key={node.id}>
       {renderContents(node.contents)}
       <div style=ReactDOMRe.Style.(make(~paddingLeft="10px", ()))>
@@ -16,7 +16,7 @@ module ShowServer = {
     ...component,
     render: _s =>
       <div>
-        <div> {renderNode(server, server.current.root)} </div>
+        <div> {renderNode(server, server.data.root)} </div>
         <div>
           <DebugStoreView.Resolve
             promise={server.history->StoreInOne.History.itemsSince(None)}
@@ -34,7 +34,7 @@ module ShowServer = {
 };
 
 type state = {
-  root: StoreInOne.Server.server,
+  root: StoreInOne.Server.serverFile,
   a: StoreInOne.MonoClient.t,
   b: StoreInOne.MonoClient.t,
   c: StoreInOne.MonoClient.t,
@@ -70,7 +70,7 @@ let make = _children => {
   ...component,
   initialState: () => {
     root: (
-      {history: baseWorld.history, current: baseWorld.current}: StoreInOne.Server.server
+      {history: baseWorld.history, data: baseWorld.current}: StoreInOne.Server.serverFile
     ),
     a: StoreInOne.MonoClient.fromWorld(~metaData=MetaData.blankMetaData(), ~sessionId="a", ~world=baseWorld),
     b: StoreInOne.MonoClient.fromWorld(~metaData=MetaData.blankMetaData(), ~sessionId="b", ~world=baseWorld),

@@ -17,7 +17,7 @@ module type HistoryT = {
   /* let moreItems: (t('change, 'rebase, 'selection), ~limit: int, string) => list(Sync.change('change, 'rebase, 'selection)); */
 };
 
-module History: HistoryT = {
+module History = {
   type t('change, 'rebase, 'selection) =
     list(Sync.change('change, 'rebase, 'selection));
   let latestId = t => List.head(t)->Lets.Opt.map(c => c.Sync.inner.changeId);
@@ -51,9 +51,9 @@ type history =
   History.t(World.MultiChange.change, World.MultiChange.rebaseItem, World.MultiChange.selection);
 
 module Server = {
-  type server = {
+  type serverFile = {
     history,
-    current: World.MultiChange.data,
+    data: World.MultiChange.data,
   };
 
   let persistChangedNodes = (current, changes) => {
@@ -67,20 +67,20 @@ module Server = {
 
   let processSyncRequest = (server, id, changes) => {
       let%Lets.Async.Wrap items = History.itemsSince(server.history, id);
-      switch (World.processSyncRequest(server.current, items, changes)) {
-        | `Commit(current) =>
+      switch (World.processSyncRequest(server.data, items, changes)) {
+        | `Commit(data) =>
           let server = {
             history: History.append(server.history, changes),
-            current,
+            data,
           };
-          persistChangedNodes(server.current, changes)->ignore;
+          persistChangedNodes(server.data, changes)->ignore;
           (server, `Commit)
-        | `Rebase(current, rebasedChanges, rebases) =>
+        | `Rebase(data, rebasedChanges, rebases) =>
           let server = {
             history: History.append(server.history, rebasedChanges),
-            current,
+            data,
           };
-          persistChangedNodes(server.current, rebasedChanges)->ignore;
+          persistChangedNodes(server.data, rebasedChanges)->ignore;
           (server, `Rebase(items @ rebasedChanges, rebases))
       }
   };
@@ -190,12 +190,9 @@ module Client = {
   };
 
   let applyRebase = (world: world, changes, rebases): world => {
-    /* open Lets; */
     let (snapshot, changes) = changes->World.reduceChanges(world.snapshot);
     let (current, unsynced) =
       world.unsynced->Queue.toList->World.processRebases(snapshot, rebases);
-    /* let%TryWrap (current, unsynced) =
-        world.unsynced->queueReduceChanges(snapshot); */
     {
       history: History.append(world.history, changes->List.reverse),
       snapshot,
@@ -210,32 +207,17 @@ module Client = {
 /* TODO this probably duplicates a lot of stuff from SharedWorker */
 module MonoClient = {
 
-  /* let create =
-      (~metaData, ~sessionId, ~root, ~nodes: list(Data.Node.t('contents, 'prefix))) => {
-    let nodeMap = Data.makeNodeMap(nodes);
-    {
-      session: Session.createSession(~metaData, ~sessionId, ~root),
-      world: make(
-          {...Data.emptyData(~root), nodes: nodeMap},
-          History.empty,
-        ),
-    };
-  }; */
-
   type t = {
     mutable world: Client.world,
     mutable session: Session.session,
   };
 
-  /* onlu ysed by rebasetest */
+  /* only used by rebasetest */
   let fromWorld = (~metaData, ~sessionId, ~world) => {
     session: Session.createSession(~metaData, ~root=world.current.root, ~sessionId),
     world,
   };
 
-  /* let editNode = (store, id) => [Event.Node(id), Event.View(Node(id))]; */
-
-  /* let viewNode = (store, id) => [Event.View(Node(id))]; */
 
   let onChange = (store, session, events) => {
     Subscription.trigger(
@@ -302,7 +284,7 @@ module MonoClient = {
     let%Lets.OptConsume change =
       World.getUndoChange(
         ~sessionId=session.sessionId,
-        ~author="fixme",
+        ~author=session.user.userId,
         ~changeId,
         store.world.unsynced->Queue.toRevList
         @ allOfHistory->List.reverse,
@@ -325,7 +307,7 @@ module MonoClient = {
     let%Lets.OptConsume change =
       World.getRedoChange(
         ~sessionId=session.sessionId,
-        ~author="fixme",
+        ~author=session.user.userId,
         ~changeId,
         store.world.unsynced->Queue.toRevList,
       );

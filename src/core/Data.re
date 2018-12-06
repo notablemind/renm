@@ -33,10 +33,10 @@ module Node = {
     prefix: 'prefix,
   };
 
-  let create = (~id, ~parent, ~contents, ~prefix, ~children) => {
+  let create = (~id, ~author, ~parent, ~contents, ~prefix, ~children) => {
     id,
     parent,
-    author: "me",
+    author,
     contents,
     trashed: None,
     tags: Set.String.empty,
@@ -50,14 +50,28 @@ module Node = {
   };
 };
 
+type source =
+  /* userId */
+  | Google(string)
+  ;
+
+type user = {
+  id: string,
+  name: string,
+  source,
+  profilePic: option(string),
+};
+
 type data('contents, 'prefix) = {
   nodes: Map.String.t(Node.t('contents, 'prefix)),
   tags: Map.String.t(Tag.t),
   root: Node.id,
+  contributors: Map.String.t(user)
 };
 
 let emptyData = (~root) => {
   root,
+  contributors: Map.String.empty,
   nodes: Map.String.empty,
   tags: Map.String.empty,
 };

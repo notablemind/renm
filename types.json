@@ -7,9 +7,11 @@
     {"file": "./src/app/WorkerProtocol.re", "type": "message"},
     {"file": "./src/app/WorkerProtocol.re", "type": "serverMessage"},
     {"file": "./src/app/MetaData.re", "type": "t", "publicName": "metaData"},
+    {"file": "./src/app/StoreInOne.re", "type": "Server.serverFile", "publicName": "serverFile"},
     {"file": "./src/core/View.re", "type": "sharedViewData"},
     {"file": "./src/World.re", "type": "MultiChange.rebaseItem", "publicName": "rebaseItem"},
     {"file": "./src/World.re", "type": "MultiChange.fullChange", "publicName": "historyItem"},
+    {"file": "./src/core/Session.re", "type": "auth", "publicName": "auth"},
     {"file": "./src/NodeType.re", "type": "t", "publicName": "node"}
   ],
   "custom": []

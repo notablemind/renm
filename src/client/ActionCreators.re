@@ -106,6 +106,7 @@ let createAfter = (store, node) => {
     Data.Node.create(
       ~id=nid,
       ~parent=pid,
+      ~author=store.session().user.userId,
       ~contents=Delta.fromString("\n"),
       ~prefix=None,
       ~children=[],
