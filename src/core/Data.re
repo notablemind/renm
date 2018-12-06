@@ -59,6 +59,7 @@ type user = {
   id: string,
   name: string,
   source,
+  loginDate: float,
   profilePic: option(string),
 };
 
@@ -66,6 +67,7 @@ type data('contents, 'prefix) = {
   nodes: Map.String.t(Node.t('contents, 'prefix)),
   tags: Map.String.t(Tag.t),
   root: Node.id,
+  /* NOTE this could have multiple userIds that point to the same google user. this just means they used different devices */
   contributors: Map.String.t(user)
 };
 

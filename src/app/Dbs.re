@@ -65,3 +65,27 @@ let getNodesDb: Persistance.levelup(unit) => Persistance.levelup(NodeType.t) =
           WorkerProtocolSerde.deserializeNode,
         ),
       );
+
+let getTagsDb: Persistance.levelup(unit) => Persistance.levelup(Data.Tag.t) =
+  fileDb =>
+    fileDb
+    ->Persistance.subleveldown(
+        "tags",
+        getEncoder(
+          "Data__Tag__t",
+          WorkerProtocolSerde.serializeTag,
+          WorkerProtocolSerde.deserializeTag,
+        ),
+      );
+
+let getContributorsDb: Persistance.levelup(unit) => Persistance.levelup(Data.user) =
+  fileDb =>
+    fileDb
+    ->Persistance.subleveldown(
+        "contributors",
+        getEncoder(
+          "Data__user",
+          WorkerProtocolSerde.serializeUser,
+          WorkerProtocolSerde.deserializeUser,
+        ),
+      );

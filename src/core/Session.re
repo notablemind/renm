@@ -14,6 +14,7 @@ type google = {
 
 type auth = {
   userId: string,
+  loginDate: float,
   google: option(google)
 };
 
@@ -40,7 +41,7 @@ let subscribeToMetadata = (session, fn) => {
 };
 
 let createSession = (~metaData, ~sessionId, ~root) => {
-  user: {userId: "uninitialized", google: None},
+  user: {userId: "uninitialized", google: None, loginDate: Js.Date.now()},
   metaData,
   sessionId,
   allFiles: Hashtbl.create(1),

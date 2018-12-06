@@ -64,3 +64,15 @@ let loadNodes = db => {
   let nodeMap = nodes->Array.map(node => (node##key, node##value))->Map.String.fromArray;
   Js.Promise.resolve(nodeMap)
 };
+
+let loadTags = db => {
+  let%Lets.Async tags = db->Dbs.getTagsDb->Persistance.getAll;
+  let tagMap = tags->Array.map(tag => (tag##key, tag##value))->Map.String.fromArray;
+  Js.Promise.resolve(tagMap)
+};
+
+let loadContributors = db => {
+  let%Lets.Async nodes = db->Dbs.getContributorsDb->Persistance.getAll;
+  let nodeMap = nodes->Array.map(node => (node##key, node##value))->Map.String.fromArray;
+  Js.Promise.resolve(nodeMap)
+};

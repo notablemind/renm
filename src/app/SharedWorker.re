@@ -225,11 +225,25 @@ let arrayFind = (items, fn) => Array.reduce(items, None, (current, item) => swit
 
 let loadFile = id => {
   let db = Dbs.getFileDb(id);
-  let%Lets.Async nodeMap = MetaDataPersist.loadNodes(db);
+  let%Lets.Async (
+    nodeMap,
+    tagMap,
+    contributorMap
+   ) = Js.Promise.all3((
+     MetaDataPersist.loadNodes(db),
+     MetaDataPersist.loadTags(db),
+     MetaDataPersist.loadContributors(db)
+   ));
 
   let world =
     StoreInOne.Client.make(
-      {...Data.emptyData(~root="root"), nodes: nodeMap},
+      {
+        root: "root",
+        nodes: nodeMap,
+        /* TODO TODO persist these */
+        contributors: contributorMap,
+        tags: tagMap,
+      },
       StoreInOne.History.empty,
     );
 
@@ -351,7 +365,8 @@ let state = {
   auth: switch (loadAuth()) {
     | None => saveAuth({
       userId: Utils.newId(),
-      google: None
+      google: None,
+      loginDate: Js.Date.now(),
     })
     | Some(auth) => auth
   },

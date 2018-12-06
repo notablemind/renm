@@ -62,7 +62,18 @@ type change =
   | ChangeContents(Node.id, Delta.delta)
   | SetPrefix(Node.id, option(NodeType.prefix))
   | SetCompleted(Node.id, bool)
-  | SetContents(Node.id, Delta.delta);
+  | SetContents(Node.id, Delta.delta)
+
+  | AddTagToNode(Node.id, Tag.id)
+  | RemoveTagFromNode(Node.id, Tag.id)
+
+  | CreateTag(Tag.t)
+  | ModifyTag(Tag.t)
+  | DeleteTag(Tag.t)
+  ;
+  /* TODO create / modify / add / remove tags */
+
+  /* TODO create / modify contributors ... hrmm maybe this will just be a side-effect actually? */
 
 open Lets;
 let events = (data: Map.String.t(NodeType.t), change) =>
@@ -83,7 +94,14 @@ let events = (data: Map.String.t(NodeType.t), change) =>
   | ChangeContents(id, _)
   | SetPrefix(id, _)
   | SetCompleted(id, _)
+  | AddTagToNode(id, _)
+  | RemoveTagFromNode(id, _)
   | SetContents(id, _) => Ok([Event.Node(id)])
+
+  | DeleteTag(tag) => Ok([]) /* TODO are there any events here? */
+
+  | CreateTag(tag)
+  | ModifyTag(tag) => Ok([Event.Tag(tag.id)])
   };
 
 let eventsForChanges = (nodes, changes) =>
@@ -99,6 +117,7 @@ let eventsForChanges = (nodes, changes) =>
 
 
 type error =
+  | MissingTag(Tag.id)
   | MissingNode(Node.id)
   /* parent, id */
   | MissingParent(Node.id, Node.id)
@@ -173,8 +192,55 @@ let rec checkCycle = (id, data, parent: Node.t('a, 'b)) =>
 
 let apply = (data: data, change) =>
   switch (change) {
+    /* TODO implement */
   | Trash(id, time) => Result.Error(MissingNode(id))
   | UnTrash(id) => Result.Error(MissingNode(id))
+
+  /* TAGS */
+
+  | DeleteTag(tag) =>
+    Ok((
+      {...data, tags: data.tags->Map.String.remove(tag.id)},
+      CreateTag(tag),
+      Nothing
+    ))
+
+  | CreateTag(tag) =>
+    Ok((
+      {...data, tags: data.tags->Map.String.set(tag.id, tag)},
+      DeleteTag(tag),
+      Nothing
+    ))
+
+  | ModifyTag(tag) =>
+    let%Lets.TryWrap current = data.tags->Map.String.get(tag.id)->Lets.Opt.orError(MissingTag(tag.id));
+    ((
+      {...data, tags: data.tags->Map.String.set(tag.id, tag)},
+      ModifyTag(current),
+      Nothing
+    ))
+
+  | AddTagToNode(id, tid) =>
+    let%Lets.TryWrap node =
+      data.nodes->Map.String.get(id)->Lets.Opt.orError(MissingNode(id));
+
+    (
+      {...data, nodes: data.nodes->Map.String.set(id, {...node, tags: node.tags->Set.String.add(tid)})},
+      SetCompleted(id, node.completed),
+      Nothing,
+    );
+
+  | RemoveTagFromNode(id, tid) =>
+    let%Lets.TryWrap node =
+      data.nodes->Map.String.get(id)->Lets.Opt.orError(MissingNode(id));
+
+    (
+      {...data, nodes: data.nodes->Map.String.set(id, {...node, tags: node.tags->Set.String.remove(tid)})},
+      SetCompleted(id, node.completed),
+      Nothing,
+    );
+
+  /* OTHER NODE THINGS */
 
   | SetCompleted(id, completed) =>
     let%Lets.TryWrap node =

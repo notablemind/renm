@@ -12,7 +12,9 @@
     {"file": "./src/World.re", "type": "MultiChange.rebaseItem", "publicName": "rebaseItem"},
     {"file": "./src/World.re", "type": "MultiChange.fullChange", "publicName": "historyItem"},
     {"file": "./src/core/Session.re", "type": "auth", "publicName": "auth"},
-    {"file": "./src/NodeType.re", "type": "t", "publicName": "node"}
+    {"file": "./src/NodeType.re", "type": "t", "publicName": "node"},
+    {"file": "./src/core/Data.re", "type": "Tag.t", "publicName": "tag"},
+    {"file": "./src/core/Data.re", "type": "user"}
   ],
   "custom": []
 }

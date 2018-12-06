@@ -48,6 +48,16 @@
           "moduleName": "NodeType",
           "modulePath": [],
           "name": "t"
+        },
+        {
+          "moduleName": "Data",
+          "modulePath": ["Tag"],
+          "name": "t"
+        },
+        {
+          "moduleName": "Data",
+          "modulePath": [],
+          "name": "user"
         }
       ],
       "engineVersion": 1,
@@ -872,6 +882,17 @@
                     ]
                   ],
                   [
+                    "loginDate",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "float"
+                      ],
+                      []
+                    ]
+                  ],
+                  [
                     "profilePic",
                     [
                       "Reference",
@@ -1655,6 +1676,17 @@
                       [
                         "Builtin",
                         "string"
+                      ],
+                      []
+                    ]
+                  ],
+                  [
+                    "loginDate",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "float"
                       ],
                       []
                     ]
