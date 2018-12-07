@@ -222,21 +222,27 @@ let apply = (data: data, change) =>
     ))
 
   | AddTagToNodes(tid, nodes) =>
-    let%Lets.TryWrap node =
-      data.nodes->Map.String.get(id)->Lets.Opt.orError(MissingNode(id));
+    let%Lets.TryWrap dataNodes = nodes->Sync.tryReduce(data.nodes, (map, id) => {
+      let%Lets.TryWrap node =
+        map->Map.String.get(id)->Lets.Opt.orError(MissingNode(id));
+        map->Map.String.set(id, {...node, tags: node.tags->Set.String.add(tid)})
+    });
 
     (
-      {...data, nodes: data.nodes->Map.String.set(id, {...node, tags: node.tags->Set.String.add(tid)})},
+      {...data, nodes: dataNodes},
       RemoveTagFromNodes(tid, nodes),
       Nothing,
     );
 
   | RemoveTagFromNodes(tid, nodes) =>
-    let%Lets.TryWrap node =
-      data.nodes->Map.String.get(id)->Lets.Opt.orError(MissingNode(id));
+    let%Lets.TryWrap dataNodes = nodes->Sync.tryReduce(data.nodes, (map, id) => {
+      let%Lets.TryWrap node =
+        map->Map.String.get(id)->Lets.Opt.orError(MissingNode(id));
+        map->Map.String.set(id, {...node, tags: node.tags->Set.String.remove(tid)})
+    });
 
     (
-      {...data, nodes: data.nodes->Map.String.set(id, {...node, tags: node.tags->Set.String.remove(tid)})},
+      {...data, nodes: dataNodes},
       AddTagToNodes(tid, nodes),
       Nothing,
     );

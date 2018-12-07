@@ -13,6 +13,11 @@ module Version1 =
       | SetPrefix of _Data__Node__id * _NodeType__prefix option 
       | SetCompleted of _Data__Node__id * bool 
       | SetContents of _Data__Node__id * _Delta__delta 
+      | AddTagToNodes of _Data__Tag__id * _Data__Node__id list 
+      | RemoveTagFromNodes of _Data__Tag__id * _Data__Node__id list 
+      | CreateTag of _Data__Tag__t 
+      | ModifyTag of _Data__Tag__t 
+      | DeleteTag of _Data__Tag__t 
     and _Change__data = (_Delta__delta, _NodeType__prefix option) _Data__data
     and _Change__rebaseItem = Change.rebaseItem =
       | Nothing 
@@ -328,6 +333,112 @@ module Version1 =
                         (SetContents (arg0, arg1) : _Change__change)
                   | Error error -> Error ("constructor argument 0" :: error))
              | Error error -> Error ("constructor argument 1" :: error))
+        | JSONArray [|tag;arg0;arg1|] when
+            ((Js.Json.JSONString ("AddTagToNodes"))[@explicit_arity ]) =
+              (Js.Json.classify tag)
+            ->
+            (match (fun list ->
+                      match Js.Json.classify list with
+                      | ((JSONArray (items))[@explicit_arity ]) ->
+                          let transformer = deserialize_Data__Node__id in
+                          let rec loop i items =
+                            match items with
+                            | [] -> ((Belt.Result.Ok ([]))[@explicit_arity ])
+                            | one::rest ->
+                                (match transformer one with
+                                 | ((Belt.Result.Error
+                                     (error))[@explicit_arity ]) ->
+                                     ((Belt.Result.Error
+                                         ((("list element " ^
+                                              (string_of_int i)) :: error)))
+                                     [@explicit_arity ])
+                                 | ((Belt.Result.Ok
+                                     (value))[@explicit_arity ]) ->
+                                     (match loop (i + 1) rest with
+                                      | ((Belt.Result.Error
+                                          (error))[@explicit_arity ]) ->
+                                          ((Belt.Result.Error (error))
+                                          [@explicit_arity ])
+                                      | ((Belt.Result.Ok
+                                          (rest))[@explicit_arity ]) ->
+                                          ((Belt.Result.Ok ((value :: rest)))
+                                          [@explicit_arity ]))) in
+                          loop 0 (Belt.List.fromArray items)
+                      | _ -> ((Belt.Result.Error (["expected an array"]))
+                          [@explicit_arity ])) arg1
+             with
+             | Belt.Result.Ok arg1 ->
+                 (match deserialize_Data__Tag__id arg0 with
+                  | Belt.Result.Ok arg0 ->
+                      Belt.Result.Ok
+                        (AddTagToNodes (arg0, arg1) : _Change__change)
+                  | Error error -> Error ("constructor argument 0" :: error))
+             | Error error -> Error ("constructor argument 1" :: error))
+        | JSONArray [|tag;arg0;arg1|] when
+            ((Js.Json.JSONString ("RemoveTagFromNodes"))[@explicit_arity ]) =
+              (Js.Json.classify tag)
+            ->
+            (match (fun list ->
+                      match Js.Json.classify list with
+                      | ((JSONArray (items))[@explicit_arity ]) ->
+                          let transformer = deserialize_Data__Node__id in
+                          let rec loop i items =
+                            match items with
+                            | [] -> ((Belt.Result.Ok ([]))[@explicit_arity ])
+                            | one::rest ->
+                                (match transformer one with
+                                 | ((Belt.Result.Error
+                                     (error))[@explicit_arity ]) ->
+                                     ((Belt.Result.Error
+                                         ((("list element " ^
+                                              (string_of_int i)) :: error)))
+                                     [@explicit_arity ])
+                                 | ((Belt.Result.Ok
+                                     (value))[@explicit_arity ]) ->
+                                     (match loop (i + 1) rest with
+                                      | ((Belt.Result.Error
+                                          (error))[@explicit_arity ]) ->
+                                          ((Belt.Result.Error (error))
+                                          [@explicit_arity ])
+                                      | ((Belt.Result.Ok
+                                          (rest))[@explicit_arity ]) ->
+                                          ((Belt.Result.Ok ((value :: rest)))
+                                          [@explicit_arity ]))) in
+                          loop 0 (Belt.List.fromArray items)
+                      | _ -> ((Belt.Result.Error (["expected an array"]))
+                          [@explicit_arity ])) arg1
+             with
+             | Belt.Result.Ok arg1 ->
+                 (match deserialize_Data__Tag__id arg0 with
+                  | Belt.Result.Ok arg0 ->
+                      Belt.Result.Ok
+                        (RemoveTagFromNodes (arg0, arg1) : _Change__change)
+                  | Error error -> Error ("constructor argument 0" :: error))
+             | Error error -> Error ("constructor argument 1" :: error))
+        | JSONArray [|tag;arg0|] when
+            ((Js.Json.JSONString ("CreateTag"))[@explicit_arity ]) =
+              (Js.Json.classify tag)
+            ->
+            (match deserialize_Data__Tag__t arg0 with
+             | Belt.Result.Ok arg0 ->
+                 Belt.Result.Ok (CreateTag (arg0) : _Change__change)
+             | Error error -> Error ("constructor argument 0" :: error))
+        | JSONArray [|tag;arg0|] when
+            ((Js.Json.JSONString ("ModifyTag"))[@explicit_arity ]) =
+              (Js.Json.classify tag)
+            ->
+            (match deserialize_Data__Tag__t arg0 with
+             | Belt.Result.Ok arg0 ->
+                 Belt.Result.Ok (ModifyTag (arg0) : _Change__change)
+             | Error error -> Error ("constructor argument 0" :: error))
+        | JSONArray [|tag;arg0|] when
+            ((Js.Json.JSONString ("DeleteTag"))[@explicit_arity ]) =
+              (Js.Json.classify tag)
+            ->
+            (match deserialize_Data__Tag__t arg0 with
+             | Belt.Result.Ok arg0 ->
+                 Belt.Result.Ok (DeleteTag (arg0) : _Change__change)
+             | Error error -> Error ("constructor argument 0" :: error))
         | _ -> ((Belt.Result.Error (["Expected an array"]))
             [@explicit_arity ])
     and (deserialize_Change____data :
@@ -2646,6 +2757,36 @@ module Version1 =
             Js.Json.array
               [|(Js.Json.string "SetContents");(serialize_Data__Node__id arg0);(
                 serialize_Delta____delta arg1)|]
+        | AddTagToNodes (arg0, arg1) ->
+            Js.Json.array
+              [|(Js.Json.string "AddTagToNodes");(serialize_Data__Tag__id
+                                                    arg0);(((fun list ->
+                                                               Js.Json.array
+                                                                 (Belt.List.toArray
+                                                                    (
+                                                                    Belt.List.map
+                                                                    list
+                                                                    serialize_Data__Node__id))))
+                                                             arg1)|]
+        | RemoveTagFromNodes (arg0, arg1) ->
+            Js.Json.array
+              [|(Js.Json.string "RemoveTagFromNodes");(serialize_Data__Tag__id
+                                                         arg0);(((fun list ->
+                                                                    Js.Json.array
+                                                                    (Belt.List.toArray
+                                                                    (Belt.List.map
+                                                                    list
+                                                                    serialize_Data__Node__id))))
+                                                                  arg1)|]
+        | CreateTag arg0 ->
+            Js.Json.array
+              [|(Js.Json.string "CreateTag");(serialize_Data__Tag__t arg0)|]
+        | ModifyTag arg0 ->
+            Js.Json.array
+              [|(Js.Json.string "ModifyTag");(serialize_Data__Tag__t arg0)|]
+        | DeleteTag arg0 ->
+            Js.Json.array
+              [|(Js.Json.string "DeleteTag");(serialize_Data__Tag__t arg0)|]
     and (serialize_Change____data : _Change__data -> Js.Json.t) =
       fun value ->
         (serialize_Data____data serialize_Delta____delta

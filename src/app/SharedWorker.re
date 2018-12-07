@@ -244,6 +244,7 @@ let loadFile = id => {
         contributors: contributorMap,
         tags: tagMap,
       },
+      /* TODO TODO persist and restore here */
       StoreInOne.History.empty,
     );
 
