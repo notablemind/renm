@@ -36,6 +36,7 @@ let make = _ => {
             ~metaData=MetaData.blankMetaData(),
             ~sessionId=Utils.newId(),
             ~root=world.current.root,
+            ~user={userId: "fake", loginDate: Js.Date.now(), google: None},
           ),
         sharedViewData,
       },

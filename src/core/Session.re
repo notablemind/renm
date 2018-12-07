@@ -51,8 +51,8 @@ let subscribeToMetadata = (session, fn) => {
   Subscription.subscribe(session.subs, [Event.MetaData(session.metaData.id)], fn)
 };
 
-let createSession = (~metaData, ~sessionId, ~root) => {
-  user: {userId: "uninitialized", google: None, loginDate: Js.Date.now()},
+let createSession = (~metaData, ~sessionId, ~root, ~user) => {
+  user,
   metaData,
   sessionId,
   allFiles: Hashtbl.create(1),

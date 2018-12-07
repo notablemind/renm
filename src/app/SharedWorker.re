@@ -366,6 +366,7 @@ let rec handleMessage = (state, port, file, sessionId, evt) =>
               file.meta,
               file->data,
               cursorsForSession(file.cursors, sessionId),
+              state.auth,
             ),
           ),
         );
@@ -459,7 +460,7 @@ addEventListener("connect", e => {
         let%Lets.Async.Consume allFiles = Dbs.metasDb->Persistance.getAll;
         state.ports->HashMap.String.set(sessionId, (file.meta.id, port));
         port->onmessage(handleMessage(state, port, file, sessionId));
-        port->postMessage(messageToJson(UserChange(state.auth)))
+        /* port->postMessage(messageToJson(UserChange(state.auth))) */
         port
         ->postMessage(
             messageToJson(
@@ -467,6 +468,7 @@ addEventListener("connect", e => {
                 file.meta,
                 file->data,
                 cursorsForSession(file.cursors, sessionId),
+                state.auth
               ),
             ),
           );

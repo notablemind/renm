@@ -20,7 +20,7 @@ type message =
 type serverMessage =
   | UserChange(Session.auth)
   /* metadata, current file data, cursors */
-  | LoadFile(MetaData.t, data, list(View.cursor))
+  | LoadFile(MetaData.t, data, list(View.cursor), Session.auth)
   | AllFiles(list(MetaData.t))
   | TabChange(changeInner)
   | MetaDataUpdate(MetaData.t)

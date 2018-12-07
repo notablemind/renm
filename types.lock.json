@@ -2968,6 +2968,18 @@
                             []
                           ]
                         ]
+                      ],
+                      [
+                        "Reference",
+                        [
+                          "Public",
+                          [
+                            "Session",
+                            [],
+                            "auth"
+                          ]
+                        ],
+                        []
                       ]
                     ],
                     null

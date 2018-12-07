@@ -66,15 +66,17 @@ let baseWorld =
     StoreInOne.History.empty,
   );
 
+let user = {Session.userId: "fake", loginDate: 0., google: None};
+
 let make = _children => {
   ...component,
   initialState: () => {
     root: (
       {history: baseWorld.history, data: baseWorld.current}: StoreInOne.Server.serverFile
     ),
-    a: StoreInOne.MonoClient.fromWorld(~metaData=MetaData.blankMetaData(), ~sessionId="a", ~world=baseWorld),
-    b: StoreInOne.MonoClient.fromWorld(~metaData=MetaData.blankMetaData(), ~sessionId="b", ~world=baseWorld),
-    c: StoreInOne.MonoClient.fromWorld(~metaData=MetaData.blankMetaData(), ~sessionId="c", ~world=baseWorld),
+    a: StoreInOne.MonoClient.fromWorld(~metaData=MetaData.blankMetaData(), ~sessionId="a", ~world=baseWorld, ~user),
+    b: StoreInOne.MonoClient.fromWorld(~metaData=MetaData.blankMetaData(), ~sessionId="b", ~world=baseWorld, ~user),
+    c: StoreInOne.MonoClient.fromWorld(~metaData=MetaData.blankMetaData(), ~sessionId="c", ~world=baseWorld, ~user),
   },
   reducer: (state, _) => ReasonReact.Update(state),
   render: ({state: {root, a, b, c}} as self) => {

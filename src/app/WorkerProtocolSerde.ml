@@ -169,7 +169,7 @@ module Version1 =
     and _WorkerProtocol__serverMessage = WorkerProtocol.serverMessage =
       | UserChange of _Session__auth 
       | LoadFile of _MetaData__t * _WorkerProtocol__data * _View__cursor list
-      
+      * _Session__auth 
       | AllFiles of _MetaData__t list 
       | TabChange of _WorkerProtocol__changeInner 
       | MetaDataUpdate of _MetaData__t 
@@ -2504,51 +2504,60 @@ module Version1 =
                  Belt.Result.Ok
                    (UserChange (arg0) : _WorkerProtocol__serverMessage)
              | Error error -> Error ("constructor argument 0" :: error))
-        | JSONArray [|tag;arg0;arg1;arg2|] when
+        | JSONArray [|tag;arg0;arg1;arg2;arg3|] when
             ((Js.Json.JSONString ("LoadFile"))[@explicit_arity ]) =
               (Js.Json.classify tag)
             ->
-            (match (fun list ->
-                      match Js.Json.classify list with
-                      | ((JSONArray (items))[@explicit_arity ]) ->
-                          let transformer = deserialize_View____cursor in
-                          let rec loop i items =
-                            match items with
-                            | [] -> ((Belt.Result.Ok ([]))[@explicit_arity ])
-                            | one::rest ->
-                                (match transformer one with
-                                 | ((Belt.Result.Error
-                                     (error))[@explicit_arity ]) ->
-                                     ((Belt.Result.Error
-                                         ((("list element " ^
-                                              (string_of_int i)) :: error)))
+            (match deserialize_Session____auth arg3 with
+             | Belt.Result.Ok arg3 ->
+                 (match (fun list ->
+                           match Js.Json.classify list with
+                           | ((JSONArray (items))[@explicit_arity ]) ->
+                               let transformer = deserialize_View____cursor in
+                               let rec loop i items =
+                                 match items with
+                                 | [] -> ((Belt.Result.Ok ([]))
                                      [@explicit_arity ])
-                                 | ((Belt.Result.Ok
-                                     (value))[@explicit_arity ]) ->
-                                     (match loop (i + 1) rest with
+                                 | one::rest ->
+                                     (match transformer one with
                                       | ((Belt.Result.Error
                                           (error))[@explicit_arity ]) ->
-                                          ((Belt.Result.Error (error))
+                                          ((Belt.Result.Error
+                                              ((("list element " ^
+                                                   (string_of_int i)) ::
+                                                error)))
                                           [@explicit_arity ])
                                       | ((Belt.Result.Ok
-                                          (rest))[@explicit_arity ]) ->
-                                          ((Belt.Result.Ok ((value :: rest)))
-                                          [@explicit_arity ]))) in
-                          loop 0 (Belt.List.fromArray items)
-                      | _ -> ((Belt.Result.Error (["expected an array"]))
-                          [@explicit_arity ])) arg2
-             with
-             | Belt.Result.Ok arg2 ->
-                 (match deserialize_WorkerProtocol____data arg1 with
-                  | Belt.Result.Ok arg1 ->
-                      (match deserialize_MetaData____t arg0 with
-                       | Belt.Result.Ok arg0 ->
-                           Belt.Result.Ok
-                             (LoadFile (arg0, arg1, arg2) : _WorkerProtocol__serverMessage)
+                                          (value))[@explicit_arity ]) ->
+                                          (match loop (i + 1) rest with
+                                           | ((Belt.Result.Error
+                                               (error))[@explicit_arity ]) ->
+                                               ((Belt.Result.Error (error))
+                                               [@explicit_arity ])
+                                           | ((Belt.Result.Ok
+                                               (rest))[@explicit_arity ]) ->
+                                               ((Belt.Result.Ok
+                                                   ((value :: rest)))
+                                               [@explicit_arity ]))) in
+                               loop 0 (Belt.List.fromArray items)
+                           | _ ->
+                               ((Belt.Result.Error (["expected an array"]))
+                               [@explicit_arity ])) arg2
+                  with
+                  | Belt.Result.Ok arg2 ->
+                      (match deserialize_WorkerProtocol____data arg1 with
+                       | Belt.Result.Ok arg1 ->
+                           (match deserialize_MetaData____t arg0 with
+                            | Belt.Result.Ok arg0 ->
+                                Belt.Result.Ok
+                                  (LoadFile (arg0, arg1, arg2, arg3) : 
+                                  _WorkerProtocol__serverMessage)
+                            | Error error ->
+                                Error ("constructor argument 0" :: error))
                        | Error error ->
-                           Error ("constructor argument 0" :: error))
-                  | Error error -> Error ("constructor argument 1" :: error))
-             | Error error -> Error ("constructor argument 2" :: error))
+                           Error ("constructor argument 1" :: error))
+                  | Error error -> Error ("constructor argument 2" :: error))
+             | Error error -> Error ("constructor argument 3" :: error))
         | JSONArray [|tag;arg0|] when
             ((Js.Json.JSONString ("AllFiles"))[@explicit_arity ]) =
               (Js.Json.classify tag)
@@ -3338,7 +3347,7 @@ module Version1 =
         | UserChange arg0 ->
             Js.Json.array
               [|(Js.Json.string "UserChange");(serialize_Session____auth arg0)|]
-        | LoadFile (arg0, arg1, arg2) ->
+        | LoadFile (arg0, arg1, arg2, arg3) ->
             Js.Json.array
               [|(Js.Json.string "LoadFile");(serialize_MetaData____t arg0);(
                 serialize_WorkerProtocol____data arg1);(((fun list ->
@@ -3347,7 +3356,8 @@ module Version1 =
                                                                  (Belt.List.map
                                                                     list
                                                                     serialize_View____cursor))))
-                                                          arg2)|]
+                                                          arg2);(serialize_Session____auth
+                                                                   arg3)|]
         | AllFiles arg0 ->
             Js.Json.array
               [|(Js.Json.string "AllFiles");(((fun list ->

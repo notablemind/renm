@@ -81,10 +81,12 @@ module Header = {
     render: (_) => {
       <EventListener
         store
-        events=[SharedTypes.Event.View(Root)]
+        events=[SharedTypes.Event.View(Root), SharedTypes.Event.User]
         render={() => {
+          Js.log("header render");
           let view = store.session().view;
           let data = store.data();
+          let user = store.session().user;
           let path = getPath(data, view.root);
           <div className=Styles.breadcrumbs>
             {path->List.toArray->Array.map(node => {
@@ -92,10 +94,28 @@ module Header = {
                 {ReasonReact.string(Delta.getText(node.contents))}
               </div>
             })->ReasonReact.array}
-            <button onClick={evt => GoogleSync.signIn()}
-            >
-            {ReasonReact.string("Sign in with google")}
-            </button>
+            <div className=Css.(style([flex(1)])) />
+            {switch (user.google) {
+              | None => 
+                <button onClick={evt => GoogleSync.signIn()}>
+                  {ReasonReact.string("Sign in with google")}
+                </button>
+              | Some(google) => <div className=Css.(style([
+                padding2(~v=px(4), ~h=px(8)),
+                flexDirection(`row),
+                display(`flex),
+                alignItems(`center),
+              ]))>
+                <div className=Css.(style([
+                  width(px(8)),
+                  height(px(8)),
+                  borderRadius(px(4)),
+                  marginRight(px(8)),
+                  backgroundColor(google.isConnected ? hex("afa") : hex("ddd"))
+                ])) />
+                {ReasonReact.string(google.userName)}
+              </div>
+            }}
           </div>
         }}
       />

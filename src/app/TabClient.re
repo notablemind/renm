@@ -89,7 +89,11 @@ let handleMessage = (~state, ~port, ~message: WorkerProtocol.serverMessage) =>
     state.session.subs->Subscription.trigger([SharedTypes.Event.MetaData(meta.id)])
 
   | UserChange(user) =>
-    state.session = {...state.session, user}
+    Js.log2("user change", user);
+    if (user != state.session.user) {
+      state.session = {...state.session, user}
+      state.session.subs->Subscription.trigger([SharedTypes.Event.User])
+    }
 
   | TabChange(change) =>
     /* TODO need to make sure that selections are updated correctly... */
@@ -154,9 +158,9 @@ let handleMessage = (~state, ~port, ~message: WorkerProtocol.serverMessage) =>
     );
   };
 
-let makeSession = (~metaData, ~sessionId, ~data, ~cursors) => {
+let makeSession = (~metaData, ~sessionId, ~data, ~cursors, ~user) => {
   let session =
-    Session.createSession(~metaData, ~sessionId, ~root=data.Data.root);
+    Session.createSession(~metaData, ~sessionId, ~root=data.Data.root, ~user);
   let session = {
     ...session,
     sharedViewData: switch (loadSharedViewData(~fileId=metaData.id)) {
@@ -181,9 +185,9 @@ let actView = (state, action) => {
   Subscription.trigger(session.subs, events);
 };
 
-let initStore = (~onSetup, ~metaData, ~sessionId, ~port, data, cursors) => {
+let initStore = (~onSetup, ~metaData, ~sessionId, ~port, ~user, data, cursors) => {
   let state = {
-    session: makeSession(~metaData, ~sessionId, ~data, ~cursors),
+    session: makeSession(~metaData, ~sessionId, ~data, ~cursors, ~user),
     data,
   };
 
@@ -220,10 +224,10 @@ let initStore = (~onSetup, ~metaData, ~sessionId, ~port, data, cursors) => {
   port
   ->onmessage(evt =>
       switch (messageFromJson(evt##data)) {
-      | Ok(LoadFile(metaData, data, cursors)) =>
+      | Ok(LoadFile(metaData, data, cursors, user)) =>
         Js.log2("Load file", metaData);
         state.session = {
-          ...makeSession(~metaData, ~sessionId, ~data, ~cursors),
+          ...makeSession(~metaData, ~sessionId, ~data, ~cursors, ~user),
           allFiles: state.session.allFiles,
         };
         state.data = data;
@@ -264,10 +268,10 @@ let setupWorker = (docId, onSetup) => {
   ->onmessage(evt => {
       /* Js.log2("Got message", evt); */
       switch (messageFromJson(evt##data)) {
-      | Ok(LoadFile(metaData, data, cursors)) =>
-        let clientStore = initStore(~onSetup, ~metaData, ~sessionId, ~port, data, cursors);
+      | Ok(LoadFile(metaData, data, cursors, user)) =>
+        let clientStore = initStore(~onSetup, ~metaData, ~sessionId, ~port, ~user, data, cursors);
         onSetup(clientStore, message => port->postMessage(messageToJson(message)));
-      | _ => ()
+      | _ => Js.log2("ignoring message", evt##data)
       };
     });
 };

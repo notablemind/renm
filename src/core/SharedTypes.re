@@ -12,6 +12,7 @@ module Event = {
     | Node(Data.Node.id)
     | Tag(Data.Tag.id)
     | MetaData(string)
+    | User
     | Update
     | Root;
 };

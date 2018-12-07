@@ -213,8 +213,8 @@ module MonoClient = {
   };
 
   /* only used by rebasetest */
-  let fromWorld = (~metaData, ~sessionId, ~world) => {
-    session: Session.createSession(~metaData, ~root=world.current.root, ~sessionId),
+  let fromWorld = (~metaData, ~sessionId, ~world, ~user) => {
+    session: Session.createSession(~metaData, ~root=world.current.root, ~sessionId, ~user),
     world,
   };
 
