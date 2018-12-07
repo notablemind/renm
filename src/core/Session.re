@@ -8,9 +8,20 @@ which lives for the life of the tab.
 type google = {
   googleId: string,
   userName: string,
-  token: string,
-  expires: float,
+  profilePic: string,
+  emailAddress: string,
+  accessToken: string,
+  refreshToken: string,
+  expiresAt: float,
+  isConnected: bool,
 };
+
+/* I think I need a way to indicate whether a user's been able to successfully authenticate with saved credentials.
+e.g. the offline case
+maybe an `isConnected` boolean?
+probably goes on the google object? although it's weird to serialize it...
+I think that's fine for now though
+ */
 
 type auth = {
   userId: string,

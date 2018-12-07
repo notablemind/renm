@@ -13,6 +13,17 @@ let getEncoder = (name, encode, decode) => {
   },
 };
 
+let globalDb: Persistance.levelup(unit) = getDb("nm:global");
+let settingsDb: Persistance.levelup(Session.auth) = globalDb
+  ->Persistance.subleveldown(
+    "settings",
+      getEncoder(
+        "Session____auth",
+        WorkerProtocolSerde.serializeAuth,
+        WorkerProtocolSerde.deserializeAuth,
+      ),
+  );
+
 let filesDb: Persistance.levelup(unit) = getDb("nm:files");
 let metasDb: Persistance.levelup(MetaData.t) =
   filesDb

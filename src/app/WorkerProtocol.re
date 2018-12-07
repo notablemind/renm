@@ -4,7 +4,7 @@ type changeInner =
 
 type message =
   /* sessionId, fileId to open */
-  | Init(string, option(string))
+  | Init(string, option(string), option(Session.google))
   | Open(option(string))
   | Close
   | Login(Session.google)

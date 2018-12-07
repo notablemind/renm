@@ -92,6 +92,10 @@ module Header = {
                 {ReasonReact.string(Delta.getText(node.contents))}
               </div>
             })->ReasonReact.array}
+            <button onClick={evt => GoogleSync.signIn()}
+            >
+            {ReasonReact.string("Sign in with google")}
+            </button>
           </div>
         }}
       />

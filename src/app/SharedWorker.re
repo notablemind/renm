@@ -110,7 +110,7 @@ let persistChangedNodes = (file, changeEvents) => {
     | SharedTypes.Event.Node(id) => Some(id)
     | _ => None
   }) -> unique->List.toArray;
-  let%Lets.Async.Consume () = file.db->Dbs.getNodesDb->Persistance.batch(
+  let nodesPromise = file.db->Dbs.getNodesDb->Persistance.batch(
     changedIds->Array.keepMap(id => {
       let%Lets.Opt node = file.world.current->Data.get(id);
       Some(Persistance.batchPut({
@@ -119,7 +119,24 @@ let persistChangedNodes = (file, changeEvents) => {
         "value": node
       }))
     })
-  )
+  );
+
+  let changedTagIds = changeEvents->List.keepMap(evt => switch evt {
+    | SharedTypes.Event.Tag(id) => Some(id)
+    | _ => None
+  }) -> unique->List.toArray;
+  let tagsPromise = file.db->Dbs.getTagsDb->Persistance.batch(
+    changedTagIds->Array.keepMap(id => {
+      let%Lets.Opt tag = file.world.current.tags->Map.String.get(id);
+      Some(Persistance.batchPut({
+        "key": id,
+        "type": "put",
+        "value": tag
+      }))
+    })
+  );
+
+  let%Lets.Async.Consume ((), ()) = Js.Promise.all2((nodesPromise, tagsPromise));
 };
 
 let applyChange = (file, change, ports, dontSendToSession) => {
@@ -292,10 +309,12 @@ let getCachedFile = (state, sessionId, docId) => {
 let authKey = "nm:auth";
 
 let saveAuth = auth => {
-  LocalStorage.setItem(authKey, Js.Json.stringify(
+  Dbs.settingsDb->Persistance.put("current", auth)->ignore;
+  auth
+  /* LocalStorage.setItem(authKey, Js.Json.stringify(
     WorkerProtocolSerde.serializeAuth(auth)
   ));
-  auth
+  auth */
 };
 
 let rec handleMessage = (state, port, file, sessionId, evt) =>
@@ -324,7 +343,12 @@ let rec handleMessage = (state, port, file, sessionId, evt) =>
       sendToPorts(~excludeSession=sessionId, state.ports, WorkerProtocol.UserChange(state.auth))
 
     | Login(google) =>
-      state.auth = {...state.auth, google: Some(google)}
+      Js.log2("Got a login!", google);
+      state.auth = {
+        google: Some(google),
+        loginDate: Js.Date.now(),
+        userId: google.googleId,
+      };
       saveAuth(state.auth)->ignore
       sendToPorts(~excludeSession=sessionId, state.ports, WorkerProtocol.UserChange(state.auth))
 
@@ -354,24 +378,44 @@ let rec handleMessage = (state, port, file, sessionId, evt) =>
 
 
 let loadAuth = () => {
-  let%Lets.Opt raw = LocalStorage.getJson(authKey);
-  switch (WorkerProtocolSerde.deserializeAuth(raw)) {
-    | Error(_) => None
-    | Ok(a) => Some(a)
-  }
+  Dbs.settingsDb->Persistance.get("current")
 };
+
+let getAndCheckAuth = (current) => {
+  let%Lets.Async auth =
+    try%Lets.Async (loadAuth()) {
+    | _ =>
+      Js.Promise.resolve(current)
+    };
+  switch (auth.google) {
+  | None => Js.Promise.resolve(auth)
+  | Some(google) =>
+    GoogleSync.checkSavedAuth(google)
+    |> Js.Promise.then_(google =>
+         Js.Promise.resolve({
+           ...auth,
+           google: Some({...google, isConnected: true}),
+         })
+       )
+    |> Js.Promise.catch(err =>
+         Js.Promise.resolve({
+           ...auth,
+           google: Some({...google, isConnected: false}),
+         })
+       )
+  };
+};
+
+let hasCheckedAuth = ref(false);
 
 let state = {
   filePromises: Hashtbl.create(10),
-  auth: switch (loadAuth()) {
-    | None => saveAuth({
-      userId: Utils.newId(),
-      google: None,
-      loginDate: Js.Date.now(),
-    })
-    | Some(auth) => auth
+  auth: {
+    userId: Utils.newId(),
+    google: None,
+    loginDate: Js.Date.now(),
   },
-  ports: HashMap.String.make(~hintSize=5)
+  ports: HashMap.String.make(~hintSize=5),
 };
 
 addEventListener("connect", e => {
@@ -379,10 +423,38 @@ addEventListener("connect", e => {
   port
   ->onmessage(evt => {
       Js.log2("Got message", evt);
+
       switch (parseMessage(evt##data)) {
       | Ok(Close) => ()
-      | Ok(Init(sessionId, fileId)) =>
+      | Ok(Init(sessionId, fileId, googleAuth)) =>
         /* TODO fileid */
+        let%Lets.Async.Consume () = switch (googleAuth) {
+          | None => {
+            if (hasCheckedAuth^) {
+              Js.Promise.resolve()
+            } else {
+              hasCheckedAuth := true;
+              let%Lets.Async.Wrap auth = getAndCheckAuth(state.auth);
+              if (auth != state.auth) {
+                state.auth = auth;
+                saveAuth(state.auth)->ignore
+                sendToPorts(~excludeSession=sessionId, state.ports, WorkerProtocol.UserChange(state.auth))
+              } else {
+                saveAuth(state.auth)->ignore
+              }
+            }
+          }
+          | Some(google) =>
+            state.auth = {
+              google: Some(google),
+              loginDate: Js.Date.now(),
+              userId: google.googleId,
+            };
+            saveAuth(state.auth)->ignore
+            sendToPorts(~excludeSession=sessionId, state.ports, WorkerProtocol.UserChange(state.auth));
+            Js.Promise.resolve();
+        };
+
         let%Lets.Async.Consume file = getCachedFile(state, sessionId, fileId);
         let%Lets.Async.Consume allFiles = Dbs.metasDb->Persistance.getAll;
         state.ports->HashMap.String.set(sessionId, (file.meta.id, port));
@@ -402,7 +474,7 @@ addEventListener("connect", e => {
         port->postMessage(messageToJson(
           AllFiles(allFiles->Belt.Array.map(m => m##value)->List.fromArray)
         ));
-      | _ => ()
+      | _ => Js.log2("Ignoring message", evt##data)
       };
     });
 });

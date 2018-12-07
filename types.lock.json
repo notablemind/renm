@@ -1914,7 +1914,7 @@
                     ]
                   ],
                   [
-                    "token",
+                    "profilePic",
                     [
                       "Reference",
                       [
@@ -1925,12 +1925,56 @@
                     ]
                   ],
                   [
-                    "expires",
+                    "emailAddress",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "string"
+                      ],
+                      []
+                    ]
+                  ],
+                  [
+                    "accessToken",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "string"
+                      ],
+                      []
+                    ]
+                  ],
+                  [
+                    "refreshToken",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "string"
+                      ],
+                      []
+                    ]
+                  ],
+                  [
+                    "expiresAt",
                     [
                       "Reference",
                       [
                         "Builtin",
                         "float"
+                      ],
+                      []
+                    ]
+                  ],
+                  [
+                    "isConnected",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "bool"
                       ],
                       []
                     ]
@@ -2666,6 +2710,27 @@
                             [
                               "Builtin",
                               "string"
+                            ],
+                            []
+                          ]
+                        ]
+                      ],
+                      [
+                        "Reference",
+                        [
+                          "Builtin",
+                          "option"
+                        ],
+                        [
+                          [
+                            "Reference",
+                            [
+                              "Public",
+                              [
+                                "Session",
+                                [],
+                                "google"
+                              ]
                             ],
                             []
                           ]

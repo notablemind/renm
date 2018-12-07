@@ -3,4 +3,5 @@ lib
 node_modules
 .bsb.lock
 bundle
+auth.json
 

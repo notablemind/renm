@@ -242,13 +242,24 @@ let initStore = (~onSetup, ~metaData, ~sessionId, ~port, data, cursors) => {
 
 let setupWorker = (docId, onSetup) => {
   Js.log2("Docid", docId);
+
+  let%Lets.Async.Consume googleAuth = try%Lets.Async (switch (GoogleSync.getGoogleCode()) {
+    | None => Js.Promise.resolve(None)
+    | Some(code) => {
+      [%bs.raw {|history.replaceState(null, "", location.href.split('?')[0])|}]->ignore;
+      let%Lets.Async.Wrap googleAuth = GoogleSync.processCode(code);
+      Some(googleAuth)
+    }
+  }) { | _ => Js.Promise.resolve(None)};
+
   let worker = sharedWorker("/bundle/SharedWorker.js");
   worker->onerror(err => Js.log(err));
   let port = worker->port;
   port->start;
   let sessionId = Utils.newId();
   window->addUnloadEvent(() => port->postMessage(messageToJson(Close)));
-  port->postMessage(messageToJson(Init(sessionId, docId)));
+  port->postMessage(messageToJson(Init(sessionId, docId, googleAuth)));
+
   port
   ->onmessage(evt => {
       /* Js.log2("Got message", evt); */
