@@ -40,11 +40,6 @@ let component = ReasonReact.reducerComponent("RebaseTest");
 
 
 
-/* TODO return an optional probably */
-let prepareSync = world => {
-  ...world,
-  StoreInOne.Client.history: StoreInOne.History.prepareSync(world.StoreInOne.Client.history),
-};
 
 
 
@@ -62,6 +57,8 @@ let baseWorld =
 
 let user = {Session.userId: "fake", loginDate: 0., google: None};
 
+
+
 let make = _children => {
   ...component,
   initialState: () => {
@@ -74,72 +71,13 @@ let make = _children => {
   },
   reducer: (state, _) => ReasonReact.Update(state),
   render: ({state: {root, a, b, c}} as self) => {
-    let startSync = (store: StoreInOne.MonoClient.t) => {
-      Js.log2("starting", store.world);
-      let world = prepareSync(store.world);
-      store.world = world;
-    };
-    let finishSync = (store: StoreInOne.MonoClient.t) => {
-      let id = StoreInOne.History.latestId(store.world.history);
-      let (_unsynced, syncing, _synced) = StoreInOne.History.partitionT(store.world.history);
-      /* Js.log4("partitioned", unsynced, syncing, synced) */
-      /* let unsynced = store.world.syncing; */
+    let finishSync = store => {
+      let server = MonoUtils.finishSync(root, store);
+      self.send({...self.state, root: server})
 
-      let (server, result) =
-        StoreInOne.Server.processSyncRequest(root, id, syncing->List.reverse);
-      Js.log2(server, result);
-
-      self.send({...self.state, root: server});
-      Js.log(server);
-      let%Lets.TryForce world =
-        switch (result) {
-        | `Commit => StoreInOne.Client.commit(store.world)
-        | `Rebase(changes, rebases) =>
-          Ok(StoreInOne.Client.applyRebase(store.world, changes, rebases))
-        };
-      let rec loop = (id, expanded) =>
-        if (id == store.session.view.root || id == world.current.root) {
-          expanded;
-        } else {
-          {
-            let%Lets.OptWrap node = world.current.nodes->Map.String.get(id);
-            let expanded = expanded->Set.String.add(node.parent);
-            loop(node.parent, expanded);
-          }
-          ->Lets.OptDefault.or_(expanded);
-        };
-
-      store.session = {
-        ...store.session,
-        sharedViewData: {
-          expanded:
-            loop(
-              store.session.view.active,
-              store.session.sharedViewData.expanded,
-            ),
-        },
-      };
-
-      let%Lets.TryForce events =
-        switch (result) {
-        | `Commit => Ok([])
-        | `Rebase(changes, _rebases) =>
-          Change.eventsForChanges(
-            store.world.current.nodes,
-            changes
-            ->List.map(c => c.inner.apply)
-            ->List.reduce([], List.concat),
-          )
-        };
-      store.world = world;
-
-      Subscription.trigger(
-        store.session.subs,
-        [SharedTypes.Event.Update, ...events],
-      );
     };
     let doSync = (store: StoreInOne.MonoClient.t) => {
-      startSync(store);
+      MonoUtils.startSync(store);
       finishSync(store);
     };
     <div className=Css.(style([display(`flex), flexDirection(`row)]))>
@@ -150,7 +88,7 @@ let make = _children => {
         <button
           onClick={
             _ev => {
-              startSync(a);
+              MonoUtils.startSync(a);
               Subscription.trigger(
                 a.session.subs,
                 [SharedTypes.Event.Update],

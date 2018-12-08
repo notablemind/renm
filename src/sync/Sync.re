@@ -125,7 +125,7 @@ module F =
   /* TODO does the server need to have a reified version of the state? Maybe, to give proper rebase things... */
   let processSyncRequest =
       (current, items, changes: list(thisChange)) => {
-    Js.log2("Items since", items);
+    /* Js.log2("Items since", items); */
     switch (items) {
     | [] =>
       let (current, _appliedChanges) =
@@ -135,7 +135,7 @@ module F =
       let rebases = items->List.map(change => change.rebase);
       let (current, rebasedChanges) =
         changes->processRebases(current, rebases);
-      Js.log2("rebased", rebasedChanges);
+      /* Js.log2("rebased", rebasedChanges); */
       (
         `Rebase((
           current,
