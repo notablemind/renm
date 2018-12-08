@@ -43,7 +43,7 @@ let showChange = (change: World.thisChange) =>
     }
   </div>;
 
-module Resolve = {
+/* module Resolve = {
   let component = ReasonReact.reducerComponentWithRetainedProps("Resolve");
   let make = (~promise, ~render, _children) => {
     ...component,
@@ -65,15 +65,15 @@ module Resolve = {
       | Some(v) => render(v)
     }
   };
-};
+}; */
 
 let component = ReasonReact.reducerComponent("DebugStoreView");
 
 let make = (~store: StoreInOne.MonoClient.t, _children) => {
   ...component,
   initialState: () => (
-    store.world.unsynced,
-    store.world.syncing,
+    /* store.world.unsynced,
+    store.world.syncing, */
     store.world.history,
   ),
   reducer: (store, _) => ReasonReact.Update(store),
@@ -86,8 +86,8 @@ let make = (~store: StoreInOne.MonoClient.t, _children) => {
           0,
           () =>
             self.send((
-              store.world.unsynced,
-              store.world.syncing,
+              /* store.world.unsynced,
+              store.world.syncing, */
               store.world.history,
             )),
         ),
@@ -97,27 +97,24 @@ let make = (~store: StoreInOne.MonoClient.t, _children) => {
     (
       {
         state: (
-          unsynced: StoreInOne.Queue.t(World.thisChange),
-          syncing: StoreInOne.Queue.t(World.thisChange),
-          history: StoreInOne.history,
+          /* unsynced: StoreInOne.Queue.t(World.thisChange),
+          syncing: StoreInOne.Queue.t(World.thisChange), */
+          history: StoreInOne.History.t,
         ),
       },
     ) =>
     <div>
-      <div>
+      /* <div>
         <h4> {ReasonReact.string("Unsynced")} </h4>
         {unsynced->StoreInOne.Queue.toList->List.map(showChange)->List.toArray->ReasonReact.array}
       </div>
       <div>
         <h4> {ReasonReact.string("Syncing")} </h4>
         {syncing->StoreInOne.Queue.toList->List.map(showChange)->List.toArray->ReasonReact.array}
-      </div>
+      </div> */
       <div>
         <h4> {ReasonReact.string("History")} </h4>
-        <Resolve
-          promise={history->StoreInOne.History.itemsSince(None)}
-          render={history => history->List.map (showChange)->List.toArray->ReasonReact.array}
-        />
+        {history.changes->List.map (showChange)->List.toArray->ReasonReact.array}
       </div>
     </div>,
 };

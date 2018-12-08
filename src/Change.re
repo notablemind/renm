@@ -118,6 +118,7 @@ let eventsForChanges = (nodes, changes) =>
 
 
 type error =
+  | MissingChange(string)
   | MissingTag(Tag.id)
   | MissingNode(Node.id)
   /* parent, id */

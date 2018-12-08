@@ -18,16 +18,10 @@ module ShowServer = {
       <div>
         <div> {renderNode(server, server.data.root)} </div>
         <div>
-          <DebugStoreView.Resolve
-            promise={server.history->StoreInOne.History.itemsSince(None)}
-            render={
-              items =>
-                items
+                {server.history
                 ->List.map(DebugStoreView.showChange)
                 ->List.toArray
-                ->ReasonReact.array
-            }
-          />
+                ->ReasonReact.array}
         </div>
       </div>,
   };
@@ -46,10 +40,10 @@ let component = ReasonReact.reducerComponent("RebaseTest");
 
 
 
+/* TODO return an optional probably */
 let prepareSync = world => {
   ...world,
-  StoreInOne.Client.syncing: world.StoreInOne.Client.unsynced,
-  unsynced: StoreInOne.Queue.empty,
+  StoreInOne.Client.history: StoreInOne.History.prepareSync(world.StoreInOne.Client.history),
 };
 
 
@@ -72,7 +66,7 @@ let make = _children => {
   ...component,
   initialState: () => {
     root: (
-      {history: baseWorld.history, data: baseWorld.current}: StoreInOne.Server.serverFile
+      {history: baseWorld.history.changes, data: baseWorld.current}: StoreInOne.Server.serverFile
     ),
     a: StoreInOne.MonoClient.fromWorld(~metaData=MetaData.blankMetaData(), ~sessionId="a", ~world=baseWorld, ~user),
     b: StoreInOne.MonoClient.fromWorld(~metaData=MetaData.blankMetaData(), ~sessionId="b", ~world=baseWorld, ~user),
@@ -81,24 +75,27 @@ let make = _children => {
   reducer: (state, _) => ReasonReact.Update(state),
   render: ({state: {root, a, b, c}} as self) => {
     let startSync = (store: StoreInOne.MonoClient.t) => {
+      Js.log2("starting", store.world);
       let world = prepareSync(store.world);
       store.world = world;
     };
     let finishSync = (store: StoreInOne.MonoClient.t) => {
       let id = StoreInOne.History.latestId(store.world.history);
-      let unsynced = store.world.syncing;
+      let (_unsynced, syncing, _synced) = StoreInOne.History.partitionT(store.world.history);
+      /* Js.log4("partitioned", unsynced, syncing, synced) */
+      /* let unsynced = store.world.syncing; */
 
-      let%Lets.Async.Consume (server, result) =
-        StoreInOne.Server.processSyncRequest(root, id, unsynced->StoreInOne.Queue.toList);
+      let (server, result) =
+        StoreInOne.Server.processSyncRequest(root, id, syncing->List.reverse);
       Js.log2(server, result);
 
       self.send({...self.state, root: server});
       Js.log(server);
-      let world =
+      let%Lets.TryForce world =
         switch (result) {
         | `Commit => StoreInOne.Client.commit(store.world)
         | `Rebase(changes, rebases) =>
-          StoreInOne.Client.applyRebase(store.world, changes, rebases)
+          Ok(StoreInOne.Client.applyRebase(store.world, changes, rebases))
         };
       let rec loop = (id, expanded) =>
         if (id == store.session.view.root || id == world.current.root) {

@@ -150,7 +150,8 @@ let applyChange = (file, change, ports, dontSendToSession) => {
   let world = {
     ...file.world,
     current,
-    unsynced: StoreInOne.Queue.append(file.world.unsynced, appliedChange),
+    history: StoreInOne.History.appendT(file.world.history, [appliedChange])
+    /* unsynced: StoreInOne.Queue.append(file.world.unsynced, appliedChange), */
   };
   file.world = world;
 
@@ -174,14 +175,13 @@ let applyChange = (file, change, ports, dontSendToSession) => {
 };
 
 let onUndo = (file, auth, ports, sessionId) => {
-  let%Lets.Async.Consume history = file.world.history->StoreInOne.History.itemsSince(None);
+  let history = file.world.history.changes->StoreInOne.History.itemsSince(None);
   let%Lets.OptConsume change =
     World.getUndoChange(
       ~sessionId,
       ~author=auth.Session.userId,
       ~changeId=workerId ++ string_of_int(nextChangeNum()),
-      file.world.unsynced->StoreInOne.Queue.toRevList
-      @ history->List.reverse,
+      file.world.history.changes
     );
 
   applyChange(file, change, ports, None);
@@ -192,7 +192,7 @@ let onRedo = (file, auth, ports, sessionId) => {
     ~sessionId,
     ~changeId=workerId ++ string_of_int(nextChangeNum()),
     ~author=auth.Session.userId,
-    file.world.unsynced->StoreInOne.Queue.toRevList,
+    file.world.history.changes
   );
 
   applyChange(file, change, ports, None);

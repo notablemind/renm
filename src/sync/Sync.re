@@ -24,6 +24,14 @@ type change('change, 'rebase, 'selection) = {
   rebase: 'rebase,
 };
 
+let rec tryReduceReverse = (list, initial, fn) =>
+  switch (list) {
+  | [] => Result.Ok(initial)
+  | [one, ...rest] =>
+    let%Lets.Try result = tryReduceReverse(rest, initial, fn);
+    fn(result, one);
+  };
+
 let rec tryReduce = (list, initial, fn) =>
   switch (list) {
   | [] => Result.Ok(initial)
