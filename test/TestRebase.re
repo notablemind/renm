@@ -34,7 +34,7 @@ let baseWorld =
   StoreInOne.Client.make(
     {
       ...Data.emptyData(~root="root"),
-      nodes: Data.makeNodeMap(Fixture.large),
+      nodes: Data.makeNodeMap(Fixture.small),
     },
     StoreInOne.History.empty,
   );
@@ -47,25 +47,52 @@ type state = {
   root: StoreInOne.Server.serverFile,
 };
 
+let show = [%bs.raw {|x => JSON.stringify(x)|}];
+
+let showStore = ({StoreInOne.MonoClient.world: {current, history: {changes, sync}}, session}) => {
+  Js.log(show(WorkerProtocolSerde.serializeHistorySync(sync)));
+  changes->List.map(WorkerProtocolSerde.serializeHistoryItem)->List.forEach(item => {
+    Js.log(show(item))
+  });
+};
+
+let showRoot = ({StoreInOne.Server.history, data}) => {
+  Js.log("Root");
+  history->List.map(WorkerProtocolSerde.serializeHistoryItem)->List.forEach(item => Js.log(show(item)));
+};
+
+
 let process = (state, change) => switch change {
   | Sync(Left) =>
     MonoUtils.startSync(state.left);
-    {...state, root: MonoUtils.finishSync(state.root, state.left)};
+    let root = MonoUtils.finishSync(state.root, state.left);
+    Js.log("Left sync");
+    showStore(state.left);
+    showRoot(root);
+    {...state, root};
   | Sync(Right) =>
     MonoUtils.startSync(state.right);
-    {...state, root: MonoUtils.finishSync(state.root, state.right)};
+    let root = MonoUtils.finishSync(state.root, state.right);
+    Js.log("Right sync");
+    showStore(state.right);
+    showRoot(root);
+    {...state, root: root};
   | Change(Left, actions) =>
     (state.left->StoreInOne.MonoClient.clientStore).act(actions);
+    Js.log("Change left")
+     showStore(state.left);
     state
   | Change(Right, actions) =>
     (state.right->StoreInOne.MonoClient.clientStore).act(actions);
+    Js.log("Change right");
+     showStore(state.right);
     state
 };
 
 type test = {changes: list(change), result: list((string, string))};
 
 let tests = [
-  {
+  /* {
     changes: [Change(Left, delta("root", Delta.makeInsert(0, "why ")))],
     result: [("root", "why Hello folks\n")]
   },
@@ -75,14 +102,15 @@ let tests = [
       Change(Right, delta("root", Delta.makeInsert(6, "my "))),
     ],
     result: [("root", "why Hello my folks\n")]
-  },
+  }, */
   {
     changes: [
       Change(Left, delta("root", Delta.makeInsert(0, "why "))),
       Sync(Right),
       Sync(Left),
       Sync(Right),
-      Change(Right, delta("root", Delta.makeInsert(6, "my "))),
+      Change(Right, delta("root", Delta.makeInsert(10, "my "))),
+      Sync(Right)
     ],
     result: [("root", "why Hello my folks\n")]
   }
@@ -95,7 +123,9 @@ let runTest = ({changes, result}) => {
     right: StoreInOne.MonoClient.fromWorld(~metaData=MetaData.blankMetaData(), ~sessionId="right", ~world=baseWorld, ~user),
   };
 
-  let state = changes->List.concat([Sync(Left), Sync(Right), Sync(Left), Sync(Right), Sync(Right), Sync(Left), Sync(Left)])->List.reduce(state, process);
+  let state = changes
+  /* ->List.concat([Sync(Left), Sync(Right), Sync(Left), Sync(Right), Sync(Right), Sync(Left), Sync(Left)]) */
+  ->List.reduce(state, process);
 
   result->List.forEach(((nid, text)) => {
     let left = state.left.world.current->Data.get(nid)->Lets.Opt.force;
@@ -111,7 +141,7 @@ let runTest = ({changes, result}) => {
       Js.log3("Bad right", Js.Json.stringifyAny(right), Js.Json.stringifyAny(text))
     };
     if (root != text) {
-      Js.log3("Bad root", left, text)
+      Js.log3("Bad root", Js.Json.stringifyAny(root), Js.Json.stringifyAny(text))
     }
   })
 };

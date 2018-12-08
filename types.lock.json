@@ -25,6 +25,11 @@
           "name": "serverFile"
         },
         {
+          "moduleName": "StoreInOne",
+          "modulePath": ["History"],
+          "name": "sync"
+        },
+        {
           "moduleName": "View",
           "modulePath": [],
           "name": "sharedViewData"
@@ -1987,63 +1992,53 @@
         [
           [
             "StoreInOne",
-            [],
-            "history"
+            ["History"],
+            "sync"
           ],
           [
             [],
             {
-              "name": "history",
+              "name": "sync",
               "variables": [],
               "body": [
-                "Expr",
+                "Variant",
                 [
-                  "Reference",
                   [
-                    "Public",
-                    [
-                      "StoreInOne",
-                      ["History"],
-                      "t"
-                    ]
+                    "Unsynced",
+                    [],
+                    null
                   ],
                   [
+                    "SyncedThrough",
                     [
-                      "Reference",
                       [
-                        "Public",
+                        "Reference",
                         [
-                          "World",
-                          ["MultiChange"],
-                          "change"
-                        ]
-                      ],
-                      []
+                          "Builtin",
+                          "string"
+                        ],
+                        []
+                      ]
                     ],
+                    null
+                  ],
+                  [
+                    "Syncing",
                     [
-                      "Reference",
                       [
-                        "Public",
+                        "Reference",
                         [
-                          "World",
-                          ["MultiChange"],
-                          "rebaseItem"
-                        ]
-                      ],
-                      []
+                          "Public",
+                          [
+                            "StoreInOne",
+                            ["History"],
+                            "syncing"
+                          ]
+                        ],
+                        []
+                      ]
                     ],
-                    [
-                      "Reference",
-                      [
-                        "Public",
-                        [
-                          "World",
-                          ["MultiChange"],
-                          "selection"
-                        ]
-                      ],
-                      []
-                    ]
+                    null
                   ]
                 ]
               ]
@@ -2054,60 +2049,56 @@
           [
             "StoreInOne",
             ["History"],
-            "t"
+            "syncing"
           ],
           [
             [],
             {
-              "name": "t",
-              "variables": [
-                [
-                  "Variable",
-                  "change"
-                ],
-                [
-                  "Variable",
-                  "rebase"
-                ],
-                [
-                  "Variable",
-                  "selection"
-                ]
-              ],
+              "name": "syncing",
+              "variables": [],
               "body": [
-                "Expr",
+                "Variant",
                 [
-                  "Reference",
                   [
-                    "Builtin",
-                    "list"
+                    "Empty",
+                    [],
+                    null
                   ],
                   [
+                    "All",
                     [
-                      "Reference",
                       [
-                        "Public",
+                        "Reference",
                         [
-                          "Sync",
-                          [],
-                          "change"
-                        ]
+                          "Builtin",
+                          "string"
+                        ],
+                        []
+                      ]
+                    ],
+                    null
+                  ],
+                  [
+                    "From",
+                    [
+                      [
+                        "Reference",
+                        [
+                          "Builtin",
+                          "string"
+                        ],
+                        []
                       ],
                       [
+                        "Reference",
                         [
-                          "Variable",
-                          "change"
+                          "Builtin",
+                          "string"
                         ],
-                        [
-                          "Variable",
-                          "rebase"
-                        ],
-                        [
-                          "Variable",
-                          "selection"
-                        ]
+                        []
                       ]
-                    ]
+                    ],
+                    null
                   ]
                 ]
               ]
@@ -2133,14 +2124,23 @@
                     [
                       "Reference",
                       [
-                        "Public",
-                        [
-                          "StoreInOne",
-                          [],
-                          "history"
-                        ]
+                        "Builtin",
+                        "list"
                       ],
-                      []
+                      [
+                        [
+                          "Reference",
+                          [
+                            "Public",
+                            [
+                              "World",
+                              [],
+                              "thisChange"
+                            ]
+                          ],
+                          []
+                        ]
+                      ]
                     ]
                   ],
                   [
@@ -3100,6 +3100,72 @@
                       ]
                     ],
                     null
+                  ]
+                ]
+              ]
+            }
+          ]
+        ],
+        [
+          [
+            "World",
+            [],
+            "thisChange"
+          ],
+          [
+            [],
+            {
+              "name": "thisChange",
+              "variables": [],
+              "body": [
+                "Expr",
+                [
+                  "Reference",
+                  [
+                    "Public",
+                    [
+                      "Sync",
+                      [],
+                      "change"
+                    ]
+                  ],
+                  [
+                    [
+                      "Reference",
+                      [
+                        "Public",
+                        [
+                          "World",
+                          ["MultiChange"],
+                          "change"
+                        ]
+                      ],
+                      []
+                    ],
+                    [
+                      "Reference",
+                      [
+                        "Public",
+                        [
+                          "World",
+                          ["MultiChange"],
+                          "rebaseItem"
+                        ]
+                      ],
+                      []
+                    ],
+                    [
+                      "Reference",
+                      [
+                        "Public",
+                        [
+                          "World",
+                          ["MultiChange"],
+                          "selection"
+                        ]
+                      ],
+                      []
+                    ]
                   ]
                 ]
               ]

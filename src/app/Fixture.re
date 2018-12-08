@@ -59,3 +59,16 @@ let large =
       ],
     )),
   );
+
+let small =
+  fromFixture(
+    "root",
+    "root",
+    `Node((
+      "Hello folks",
+      [
+        `Leaf("A one"),
+      ],
+    )),
+  );
+

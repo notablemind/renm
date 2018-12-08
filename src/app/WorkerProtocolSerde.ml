@@ -107,14 +107,17 @@ module Version1 =
       refreshToken: string ;
       expiresAt: float ;
       isConnected: bool }
-    and _StoreInOne__history =
-      (_World__MultiChange__change, _World__MultiChange__rebaseItem,
-        _World__MultiChange__selection) _StoreInOne__History__t
-    and ('change, 'rebase, 'selection) _StoreInOne__History__t =
-      ('change, 'rebase, 'selection) _Sync__change list
+    and _StoreInOne__History__sync = StoreInOne.History.sync =
+      | Unsynced 
+      | SyncedThrough of string 
+      | Syncing of _StoreInOne__History__syncing 
+    and _StoreInOne__History__syncing = StoreInOne.History.syncing =
+      | Empty 
+      | All of string 
+      | From of string * string 
     and _StoreInOne__Server__serverFile = StoreInOne.Server.serverFile =
       {
-      history: _StoreInOne__history ;
+      history: _World__thisChange list ;
       data: _World__MultiChange__data }
     and ('change, 'rebase, 'selection) _Sync__change =
       ('change, 'rebase, 'selection) Sync.change =
@@ -175,6 +178,9 @@ module Version1 =
       | MetaDataUpdate of _MetaData__t 
       | Rebase of _NodeType__t array 
       | RemoteCursors of _View__cursor list 
+    and _World__thisChange =
+      (_World__MultiChange__change, _World__MultiChange__rebaseItem,
+        _World__MultiChange__selection) _Sync__change
     and _World__MultiChange__change = _Change__change list
     and _World__MultiChange__data = _Change__data
     and _World__MultiChange__fullChange =
@@ -1778,56 +1784,88 @@ module Version1 =
                   | ((Ok (data))[@explicit_arity ]) -> inner data))
         | _ -> ((Belt.Result.Error (["Expected an object"]))
             [@explicit_arity ])
-    and (deserialize_StoreInOne____history :
-      Js.Json.t -> (_StoreInOne__history, string list) Belt.Result.t) =
-      fun value ->
-        (deserialize_StoreInOne__History__t
-           deserialize_World__MultiChange__change
-           deserialize_World__MultiChange__rebaseItem
-           deserialize_World__MultiChange__selection) value
-    and deserialize_StoreInOne__History__t :
-      'arg0 'arg1 'arg2 .
-        (Js.Json.t -> ('arg0, string list) Belt.Result.t) ->
-          (Js.Json.t -> ('arg1, string list) Belt.Result.t) ->
-            (Js.Json.t -> ('arg2, string list) Belt.Result.t) ->
-              Js.Json.t ->
-                (('arg0, 'arg1, 'arg2) _StoreInOne__History__t, string list)
-                  Belt.Result.t
-      = fun (type arg2) -> fun (type arg1) -> fun (type arg0) ->
-      fun changeTransformer ->
-        fun rebaseTransformer ->
-          fun selectionTransformer ->
-            fun value ->
-              (fun list ->
-                 match Js.Json.classify list with
-                 | ((JSONArray (items))[@explicit_arity ]) ->
-                     let transformer =
-                       deserialize_Sync____change changeTransformer
-                         rebaseTransformer selectionTransformer in
-                     let rec loop i items =
-                       match items with
-                       | [] -> ((Belt.Result.Ok ([]))[@explicit_arity ])
-                       | one::rest ->
-                           (match transformer one with
-                            | ((Belt.Result.Error (error))[@explicit_arity ])
-                                ->
-                                ((Belt.Result.Error
-                                    ((("list element " ^ (string_of_int i))
-                                      :: error)))
-                                [@explicit_arity ])
-                            | ((Belt.Result.Ok (value))[@explicit_arity ]) ->
-                                (match loop (i + 1) rest with
-                                 | ((Belt.Result.Error
-                                     (error))[@explicit_arity ]) ->
-                                     ((Belt.Result.Error (error))
-                                     [@explicit_arity ])
-                                 | ((Belt.Result.Ok
-                                     (rest))[@explicit_arity ]) ->
-                                     ((Belt.Result.Ok ((value :: rest)))
-                                     [@explicit_arity ]))) in
-                     loop 0 (Belt.List.fromArray items)
-                 | _ -> ((Belt.Result.Error (["expected an array"]))
-                     [@explicit_arity ])) value
+    and (deserialize_StoreInOne__History__sync :
+      Js.Json.t -> (_StoreInOne__History__sync, string list) Belt.Result.t) =
+      fun constructor ->
+        match Js.Json.classify constructor with
+        | JSONArray [|tag|] when
+            ((Js.Json.JSONString ("Unsynced"))[@explicit_arity ]) =
+              (Js.Json.classify tag)
+            -> Belt.Result.Ok (Unsynced : _StoreInOne__History__sync)
+        | JSONArray [|tag;arg0|] when
+            ((Js.Json.JSONString ("SyncedThrough"))[@explicit_arity ]) =
+              (Js.Json.classify tag)
+            ->
+            (match (fun string ->
+                      match Js.Json.classify string with
+                      | ((JSONString (string))[@explicit_arity ]) ->
+                          ((Belt.Result.Ok (string))[@explicit_arity ])
+                      | _ -> ((Error (["expected a string"]))
+                          [@explicit_arity ])) arg0
+             with
+             | Belt.Result.Ok arg0 ->
+                 Belt.Result.Ok
+                   (SyncedThrough (arg0) : _StoreInOne__History__sync)
+             | Error error -> Error ("constructor argument 0" :: error))
+        | JSONArray [|tag;arg0|] when
+            ((Js.Json.JSONString ("Syncing"))[@explicit_arity ]) =
+              (Js.Json.classify tag)
+            ->
+            (match deserialize_StoreInOne__History__syncing arg0 with
+             | Belt.Result.Ok arg0 ->
+                 Belt.Result.Ok (Syncing (arg0) : _StoreInOne__History__sync)
+             | Error error -> Error ("constructor argument 0" :: error))
+        | _ -> ((Belt.Result.Error (["Expected an array"]))
+            [@explicit_arity ])
+    and (deserialize_StoreInOne__History__syncing :
+      Js.Json.t -> (_StoreInOne__History__syncing, string list) Belt.Result.t)
+      =
+      fun constructor ->
+        match Js.Json.classify constructor with
+        | JSONArray [|tag|] when
+            ((Js.Json.JSONString ("Empty"))[@explicit_arity ]) =
+              (Js.Json.classify tag)
+            -> Belt.Result.Ok (Empty : _StoreInOne__History__syncing)
+        | JSONArray [|tag;arg0|] when
+            ((Js.Json.JSONString ("All"))[@explicit_arity ]) =
+              (Js.Json.classify tag)
+            ->
+            (match (fun string ->
+                      match Js.Json.classify string with
+                      | ((JSONString (string))[@explicit_arity ]) ->
+                          ((Belt.Result.Ok (string))[@explicit_arity ])
+                      | _ -> ((Error (["expected a string"]))
+                          [@explicit_arity ])) arg0
+             with
+             | Belt.Result.Ok arg0 ->
+                 Belt.Result.Ok (All (arg0) : _StoreInOne__History__syncing)
+             | Error error -> Error ("constructor argument 0" :: error))
+        | JSONArray [|tag;arg0;arg1|] when
+            ((Js.Json.JSONString ("From"))[@explicit_arity ]) =
+              (Js.Json.classify tag)
+            ->
+            (match (fun string ->
+                      match Js.Json.classify string with
+                      | ((JSONString (string))[@explicit_arity ]) ->
+                          ((Belt.Result.Ok (string))[@explicit_arity ])
+                      | _ -> ((Error (["expected a string"]))
+                          [@explicit_arity ])) arg1
+             with
+             | Belt.Result.Ok arg1 ->
+                 (match (fun string ->
+                           match Js.Json.classify string with
+                           | ((JSONString (string))[@explicit_arity ]) ->
+                               ((Belt.Result.Ok (string))[@explicit_arity ])
+                           | _ -> ((Error (["expected a string"]))
+                               [@explicit_arity ])) arg0
+                  with
+                  | Belt.Result.Ok arg0 ->
+                      Belt.Result.Ok
+                        (From (arg0, arg1) : _StoreInOne__History__syncing)
+                  | Error error -> Error ("constructor argument 0" :: error))
+             | Error error -> Error ("constructor argument 1" :: error))
+        | _ -> ((Belt.Result.Error (["Expected an array"]))
+            [@explicit_arity ])
     and (deserialize_StoreInOne__Server__serverFile :
       Js.Json.t ->
         (_StoreInOne__Server__serverFile, string list) Belt.Result.t)
@@ -1842,7 +1880,42 @@ module Version1 =
               | None -> ((Belt.Result.Error (["No attribute history"]))
                   [@explicit_arity ])
               | ((Some (json))[@explicit_arity ]) ->
-                  (match deserialize_StoreInOne____history json with
+                  (match (fun list ->
+                            match Js.Json.classify list with
+                            | ((JSONArray (items))[@explicit_arity ]) ->
+                                let transformer =
+                                  deserialize_World____thisChange in
+                                let rec loop i items =
+                                  match items with
+                                  | [] -> ((Belt.Result.Ok ([]))
+                                      [@explicit_arity ])
+                                  | one::rest ->
+                                      (match transformer one with
+                                       | ((Belt.Result.Error
+                                           (error))[@explicit_arity ]) ->
+                                           ((Belt.Result.Error
+                                               ((("list element " ^
+                                                    (string_of_int i)) ::
+                                                 error)))
+                                           [@explicit_arity ])
+                                       | ((Belt.Result.Ok
+                                           (value))[@explicit_arity ]) ->
+                                           (match loop (i + 1) rest with
+                                            | ((Belt.Result.Error
+                                                (error))[@explicit_arity ])
+                                                ->
+                                                ((Belt.Result.Error (error))
+                                                [@explicit_arity ])
+                                            | ((Belt.Result.Ok
+                                                (rest))[@explicit_arity ]) ->
+                                                ((Belt.Result.Ok
+                                                    ((value :: rest)))
+                                                [@explicit_arity ]))) in
+                                loop 0 (Belt.List.fromArray items)
+                            | _ ->
+                                ((Belt.Result.Error (["expected an array"]))
+                                [@explicit_arity ])) json
+                   with
                    | ((Belt.Result.Error (error))[@explicit_arity ]) ->
                        ((Belt.Result.Error (("attribute history" :: error)))
                        [@explicit_arity ])
@@ -2700,6 +2773,12 @@ module Version1 =
              | Error error -> Error ("constructor argument 0" :: error))
         | _ -> ((Belt.Result.Error (["Expected an array"]))
             [@explicit_arity ])
+    and (deserialize_World____thisChange :
+      Js.Json.t -> (_World__thisChange, string list) Belt.Result.t) =
+      fun value ->
+        (deserialize_Sync____change deserialize_World__MultiChange__change
+           deserialize_World__MultiChange__rebaseItem
+           deserialize_World__MultiChange__selection) value
     and (deserialize_World__MultiChange__change :
       Js.Json.t -> (_World__MultiChange__change, string list) Belt.Result.t)
       =
@@ -3139,37 +3218,42 @@ module Version1 =
                ("expiresAt", (Js.Json.number record.expiresAt));("isConnected",
                                                                   (Js.Json.boolean
                                                                     record.isConnected))|])
-    and (serialize_StoreInOne____history : _StoreInOne__history -> Js.Json.t)
-      =
-      fun value ->
-        (serialize_StoreInOne__History__t
-           serialize_World__MultiChange__change
-           serialize_World__MultiChange__rebaseItem
-           serialize_World__MultiChange__selection) value
-    and serialize_StoreInOne__History__t :
-      'arg0 'arg1 'arg2 .
-        ('arg0 -> Js.Json.t) ->
-          ('arg1 -> Js.Json.t) ->
-            ('arg2 -> Js.Json.t) ->
-              ('arg0, 'arg1, 'arg2) _StoreInOne__History__t -> Js.Json.t
-      =
-      fun changeTransformer ->
-        fun rebaseTransformer ->
-          fun selectionTransformer ->
-            fun value ->
-              (fun list ->
-                 Js.Json.array
-                   (Belt.List.toArray
-                      (Belt.List.map list
-                         (serialize_Sync____change changeTransformer
-                            rebaseTransformer selectionTransformer)))) value
+    and (serialize_StoreInOne__History__sync :
+      _StoreInOne__History__sync -> Js.Json.t) =
+      fun constructor ->
+        match constructor with
+        | Unsynced -> Js.Json.array [|(Js.Json.string "Unsynced")|]
+        | SyncedThrough arg0 ->
+            Js.Json.array
+              [|(Js.Json.string "SyncedThrough");(Js.Json.string arg0)|]
+        | Syncing arg0 ->
+            Js.Json.array
+              [|(Js.Json.string "Syncing");(serialize_StoreInOne__History__syncing
+                                              arg0)|]
+    and (serialize_StoreInOne__History__syncing :
+      _StoreInOne__History__syncing -> Js.Json.t) =
+      fun constructor ->
+        match constructor with
+        | Empty -> Js.Json.array [|(Js.Json.string "Empty")|]
+        | All arg0 ->
+            Js.Json.array [|(Js.Json.string "All");(Js.Json.string arg0)|]
+        | From (arg0, arg1) ->
+            Js.Json.array
+              [|(Js.Json.string "From");(Js.Json.string arg0);(Js.Json.string
+                                                                 arg1)|]
     and (serialize_StoreInOne__Server__serverFile :
       _StoreInOne__Server__serverFile -> Js.Json.t) =
       fun record ->
         Js.Json.object_
           (Js.Dict.fromArray
-             [|("history", (serialize_StoreInOne____history record.history));
-               ("data", (serialize_World__MultiChange__data record.data))|])
+             [|("history",
+                 (((fun list ->
+                      Js.Json.array
+                        (Belt.List.toArray
+                           (Belt.List.map list serialize_World____thisChange))))
+                    record.history));("data",
+                                       (serialize_World__MultiChange__data
+                                          record.data))|])
     and serialize_Sync____change :
       'arg0 'arg1 'arg2 .
         ('arg0 -> Js.Json.t) ->
@@ -3391,6 +3475,11 @@ module Version1 =
                                                               list
                                                               serialize_View____cursor))))
                                                     arg0)|]
+    and (serialize_World____thisChange : _World__thisChange -> Js.Json.t) =
+      fun value ->
+        (serialize_Sync____change serialize_World__MultiChange__change
+           serialize_World__MultiChange__rebaseItem
+           serialize_World__MultiChange__selection) value
     and (serialize_World__MultiChange__change :
       _World__MultiChange__change -> Js.Json.t) =
       fun value ->
@@ -3526,6 +3615,25 @@ and deserializeServerFile data =
        | 1 ->
            (match Version1.deserialize_StoreInOne__Server__serverFile data
             with
+            | ((Belt.Result.Error (error))[@explicit_arity ]) ->
+                ((Belt.Result.Error (error))[@explicit_arity ])
+            | ((Ok (data))[@explicit_arity ]) -> ((Belt.Result.Ok (data))
+                [@explicit_arity ]))
+       | _ ->
+           ((Belt.Result.Error
+               (["Unexpected version " ^ (string_of_int version)]))
+           [@explicit_arity ]))
+let serializeHistorySync data =
+  wrapWithVersion currentVersion
+    (Version1.serialize_StoreInOne__History__sync data)
+and deserializeHistorySync data =
+  match parseVersion data with
+  | ((Belt.Result.Error (err))[@explicit_arity ]) ->
+      ((Belt.Result.Error ([err]))[@explicit_arity ])
+  | ((Ok (version, data))[@implicit_arity ]) ->
+      (match version with
+       | 1 ->
+           (match Version1.deserialize_StoreInOne__History__sync data with
             | ((Belt.Result.Error (error))[@explicit_arity ]) ->
                 ((Belt.Result.Error (error))[@explicit_arity ])
             | ((Ok (data))[@explicit_arity ]) -> ((Belt.Result.Ok (data))
