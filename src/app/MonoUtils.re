@@ -15,7 +15,7 @@ let startSync = (store: StoreInOne.MonoClient.t) => {
 let finishSync = (root, store: StoreInOne.MonoClient.t) => {
   let id = StoreInOne.History.latestSyncedId(store.world.history);
   let (_unsynced, syncing, _synced) = StoreInOne.History.partitionT(store.world.history);
-  Js.log4("  :partitioned", _unsynced->List.length, syncing->List.length, _synced->List.length);
+  /* Js.log4("  :partitioned", _unsynced->List.length, syncing->List.length, _synced->List.length); */
   /* let unsynced = store.world.syncing; */
 
   /* Js.log3("Server count", List.length(root.StoreInOne.Server.history), List.length(syncing)); */
@@ -31,10 +31,10 @@ let finishSync = (root, store: StoreInOne.MonoClient.t) => {
   let%Lets.TryForce world =
     switch (result) {
     | `Commit =>
-      Js.log("  < commit")
+      /* Js.log("  < commit") */
       StoreInOne.Client.commit(store.world)
     | `Rebase(changes, rebases) =>
-      Js.log2("  < rebase", List.length(rebases));
+      /* Js.log2("  < rebase", List.length(rebases)); */
       Ok(StoreInOne.Client.applyRebase(store.world, changes, rebases))
     };
   let rec loop = (id, expanded) =>

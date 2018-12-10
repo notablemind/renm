@@ -101,7 +101,7 @@ let process = (state, change) => {
 type test = {changes: list(change), result: list((string, string))};
 
 let tests = [
-  /* {
+  {
     changes: [Change(Left, delta("root", Delta.makeInsert(0, "why ")))],
     result: [("root", "why Hello folks\n")]
   },
@@ -111,7 +111,7 @@ let tests = [
       Change(Right, delta("root", Delta.makeInsert(6, "my "))),
     ],
     result: [("root", "why Hello my folks\n")]
-  }, */
+  },
   {
     changes: [
       Change(Left, delta("root", Delta.makeInsert(0, "why "))),
@@ -139,19 +139,29 @@ let runTest = ({changes, result}) => {
   result->List.forEach(((nid, text)) => {
     let lh = state.left.world.history.changes;
     let rh = state.right.world.history.changes;
-    /* if (lh != rh) {
+    if (lh != rh) {
+      Js.log3(red("Left & Right histories are different"), lh, rh)
+    };
+    if (lh != rh) {
       Js.log3("Different histories", lh, rh);
       if (List.length(lh) == List.length(rh)) {
         List.zip(lh, rh)->List.forEach(((l, r)) => {
           if (l != r) {
-            Js.log3("Different item", l, r)
+            Js.log("Different item");
+            if (Js.Json.stringify(WorkerProtocolSerde.serializeHistoryItem(l)) ==
+            Js.Json.stringify(WorkerProtocolSerde.serializeHistoryItem(r))) {
+              Js.log("  [but same serialized]")
+            } else {
+              Js.log("  " ++ show(WorkerProtocolSerde.serializeHistoryItem(l)));
+              Js.log("  " ++ show(WorkerProtocolSerde.serializeHistoryItem(r)));
+            }
           } else {
             Js.log("same tho")
           }
         })
       };
       [%bs.debugger];
-    } */
+    }
     let left = state.left.world.current->Data.get(nid)->Lets.Opt.force;
     let right = state.right.world.current->Data.get(nid)->Lets.Opt.force;
     let left = left.contents->Delta.getText;
