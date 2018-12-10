@@ -107,7 +107,7 @@ module History = {
         | Some(oldest) =>
         switch changes {
           | [] => ([], [], [])
-          | [{Sync.inner: {changeId}} as change, ...rest] when changeId == oldest => ([], [], changes)
+          | [{Sync.inner: {changeId}} , ...rest] when changeId == oldest => ([], [], changes)
           | [change, ...rest] =>
             let (unsynced, syncing, synced) = loop(true, rest);
             (unsynced, [change, ...syncing], synced)
@@ -116,7 +116,7 @@ module History = {
       } else {
         switch changes {
           | [] => ([], [], [])
-          | [{Sync.inner: {changeId}} as change, ..._] when changeId == latest => loop(true, changes)
+          | [{Sync.inner: {changeId}} , ..._] when changeId == latest => loop(true, changes)
           | [one, ...rest] =>
             let (unsynced, syncing, synced) = loop(false, rest);
             ([one, ...unsynced], syncing, synced)
@@ -126,7 +126,7 @@ module History = {
   };
 
   let partitionT = t => switch (t.sync) {
-    | Syncing(Empty) => ([], [], [])
+    | Syncing(Empty) => (t.changes, [], [])
     | Syncing(All(latest)) => partition(t.changes, latest, None)
     | Syncing(From(newer, older)) => partition(t.changes, newer, Some(older))
     | _ => failwith("Not syncing")
@@ -273,7 +273,7 @@ module Client = {
     }
   };
 
-  let queueReduceChanges = (changes, initial) =>
+  /* let queueReduceChanges = (changes, initial) =>
     changes
     ->Queue.skipReduce(
         (initial, Queue.empty),
@@ -282,7 +282,7 @@ module Client = {
             World.MultiChange.apply(data, change.Sync.inner.apply);
           Ok((data, Queue.append(changes, {...change, revert, rebase})));
         },
-      );
+      ); */
 
   let applyChange =
       (world: world, change: Sync.changeInner(World.MultiChange.change, World.MultiChange.selection))
@@ -297,8 +297,7 @@ module Client = {
     {
       ...world,
       current,
-      /* TODO make a function for this */
-      history: {...world.history, changes: world.history.changes->History.append([change])}
+      history: History.appendT(world.history, [change])
     };
   };
 
