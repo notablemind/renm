@@ -13,25 +13,28 @@ let startSync = (store: StoreInOne.MonoClient.t) => {
   store.world = world;
 };
 let finishSync = (root, store: StoreInOne.MonoClient.t) => {
-  let id = StoreInOne.History.latestId(store.world.history);
+  let id = StoreInOne.History.latestSyncedId(store.world.history);
   let (_unsynced, syncing, _synced) = StoreInOne.History.partitionT(store.world.history);
-  /* Js.log4("partitioned", unsynced, syncing, synced) */
+  Js.log4("  :partitioned", _unsynced->List.length, syncing->List.length, _synced->List.length);
   /* let unsynced = store.world.syncing; */
 
-  Js.log3("Server count", List.length(root.StoreInOne.Server.history), List.length(syncing));
+  /* Js.log3("Server count", List.length(root.StoreInOne.Server.history), List.length(syncing)); */
   /* THE BUG IS HERE -- the server just maybe replaces the old history with the new?
    */
   let (server, result) =
     StoreInOne.Server.processSyncRequest(root, id, syncing->List.reverse);
-  Js.log2("Server count after", List.length(root.StoreInOne.Server.history));
+  /* Js.log2("Server count after", List.length(root.StoreInOne.Server.history)); */
   /* Js.log2(server, result); */
 
   /* self.send({...self.state, root: server}); */
   /* Js.log(server); */
   let%Lets.TryForce world =
     switch (result) {
-    | `Commit => StoreInOne.Client.commit(store.world)
+    | `Commit =>
+      Js.log("  < commit")
+      StoreInOne.Client.commit(store.world)
     | `Rebase(changes, rebases) =>
+      Js.log2("  < rebase", List.length(rebases));
       Ok(StoreInOne.Client.applyRebase(store.world, changes, rebases))
     };
   let rec loop = (id, expanded) =>

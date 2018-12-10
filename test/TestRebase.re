@@ -1,5 +1,7 @@
 
 
+[%bs.raw "require('../src/app/SetupDebugger')"];
+
 [%bs.raw "require('./shim.js')"];
 /*
 
@@ -50,43 +52,50 @@ type state = {
 let show = [%bs.raw {|x => JSON.stringify(x)|}];
 
 let showStore = ({StoreInOne.MonoClient.world: {current, history: {changes, sync}}, session}) => {
-  Js.log(show(WorkerProtocolSerde.serializeHistorySync(sync)));
-  changes->List.map(WorkerProtocolSerde.serializeHistoryItem)->List.forEach(item => {
+  /* Js.log(show(WorkerProtocolSerde.serializeHistorySync(sync))); */
+  /* Js.log(sync); */
+  /* Js.log(changes) */
+  changes->List.map(change => change.inner.changeId)->Js.log;
+  /* changes->List.map(WorkerProtocolSerde.serializeHistoryItem)->List.forEach(item => {
     Js.log(show(item))
-  });
+  }); */
 };
 
 let showRoot = ({StoreInOne.Server.history, data}) => {
-  Js.log("Root");
-  history->List.map(WorkerProtocolSerde.serializeHistoryItem)->List.forEach(item => Js.log(show(item)));
+  Js.log2("  ~ Root", history->List.map(change => change.inner.changeId));
+  /* history->List.map(WorkerProtocolSerde.serializeHistoryItem)->List.forEach(item => Js.log(show(item))); */
 };
 
+let red = text => "\027[31;1;4m" ++ text ++ "\027[0m";
 
-let process = (state, change) => switch change {
+let process = (state, change) => {
+  /* [%bs.debugger]; */
+  switch change {
   | Sync(Left) =>
+    Js.log(red(">> Left sync"));
     MonoUtils.startSync(state.left);
     let root = MonoUtils.finishSync(state.root, state.left);
-    Js.log("Left sync");
     showStore(state.left);
     showRoot(root);
     {...state, root};
   | Sync(Right) =>
+    Js.log(red(">> Right sync"));
     MonoUtils.startSync(state.right);
     let root = MonoUtils.finishSync(state.root, state.right);
-    Js.log("Right sync");
     showStore(state.right);
     showRoot(root);
     {...state, root: root};
   | Change(Left, actions) =>
+    Js.log(red(">> Change left"));
     (state.left->StoreInOne.MonoClient.clientStore).act(actions);
-    Js.log("Change left")
      showStore(state.left);
     state
   | Change(Right, actions) =>
+    Js.log(red(">> Change right"));
     (state.right->StoreInOne.MonoClient.clientStore).act(actions);
-    Js.log("Change right");
      showStore(state.right);
     state
+};
 };
 
 type test = {changes: list(change), result: list((string, string))};
@@ -106,11 +115,11 @@ let tests = [
   {
     changes: [
       Change(Left, delta("root", Delta.makeInsert(0, "why "))),
-      Sync(Right),
       Sync(Left),
       Sync(Right),
       Change(Right, delta("root", Delta.makeInsert(10, "my "))),
-      Sync(Right)
+      Sync(Right),
+      Sync(Left),
     ],
     result: [("root", "why Hello my folks\n")]
   }
@@ -124,10 +133,25 @@ let runTest = ({changes, result}) => {
   };
 
   let state = changes
-  /* ->List.concat([Sync(Left), Sync(Right), Sync(Left), Sync(Right), Sync(Right), Sync(Left), Sync(Left)]) */
+  ->List.concat([Sync(Left), Sync(Right), Sync(Left), Sync(Right), Sync(Right), Sync(Left), Sync(Left)])
   ->List.reduce(state, process);
 
   result->List.forEach(((nid, text)) => {
+    let lh = state.left.world.history.changes;
+    let rh = state.right.world.history.changes;
+    /* if (lh != rh) {
+      Js.log3("Different histories", lh, rh);
+      if (List.length(lh) == List.length(rh)) {
+        List.zip(lh, rh)->List.forEach(((l, r)) => {
+          if (l != r) {
+            Js.log3("Different item", l, r)
+          } else {
+            Js.log("same tho")
+          }
+        })
+      };
+      [%bs.debugger];
+    } */
     let left = state.left.world.current->Data.get(nid)->Lets.Opt.force;
     let right = state.right.world.current->Data.get(nid)->Lets.Opt.force;
     let left = left.contents->Delta.getText;
@@ -145,6 +169,9 @@ let runTest = ({changes, result}) => {
     }
   })
 };
+[%bs.debugger];
 
-tests->List.forEach(runTest)
+tests->List.forEach(runTest);
+
+[%bs.debugger];
 

@@ -82,6 +82,14 @@ module History = {
 
   let latestId = t => List.head(t.changes)->Lets.Opt.map(c => c.Sync.inner.changeId);
 
+  let latestSyncedId = t => switch (t.sync) {
+    | Unsynced => failwith("Not syncing")
+    | SyncedThrough(id) => failwith("Not syncing")
+    | Syncing(Empty) => None
+    | Syncing(All(id)) => None
+    | Syncing(From(id, old)) => Some(old)
+  };
+
   let append = (changes, items) => List.reverse(items) @ changes;
 
   let appendT = (t, items) => {...t, changes: append(t.changes, items)};
