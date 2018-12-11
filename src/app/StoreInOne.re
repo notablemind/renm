@@ -325,7 +325,7 @@ module Client = {
         world.current;
       } else {
         /* these are the rebase changes, that we don't need right now */
-        let (unsynced, syncing, synced) =
+        let (unsynced, syncing, _synced) =
           History.partition(world.history.changes, newest, oldest);
           /* replace the history from "newer" until "older", with the changes */
           /* can I just undo the unsynced things? that might not be perfect...
@@ -365,52 +365,20 @@ module Client = {
   let applyRebase = (world: world, changes, rebases): world => {
     let (snapshot, changes) = changes->World.reduceChanges(world.snapshot);
 
-    switch (world.history.sync) {
-      | Unsynced => failwith("Invalid sync state")
-      | SyncedThrough(latest) => failwith("Invalid sync state")
-      | Syncing(syncing) => switch syncing {
-        | Empty =>
-          let (unsynced, _syncing, _synced) = (world.history.changes, [], []);
-          let (current, unsynced) =
-            unsynced->List.reverse->World.processRebases(snapshot, rebases);
-          let total = unsynced @ changes;
-          {
-            history: {changes: total, sync: switch (changes) {
-              | [] => Unsynced
-              | [{Sync.inner: {changeId}}, ..._] => SyncedThrough(changeId)
-            }},
-            snapshot,
-            current,
-          };
-        | All(latest) =>
-          let (unsynced, syncing, synced) = History.partition(world.history.changes, latest, None);
-          let (current, unsynced) =
-            unsynced->List.reverse->World.processRebases(snapshot, rebases);
-          {
-            history: {changes: unsynced @ changes, sync: switch (changes) {
-              | [] => Unsynced
-              | [{Sync.inner: {changeId}}, ..._] => SyncedThrough(changeId)
-            }},
-            snapshot,
-            current,
-          };
-      | From(newer, older) => {
-        let (unsynced, syncing, synced) = History.partition(world.history.changes, newer, Some(older));
-
-          let (current, unsynced) =
-            unsynced->List.reverse->World.processRebases(snapshot, rebases);
-          {
-            history: {changes: unsynced @ changes @ synced, sync: switch (changes) {
-              | [] => Unsynced
-              | [{Sync.inner: {changeId}}, ..._] => SyncedThrough(changeId)
-            }},
-            snapshot,
-            current,
-            /* syncing: Queue.empty,
-            unsynced: Queue.ofList(unsynced), */
-        };
-        };
-      }
+    let (unsynced, syncing, synced) = History.partitionT(world.history);
+    let (current, unsynced) =
+      unsynced->List.reverse->World.processRebases(snapshot, rebases);
+    {
+      history: {
+        changes: unsynced @ changes @ synced,
+        sync:
+          switch (changes) {
+          | [] => Unsynced
+          | [{Sync.inner: {changeId}}, ..._] => SyncedThrough(changeId)
+          },
+      },
+      snapshot,
+      current,
     };
   };
 
