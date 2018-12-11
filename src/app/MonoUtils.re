@@ -19,8 +19,6 @@ let finishSync = (root, store: StoreInOne.MonoClient.t) => {
   /* let unsynced = store.world.syncing; */
 
   /* Js.log3("Server count", List.length(root.StoreInOne.Server.history), List.length(syncing)); */
-  /* THE BUG IS HERE -- the server just maybe replaces the old history with the new?
-   */
   let (server, result) =
     StoreInOne.Server.processSyncRequest(root, id, syncing->List.reverse);
   /* Js.log2("Server count after", List.length(root.StoreInOne.Server.history)); */
