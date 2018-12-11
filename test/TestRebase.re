@@ -67,47 +67,58 @@ let showRoot = ({StoreInOne.Server.history, data}) => {
 };
 
 let red = text => "\027[31;1;4m" ++ text ++ "\027[0m";
-let green = text => "\027[32;1;4m" ++ text ++ "\027[0m";
+let green = text => "\027[32m" ++ text ++ "\027[0m";
+let blue= text => "\027[34;1;4m" ++ text ++ "\027[0m";
 let yellow = text => "\027[33m" ++ text ++ "\027[0m";
 
-let process = (state, change) => {
+let process = (debug, state, change) => {
   /* [%bs.debugger]; */
   switch change {
   | Sync(Left) =>
-    Js.log(yellow(">>") ++ " Left sync");
+    if (debug) {Js.log(yellow(">>") ++ " Left sync");};
     MonoUtils.startSync(state.left);
     let root = MonoUtils.finishSync(state.root, state.left);
-    showStore(state.left);
-    showRoot(root);
+    if (debug) {showStore(state.left);};
+    if (debug) {showRoot(root);};
     {...state, root};
   | Sync(Right) =>
-    Js.log(yellow(">>") ++ " Right sync");
+    if (debug) {Js.log(yellow(">>") ++ " Right sync");};
     MonoUtils.startSync(state.right);
     let root = MonoUtils.finishSync(state.root, state.right);
-    showStore(state.right);
-    showRoot(root);
+    if (debug) {showStore(state.right);};
+    if (debug) {showRoot(root);};
     {...state, root: root};
   | Change(Left, actions) =>
-    Js.log(yellow(">>") ++ " Change left");
+    if (debug) {Js.log(yellow(">>") ++ " Change left");};
     (state.left->StoreInOne.MonoClient.clientStore).act(actions);
-     showStore(state.left);
+     if (debug) {showStore(state.left);};
     state
   | Change(Right, actions) =>
-    Js.log(yellow(">>") ++ " Change right");
+    if (debug) {Js.log(yellow(">>") ++ " Change right");};
     (state.right->StoreInOne.MonoClient.clientStore).act(actions);
-     showStore(state.right);
+     if (debug) {showStore(state.right);};
     state
 };
 };
 
-type test = {changes: list(change), result: list((string, string))};
+type test = {
+  title: string,
+  changes: list(change), result: list((string, string))};
+
+let typeChanges = (pos, text) => {
+  Js.String.split("", text)->List.fromArray->List.mapWithIndex((i, char) => {
+    Delta.makeInsert(pos + i, char)
+  })
+};
 
 let tests = [
   {
+    title: "Simple insert",
     changes: [Change(Left, delta("root", Delta.makeInsert(0, "why ")))],
     result: [("root", "why Hello folks\n")]
   },
   {
+    title: "Insert both sides",
     changes: [
       Change(Left, delta("root", Delta.makeInsert(0, "why "))),
       Change(Right, delta("root", Delta.makeInsert(6, "my "))),
@@ -115,6 +126,7 @@ let tests = [
     result: [("root", "why Hello my folks\n")]
   },
   {
+    title: "Insert both sides w/ double sync in the middle",
     changes: [
       Change(Left, delta("root", Delta.makeInsert(0, "why "))),
       Sync(Left),
@@ -124,10 +136,31 @@ let tests = [
       Sync(Left),
     ],
     result: [("root", "why Hello my folks\n")]
-  }
+  },
+  {
+    title: "Insert many keys both sides",
+    changes: 
+    typeChanges(2, "1234")->List.map(d => Change(Left, delta("root", d)))
+    @ typeChanges(4, "5678")->List.map(d => Change(Right, delta("root", d))) @ [
+      Sync(Left),
+      Sync(Right)
+    ],
+    result: [("root", "He1234ll5678o folks\n")]
+  },
+  {
+    title: "Insert many keys both sides, reversed sync order",
+    changes: 
+    typeChanges(2, "1234")->List.map(d => Change(Left, delta("root", d)))
+    @ typeChanges(4, "5678")->List.map(d => Change(Right, delta("root", d))) @ [
+      Sync(Right),
+      Sync(Left),
+    ],
+    result: [("root", "He1234ll5678o folks\n")]
+  },
 ];
 
-let runTest = ({changes, result}) => {
+let runTest = ({title, changes, result}) => {
+  Js.log(blue(title));
   let state = {
     root: {history: baseWorld.history.changes, data: baseWorld.current},
     left: StoreInOne.MonoClient.fromWorld(~metaData=MetaData.blankMetaData(), ~sessionId="left", ~world=baseWorld, ~user),
@@ -136,51 +169,56 @@ let runTest = ({changes, result}) => {
 
   let state = changes
   ->List.concat([Sync(Left), Sync(Right), Sync(Left), Sync(Right), Sync(Right), Sync(Left), Sync(Left)])
-  ->List.reduce(state, process);
+  ->List.reduce(state, process(false));
+
+  let lh = state.left.world.history.changes;
+  let rh = state.right.world.history.changes;
+  let slh = lh->List.map(WorkerProtocolSerde.serializeHistoryItem)->List.map(Js.Json.stringify);
+  let srh = rh->List.map(WorkerProtocolSerde.serializeHistoryItem)->List.map(Js.Json.stringify);
+  if (slh != srh) {
+    Js.log3("  " ++ red("Left & Right histories are different"), lh, rh)
+    if (List.length(lh) == List.length(rh)) {
+      List.zip(lh, rh)->List.forEach(((l, r)) => {
+        if (l != r) {
+          Js.log("    Different item");
+          if (Js.Json.stringify(WorkerProtocolSerde.serializeHistoryItem(l)) ==
+          Js.Json.stringify(WorkerProtocolSerde.serializeHistoryItem(r))) {
+            Js.log("    [but same serialized]")
+          } else {
+            Js.log("    " ++ show(WorkerProtocolSerde.serializeHistoryItem(l)));
+            Js.log("    " ++ show(WorkerProtocolSerde.serializeHistoryItem(r)));
+          }
+        } else {
+          Js.log("  same tho")
+        }
+      })
+    } else {
+      Js.log("  " ++ red("> Different lengths!!"))
+    };
+    [%bs.debugger];
+  } else {
+    Js.log("  " ++ ("Histories match!"))
+  };
 
   result->List.forEach(((nid, text)) => {
-    let lh = state.left.world.history.changes;
-    let rh = state.right.world.history.changes;
-    let slh = lh->List.map(WorkerProtocolSerde.serializeHistoryItem)->List.map(Js.Json.stringify);
-    let srh = rh->List.map(WorkerProtocolSerde.serializeHistoryItem)->List.map(Js.Json.stringify);
-    if (slh != srh) {
-      Js.log3(red("Left & Right histories are different"), lh, rh)
-      if (List.length(lh) == List.length(rh)) {
-        List.zip(lh, rh)->List.forEach(((l, r)) => {
-          if (l != r) {
-            Js.log("Different item");
-            if (Js.Json.stringify(WorkerProtocolSerde.serializeHistoryItem(l)) ==
-            Js.Json.stringify(WorkerProtocolSerde.serializeHistoryItem(r))) {
-              Js.log("  [but same serialized]")
-            } else {
-              Js.log("  " ++ show(WorkerProtocolSerde.serializeHistoryItem(l)));
-              Js.log("  " ++ show(WorkerProtocolSerde.serializeHistoryItem(r)));
-            }
-          } else {
-            Js.log("same tho")
-          }
-        })
-      } else {
-        Js.log(red("> Different lengths!!"))
-      };
-      [%bs.debugger];
-    } else {
-      Js.log(green("Histories match!"))
-    }
     let left = state.left.world.current->Data.get(nid)->Lets.Opt.force;
     let right = state.right.world.current->Data.get(nid)->Lets.Opt.force;
     let left = left.contents->Delta.getText;
     let right = right.contents->Delta.getText;
     let root = state.root.data->Data.get(nid)->Lets.Opt.force;
     let root = root.contents->Delta.getText;
-    if (left != text) {
-      Js.log3("Bad left", Js.Json.stringifyAny(left), Js.Json.stringifyAny(text))
-    };
-    if (right != text) {
-      Js.log3("Bad right", Js.Json.stringifyAny(right), Js.Json.stringifyAny(text))
-    };
-    if (root != text) {
-      Js.log3("Bad root", Js.Json.stringifyAny(root), Js.Json.stringifyAny(text))
+    if (left == text && right == text && root == text) {
+      Js.log("  " ++ green("Node " ++ nid ++ " looks good!"))
+    } else {
+      if (left != text) {
+        Js.log3("  Bad left ", Js.Json.stringifyAny(left), Js.Json.stringifyAny(text))
+      };
+      if (right != text) {
+        Js.log3("  Bad right", Js.Json.stringifyAny(right), Js.Json.stringifyAny(text))
+      };
+      if (root != text) {
+        Js.log3("  Bad root ", Js.Json.stringifyAny(root), Js.Json.stringifyAny(text))
+      };
     }
   })
 };
