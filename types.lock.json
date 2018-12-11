@@ -42,6 +42,11 @@
         {
           "moduleName": "World",
           "modulePath": ["MultiChange"],
+          "name": "change"
+        },
+        {
+          "moduleName": "World",
+          "modulePath": ["MultiChange"],
           "name": "fullChange"
         },
         {

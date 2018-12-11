@@ -187,6 +187,12 @@ changeTests
     };
   });
 
+let typeChanges = (pos, text) => {
+  Js.String.split("", text)->List.fromArray->List.mapWithIndex((i, char) => {
+    Delta.makeInsert(pos + i, char)
+  })
+};
+
 let rebaseTests = [
   (
     "Add before",
@@ -230,6 +236,26 @@ let rebaseTests = [
       expectChildren("a", []),
       expectChildren("c", ["d", "e", "b", "f", "h"]),
     ]),
+  ),
+  (
+    "More complex change",
+    [ChangeContents("a", Delta.makeInsert(1, "1234"))],
+    [ChangeContents("a", Delta.makeInsert(2, "5678"))],
+    expectContents("a", "A1234 5678leaf")
+  ),
+  (
+    "More complex change reversed",
+    [ChangeContents("a", Delta.makeInsert(2, "5678"))],
+    [ChangeContents("a", Delta.makeInsert(1, "1234"))],
+    expectContents("a", "A1234 5678leaf")
+  ),
+  (
+    "More complex change - typed by char",
+    typeChanges(1, "1234")
+    ->List.map(d => ChangeContents("a", d)),
+    typeChanges(2, "5678")
+    ->List.map(d => ChangeContents("a", d)),
+    expectContents("a", "A1234 5678leaf")
   ),
 ];
 

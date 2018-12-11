@@ -66,7 +66,7 @@ let showRoot = ({StoreInOne.Server.history, data}) => {
   /* history->List.map(WorkerProtocolSerde.serializeHistoryItem)->List.forEach(item => Js.log(show(item))); */
 };
 
-let red = text => "\027[31;1;4m" ++ text ++ "\027[0m";
+let red = text => "\027[31;1m" ++ text ++ "\027[0m";
 let green = text => "\027[32m" ++ text ++ "\027[0m";
 let blue= text => "\027[34;1;4m" ++ text ++ "\027[0m";
 let yellow = text => "\027[33m" ++ text ++ "\027[0m";
@@ -197,10 +197,10 @@ let runTest = ({title, changes, result}) => {
     };
     [%bs.debugger];
   } else {
-    Js.log("  " ++ ("Histories match!"))
+    Js.log("  " ++ green("Histories match!"))
   };
 
-  result->List.forEach(((nid, text)) => {
+  let wrong = result->List.some(((nid, text)) => {
     let left = state.left.world.current->Data.get(nid)->Lets.Opt.force;
     let right = state.right.world.current->Data.get(nid)->Lets.Opt.force;
     let left = left.contents->Delta.getText;
@@ -208,19 +208,31 @@ let runTest = ({title, changes, result}) => {
     let root = state.root.data->Data.get(nid)->Lets.Opt.force;
     let root = root.contents->Delta.getText;
     if (left == text && right == text && root == text) {
-      Js.log("  " ++ green("Node " ++ nid ++ " looks good!"))
+      Js.log("  " ++ green("Node " ++ nid ++ " looks good!"));
+      false
     } else {
+      Js.log2("  Expected:", Js.Json.stringifyAny(text));
       if (left != text) {
-        Js.log3("  Bad left ", Js.Json.stringifyAny(left), Js.Json.stringifyAny(text))
+        Js.log2("  " ++ red("Bad left "), Js.Json.stringifyAny(left))
       };
       if (right != text) {
-        Js.log3("  Bad right", Js.Json.stringifyAny(right), Js.Json.stringifyAny(text))
+        Js.log2(red("  Bad right"), Js.Json.stringifyAny(right))
       };
       if (root != text) {
-        Js.log3("  Bad root ", Js.Json.stringifyAny(root), Js.Json.stringifyAny(text))
+        Js.log2(red("  Bad root "), Js.Json.stringifyAny(root))
       };
+      true;
     }
-  })
+  });
+
+  if (wrong) {
+    state.root.history->List.forEach(change => {
+      Js.log(change.inner.changeId);
+      Js.log(WorkerProtocolSerde.serializeChange(change.inner.apply)->Js.Json.stringify);
+      Js.log(WorkerProtocolSerde.serializeRebaseItem(change.rebase)->Js.Json.stringify);
+      Js.log(WorkerProtocolSerde.serializeChange(change.revert)->Js.Json.stringify);
+    })
+  }
 };
 [%bs.debugger];
 

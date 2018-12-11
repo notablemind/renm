@@ -11,6 +11,7 @@
     {"file": "./src/app/StoreInOne.re", "type": "History.sync", "publicName": "historySync"},
     {"file": "./src/core/View.re", "type": "sharedViewData"},
     {"file": "./src/World.re", "type": "MultiChange.rebaseItem", "publicName": "rebaseItem"},
+    {"file": "./src/World.re", "type": "MultiChange.change", "publicName": "change"},
     {"file": "./src/World.re", "type": "MultiChange.fullChange", "publicName": "historyItem"},
     {"file": "./src/core/Session.re", "type": "auth", "publicName": "auth"},
     {"file": "./src/NodeType.re", "type": "t", "publicName": "node"},

@@ -3681,6 +3681,25 @@ and deserializeRebaseItem data =
            ((Belt.Result.Error
                (["Unexpected version " ^ (string_of_int version)]))
            [@explicit_arity ]))
+let serializeChange data =
+  wrapWithVersion currentVersion
+    (Version1.serialize_World__MultiChange__change data)
+and deserializeChange data =
+  match parseVersion data with
+  | ((Belt.Result.Error (err))[@explicit_arity ]) ->
+      ((Belt.Result.Error ([err]))[@explicit_arity ])
+  | ((Ok (version, data))[@implicit_arity ]) ->
+      (match version with
+       | 1 ->
+           (match Version1.deserialize_World__MultiChange__change data with
+            | ((Belt.Result.Error (error))[@explicit_arity ]) ->
+                ((Belt.Result.Error (error))[@explicit_arity ])
+            | ((Ok (data))[@explicit_arity ]) -> ((Belt.Result.Ok (data))
+                [@explicit_arity ]))
+       | _ ->
+           ((Belt.Result.Error
+               (["Unexpected version " ^ (string_of_int version)]))
+           [@explicit_arity ]))
 let serializeHistoryItem data =
   wrapWithVersion currentVersion
     (Version1.serialize_World__MultiChange__fullChange data)
