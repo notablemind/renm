@@ -67,31 +67,33 @@ let showRoot = ({StoreInOne.Server.history, data}) => {
 };
 
 let red = text => "\027[31;1;4m" ++ text ++ "\027[0m";
+let green = text => "\027[32;1;4m" ++ text ++ "\027[0m";
+let yellow = text => "\027[33m" ++ text ++ "\027[0m";
 
 let process = (state, change) => {
   /* [%bs.debugger]; */
   switch change {
   | Sync(Left) =>
-    Js.log(red(">> Left sync"));
+    Js.log(yellow(">>") ++ " Left sync");
     MonoUtils.startSync(state.left);
     let root = MonoUtils.finishSync(state.root, state.left);
     showStore(state.left);
     showRoot(root);
     {...state, root};
   | Sync(Right) =>
-    Js.log(red(">> Right sync"));
+    Js.log(yellow(">>") ++ " Right sync");
     MonoUtils.startSync(state.right);
     let root = MonoUtils.finishSync(state.root, state.right);
     showStore(state.right);
     showRoot(root);
     {...state, root: root};
   | Change(Left, actions) =>
-    Js.log(red(">> Change left"));
+    Js.log(yellow(">>") ++ " Change left");
     (state.left->StoreInOne.MonoClient.clientStore).act(actions);
      showStore(state.left);
     state
   | Change(Right, actions) =>
-    Js.log(red(">> Change right"));
+    Js.log(yellow(">>") ++ " Change right");
     (state.right->StoreInOne.MonoClient.clientStore).act(actions);
      showStore(state.right);
     state
@@ -139,11 +141,10 @@ let runTest = ({changes, result}) => {
   result->List.forEach(((nid, text)) => {
     let lh = state.left.world.history.changes;
     let rh = state.right.world.history.changes;
-    if (lh != rh) {
+    let slh = lh->List.map(WorkerProtocolSerde.serializeHistoryItem)->List.map(Js.Json.stringify);
+    let srh = rh->List.map(WorkerProtocolSerde.serializeHistoryItem)->List.map(Js.Json.stringify);
+    if (slh != srh) {
       Js.log3(red("Left & Right histories are different"), lh, rh)
-    };
-    if (lh != rh) {
-      Js.log3("Different histories", lh, rh);
       if (List.length(lh) == List.length(rh)) {
         List.zip(lh, rh)->List.forEach(((l, r)) => {
           if (l != r) {
@@ -159,8 +160,12 @@ let runTest = ({changes, result}) => {
             Js.log("same tho")
           }
         })
+      } else {
+        Js.log(red("> Different lengths!!"))
       };
       [%bs.debugger];
+    } else {
+      Js.log(green("Histories match!"))
     }
     let left = state.left.world.current->Data.get(nid)->Lets.Opt.force;
     let right = state.right.world.current->Data.get(nid)->Lets.Opt.force;
