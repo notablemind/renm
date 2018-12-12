@@ -37,18 +37,8 @@ let messageToJson = WorkerProtocolSerde.serializeServerMessage;
 
 type file = {
   mutable meta: MetaData.t,
-  /* mutable current: Change.data,
-  mutable snapshot: Change.data, */
   /* TODO maybe keep around a cache of recent changes to be able to get undo things sooner */
   /* mutable recentChanges */
-
-  /* mutable snapshot: World.MultiChange.data,
-  mutable history: StoreInOne.history,
-  mutable syncing: StoreInOne.Queue.t(World.thisChange),
-  mutable unsynced: StoreInOne.Queue.t(World.thisChange),
-  mutable current: World.MultiChange.data, */
-
-
 
   mutable world: StoreInOne.Client.world,
   mutable cursors: Hashtbl.t(string, (string, View.Range.range)),
@@ -151,7 +141,6 @@ let applyChange = (file, change, ports, dontSendToSession) => {
     ...file.world,
     current,
     history: StoreInOne.History.appendT(file.world.history, [appliedChange])
-    /* unsynced: StoreInOne.Queue.append(file.world.unsynced, appliedChange), */
   };
   file.world = world;
 

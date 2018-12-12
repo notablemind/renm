@@ -212,50 +212,10 @@ module Server = {
   };
 };
 
-module Queue: {
-  type t('t);
-  let empty: t('t);
-  let append: (t('t), 't) => t('t);
-  let toList: t('t) => list('t);
-  let toRevList: t('t) => list('t);
-  let ofList: list('t) => t('t);
-  let tryReduce:
-    (t('t), 'a, ('a, 't) => Result.t('a, 'e)) => Result.t('a, 'e);
-  let skipReduce: (t('t), 'a, ('a, 't) => Result.t('a, 'e)) => 'a;
-} = {
-  type t('t) = list('t);
-  let empty = [];
-  let append = (q, item) => [item, ...q];
-  let toList = t => List.reverse(t);
-  let toRevList = t => t;
-  let ofList = t => List.reverse(t);
-
-  let rec tryReduce = (list, initial, fn) =>
-    switch (list) {
-    | [] => Result.Ok(initial)
-    | [one, ...rest] =>
-      let%Lets.Try result = tryReduce(rest, initial, fn);
-      fn(result, one);
-    };
-
-  let rec skipReduce = (list, initial, fn) =>
-    switch (list) {
-    | [] => initial
-    | [one, ...rest] =>
-      let result = skipReduce(rest, initial, fn);
-      switch (fn(result, one)) {
-      | Result.Error(_) => result
-      | Ok(result) => result
-      };
-    };
-};
-
 module Client = {
   type world = {
     snapshot: World.MultiChange.data,
     history: History.t,
-    /* syncing: Queue.t(World.thisChange),
-    unsynced: Queue.t(World.thisChange), */
     current: World.MultiChange.data,
   };
 
@@ -263,8 +223,6 @@ module Client = {
     snapshot: current,
     history,
     current,
-    /* syncing: Queue.empty,
-    unsynced: Queue.empty, */
   };
 
   /* Maybe this should go inside of the `History` module */
@@ -287,24 +245,13 @@ module Client = {
           } else {
             switch changes {
               | [] => Error(Change.MissingChange(newer))
-              | [{Sync.inner: {changeId}} as change, ..._] when changeId == newer => loop(true, changes)
+              | [{Sync.inner: {changeId}}, ..._] when changeId == newer => loop(true, changes)
               | [_, ...rest] => loop(false, rest)
             }
           };
         loop(false, changes)
     }
   };
-
-  /* let queueReduceChanges = (changes, initial) =>
-    changes
-    ->Queue.skipReduce(
-        (initial, Queue.empty),
-        ((data, changes), change) => {
-          let%Lets.Try (data, revert, rebase) =
-            World.MultiChange.apply(data, change.Sync.inner.apply);
-          Ok((data, Queue.append(changes, {...change, revert, rebase})));
-        },
-      ); */
 
   let applyChange =
       (world: world, change: Sync.changeInner(World.MultiChange.change, World.MultiChange.selection))

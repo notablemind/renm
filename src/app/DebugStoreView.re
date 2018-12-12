@@ -86,8 +86,6 @@ let make = (~store: StoreInOne.MonoClient.t, _children) => {
           0,
           () =>
             self.send((
-              /* store.world.unsynced,
-              store.world.syncing, */
               store.world.history,
             )),
         ),
@@ -97,21 +95,11 @@ let make = (~store: StoreInOne.MonoClient.t, _children) => {
     (
       {
         state: (
-          /* unsynced: StoreInOne.Queue.t(World.thisChange),
-          syncing: StoreInOne.Queue.t(World.thisChange), */
           history: StoreInOne.History.t,
         ),
       },
     ) =>
     <div>
-      /* <div>
-        <h4> {ReasonReact.string("Unsynced")} </h4>
-        {unsynced->StoreInOne.Queue.toList->List.map(showChange)->List.toArray->ReasonReact.array}
-      </div>
-      <div>
-        <h4> {ReasonReact.string("Syncing")} </h4>
-        {syncing->StoreInOne.Queue.toList->List.map(showChange)->List.toArray->ReasonReact.array}
-      </div> */
       <div>
         <h4> {ReasonReact.string("History")} </h4>
         {history.changes->List.map (showChange)->List.toArray->ReasonReact.array}
