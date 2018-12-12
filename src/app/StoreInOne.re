@@ -80,6 +80,8 @@ module History = {
 
   let empty = {changes: [], sync: Unsynced};
 
+  let resetSyncing = (t, sync) => {...t, sync};
+
   let latestId = t => List.head(t.changes)->Lets.Opt.map(c => c.Sync.inner.changeId);
 
   let latestSyncedId = t => switch (t.sync) {
@@ -138,6 +140,18 @@ module History = {
     | Syncing(All(latest)) => partition(t.changes, latest, None)
     | Syncing(From(newer, older)) => partition(t.changes, newer, Some(older))
     | _ => failwith("Not syncing")
+  };
+
+  let applyRebase = (t, unsynced, rebase) => {
+    let (_, _, synced) = partitionT(t);
+    {
+      changes: unsynced @ rebase @ synced,
+      sync:
+        switch (rebase) {
+        | [] => t.sync
+        | [{Sync.inner: {changeId}}, ..._] => SyncedThrough(changeId)
+        },
+    }
   };
 
   /* type t('change, 'rebase, 'selection) =
@@ -336,7 +350,7 @@ module Client = {
           syncing->World.reduceChanges(world.snapshot);
         snapshot;
       };
-    let history = {...world.history, sync: SyncedThrough(newest)};
+    let history = world.history->History.resetSyncing(SyncedThrough(newest));
     (snapshot, history);
   };
 
@@ -348,7 +362,7 @@ module Client = {
     };
     let%Lets.Try (snapshot, history) =
       switch (syncing) {
-        | Empty => Result.Ok((world.current, {...world.history, sync: Unsynced}))
+        | Empty => Result.Ok((world.current, world.history->History.resetSyncing(Unsynced)))
         | All(latest) =>
           Result.Ok(commitPartial(world, latest, None))
         | From(newer, older) => {
@@ -368,15 +382,17 @@ module Client = {
     let (unsynced, syncing, synced) = History.partitionT(world.history);
     let (current, unsynced) =
       unsynced->List.reverse->World.processRebases(snapshot, rebases);
+
     {
-      history: {
+      history: world.history->History.applyRebase(unsynced, changes),
+      /* {
         changes: unsynced @ changes @ synced,
         sync:
           switch (changes) {
           | [] => Unsynced
           | [{Sync.inner: {changeId}}, ..._] => SyncedThrough(changeId)
           },
-      },
+      }, */
       snapshot,
       current,
     };
