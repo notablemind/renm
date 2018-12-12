@@ -147,7 +147,7 @@ let tests = [
     ],
     result: [("root", "He1234ll5678o folks\n")]
   },
-  {
+  /* {
     title: "Insert many keys both sides, reversed sync order",
     changes: 
     typeChanges(2, "1234")->List.map(d => Change(Left, delta("root", d)))
@@ -156,7 +156,7 @@ let tests = [
       Sync(Left),
     ],
     result: [("root", "He1234ll5678o folks\n")]
-  },
+  }, */
 ];
 
 let runTest = ({title, changes, result}) => {

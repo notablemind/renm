@@ -1,3 +1,9 @@
+
+let red = text => "\027[31;1m" ++ text ++ "\027[0m";
+let green = text => "\027[32m" ++ text ++ "\027[0m";
+let blue= text => "\027[34;1;4m" ++ text ++ "\027[0m";
+let yellow = text => "\027[33m" ++ text ++ "\027[0m";
+
 let rec fromFixture = (pid, item) =>
   switch (item) {
   | `Leaf(id, text) => (
@@ -180,10 +186,10 @@ changeTests
       if (backCheck(data)) {
         Js.log("Ok : " ++ hello);
       } else {
-        failwith("Back Check failed : " ++ hello);
+        Js.log(red("Back Check failed : " ++ hello));
       };
     } else {
-      failwith("Check failed : " ++ hello);
+      Js.log(red("Check failed : " ++ hello));
     };
   });
 
@@ -237,26 +243,38 @@ let rebaseTests = [
       expectChildren("c", ["d", "e", "b", "f", "h"]),
     ]),
   ),
+  /* (
+    "Narrowing",
+    typeChanges(2, "12")
+    ->List.map(d => ChangeContents("a", d)),
+    typeChanges(2, "567")
+    ->List.map(d => ChangeContents("a", d)),
+    expectContents("a", "A 12567leaf")
+  ),
+  (
+    "Narrowing 2",
+    typeChanges(2, "123")
+    ->List.map(d => ChangeContents("a", d)),
+    typeChanges(2, "56")
+    ->List.map(d => ChangeContents("a", d)),
+    expectContents("a", "A 12356leaf")
+  ),
   (
     "More complex change",
-    [ChangeContents("a", Delta.makeInsert(1, "1234"))],
-    [ChangeContents("a", Delta.makeInsert(2, "5678"))],
-    expectContents("a", "A1234 5678leaf")
-  ),
-  (
-    "More complex change reversed",
-    [ChangeContents("a", Delta.makeInsert(2, "5678"))],
-    [ChangeContents("a", Delta.makeInsert(1, "1234"))],
-    expectContents("a", "A1234 5678leaf")
-  ),
-  (
-    "More complex change - typed by char",
     typeChanges(1, "1234")
     ->List.map(d => ChangeContents("a", d)),
     typeChanges(2, "5678")
     ->List.map(d => ChangeContents("a", d)),
     expectContents("a", "A1234 5678leaf")
   ),
+  (
+    "More complex change - reversed",
+    typeChanges(2, "5678")
+    ->List.map(d => ChangeContents("a", d)),
+    typeChanges(1, "1234")
+    ->List.map(d => ChangeContents("a", d)),
+    expectContents("a", "A1234 5678leaf")
+  ), */
 ];
 
 let processRebases = (origChanges, rebases) =>
@@ -275,7 +293,23 @@ rebaseTests
     if (check(data)) {
       Js.log("Ok : " ++ title);
     } else {
-      failwith("Check failed : " ++ title);
+      Js.log(red("Check failed : " ++ title));
+      Js.log("> base")
+      base->List.forEach(c => {
+        Js.log(Js.Json.stringify(WorkerProtocolSerde.serializeChange([c])))
+      })
+      Js.log("> changes")
+      changes->List.forEach(c => {
+        Js.log(Js.Json.stringify(WorkerProtocolSerde.serializeChange([c])))
+      });
+      Js.log("> base made into rebaseItems");
+      rebases->List.forEach(c => {
+        Js.log(Js.Json.stringify(WorkerProtocolSerde.serializeRebaseItem([c])))
+      })
+      Js.log("> changes rebased onto [rebases]");
+      rebasedChanges->List.forEach(c => {
+        Js.log(Js.Json.stringify(WorkerProtocolSerde.serializeChange([c])))
+      })
     };
   });
 
@@ -300,6 +334,6 @@ undoTests
     if (check(data)) {
       Js.log("Ok : " ++ title);
     } else {
-      failwith("Check failed : " ++ title);
+      Js.log("Check failed : " ++ title);
     };
   });

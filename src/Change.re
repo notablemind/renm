@@ -157,7 +157,7 @@ let rebasePosRemove = (pid, idx, pid2, idx2) =>
 let rebase = (change, rebaseItem) =>
   switch (change, rebaseItem) {
   | (ChangeContents(aid, ado), Contents(bid, bdo)) when aid == bid =>
-    ChangeContents(aid, Delta.transform(bdo, ado))
+    ChangeContents(aid, Delta.transformPriority(bdo, ado, true))
 
   | (MoveNode(nextPid, nidx, id), MoveChild(pid1, idx1, pid2, idx2)) =>
     let nidx = pid1 == nextPid && idx1 <= nidx ? nidx - 1 : nidx;

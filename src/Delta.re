@@ -19,6 +19,7 @@ let fromString = str => make([|insert({"insert": withNewline(str)})|]);
 [@bs.send] external diff: (delta, delta) => delta = "";
 
 [@bs.send] external transform: (delta, delta) => delta = "";
+[@bs.send] external transformPriority: (delta, delta, bool) => delta = "transform";
 [@bs.send] external compose: (delta, delta) => delta = "";
 
 let getText: delta => string = [%bs.raw
