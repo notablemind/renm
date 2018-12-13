@@ -102,7 +102,7 @@ let make = (~store: StoreInOne.MonoClient.t, _children) => {
     <div>
       <div>
         <h4> {ReasonReact.string("History")} </h4>
-        {history.changes->List.map (showChange)->List.toArray->ReasonReact.array}
+        {history->History.allChanges->List.map (showChange)->List.toArray->ReasonReact.array}
       </div>
     </div>,
 };

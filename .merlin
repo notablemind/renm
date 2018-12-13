@@ -26,6 +26,10 @@ S src/utils
 B lib/bs/src/utils
 S src/app
 B lib/bs/src/app
+S src/app/debug
+B lib/bs/src/app/debug
+S src/app/storage
+B lib/bs/src/app/storage
 S src/core
 B lib/bs/src/core
 S src/ui

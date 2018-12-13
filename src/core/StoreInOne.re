@@ -54,127 +54,8 @@ Also forget this module type shenanigans
   /* let moreItems: (t('change, 'rebase, 'selection), ~limit: int, string) => list(Sync.change('change, 'rebase, 'selection)); */
 }; */
 
-module History = {
-  type syncing =
-    | Empty
-    | All(string)
-    | From(string, string)
-  type sync =
-    | Unsynced
-    | SyncedThrough(string)
-    | Syncing(syncing)
 
-  type t = {
-    changes: list(World.thisChange), /* order: newest to oldest */
-    sync,
-  };
-
-  let prepareSync = t => {...t, sync: Syncing(switch (t.changes) {
-    | [] => Empty
-    | [{Sync.inner: {changeId: latest}}, ..._] => switch (t.sync) {
-      | Unsynced => All(latest)
-      | SyncedThrough(oldest) => From(latest, oldest)
-      | Syncing(_) => failwith("already syncing")
-    }
-  })};
-
-  let empty = {changes: [], sync: Unsynced};
-
-  let resetSyncing = (t, sync) => {...t, sync};
-
-  let latestId = t => List.head(t.changes)->Lets.Opt.map(c => c.Sync.inner.changeId);
-
-  let latestSyncedId = t => switch (t.sync) {
-    | Unsynced => failwith("Not syncing")
-    | SyncedThrough(id) => failwith("Not syncing")
-    | Syncing(Empty) => None
-    | Syncing(All(id)) => None
-    | Syncing(From(id, old)) => Some(old)
-  };
-
-  let append = (changes, items) => List.reverse(items) @ changes;
-
-  let appendT = (t, items) => {...t, changes: append(t.changes, items)};
-
-  let itemsSince = (list, id) =>
-    switch (id) {
-    | None => List.reverse(list)
-    | Some(id) =>
-      let rec loop = (items, collector) =>
-        switch (items) {
-        | [] => collector
-        | [one, ...rest] when one.Sync.inner.changeId == id => collector
-        | [one, ...rest] => loop(rest, [one, ...collector])
-        };
-      loop(list, []);
-    };
-
-  /* OK there are data structure things we could do to speed this up... if we wanted */
-  let partition = (changes, latest, oldest) => {
-    let rec loop = (foundNewer, changes) => if (foundNewer) {
-      switch oldest {
-        | None => ([], changes, [])
-        | Some(oldest) =>
-        switch changes {
-          | [] => ([], [], [])
-          | [{Sync.inner: {changeId}} , ...rest] when changeId == oldest => ([], [], changes)
-          | [change, ...rest] =>
-            let (unsynced, syncing, synced) = loop(true, rest);
-            (unsynced, [change, ...syncing], synced)
-          }
-        }
-      } else {
-        switch changes {
-          | [] => ([], [], [])
-          | [{Sync.inner: {changeId}} , ..._] when changeId == latest => loop(true, changes)
-          | [one, ...rest] =>
-            let (unsynced, syncing, synced) = loop(false, rest);
-            ([one, ...unsynced], syncing, synced)
-        }
-      };
-    loop(false, changes)
-  };
-
-  let partitionT = t => switch (t.sync) {
-    | Syncing(Empty) => (t.changes, [], [])
-    | Syncing(All(latest)) => partition(t.changes, latest, None)
-    | Syncing(From(newer, older)) => partition(t.changes, newer, Some(older))
-    | _ => failwith("Not syncing")
-  };
-
-  let applyRebase = (t, unsynced, rebase) => {
-    let (_, _, synced) = partitionT(t);
-    {
-      changes: unsynced @ rebase @ synced,
-      sync:
-        switch (rebase) {
-        | [] => t.sync
-        | [{Sync.inner: {changeId}}, ..._] => SyncedThrough(changeId)
-        },
-    }
-  };
-
-  /* type t('change, 'rebase, 'selection) =
-    list(Sync.change('change, 'rebase, 'selection));
-  let latestId = t => List.head(t)->Lets.Opt.map(c => c.Sync.inner.changeId);
-  let append = (t, items) => List.reverse(items) @ t;
-  let itemsSince = (t, id) =>
-    Js.Promise.resolve(switch (id) {
-    | None => List.reverse(t)
-    | Some(id) =>
-      let rec loop = (items, collector) =>
-        switch (items) {
-        | [] => collector
-        | [one, ...rest] when one.Sync.inner.changeId == id => collector
-        | [one, ...rest] => loop(rest, [one, ...collector])
-        };
-      loop(t, []);
-    });
-  let empty = []; */
-};
-
-/* type history =
-  History.t(World.MultiChange.change, World.MultiChange.rebaseItem, World.MultiChange.selection); */
+module History = History;
 
 module Server = {
   type serverFile = {
@@ -182,16 +63,16 @@ module Server = {
     data: World.MultiChange.data,
   };
 
-  let persistChangedNodes = (current, changes) => {
+  let persistChangedNodes = (current, changes, fn) => {
     let%Lets.TryWrap events = Change.eventsForChanges(current.Data.nodes, changes->List.map(change => change.Sync.inner.apply)->List.toArray->List.concatMany);
-    let _nodes = events->List.keepMap(item => switch item {
+    let ids = events->List.keepMap(item => switch item {
       | SharedTypes.Event.Node(id) => Some(id)
       | _ => None
     });
-    /* TODO */
+    fn(ids)
   };
 
-  let processSyncRequest = (server, id, changes) => {
+  let processSyncRequest = (server, ~persist=?, id, changes) => {
       let items = History.itemsSince(server.history, id);
       switch (World.processSyncRequest(server.data, items, changes)) {
         | `Commit(data) =>
@@ -199,14 +80,20 @@ module Server = {
             history: server.history->History.append(changes),
             data,
           };
-          persistChangedNodes(server.data, changes)->ignore;
+          switch (persist) {
+            | None => ()
+            | Some(fn) => persistChangedNodes(server.data, changes, fn)->ignore;
+          };
           (server, `Commit)
         | `Rebase(data, rebasedChanges, rebases) =>
           let server = {
             history: server.history->History.append(rebasedChanges),
             data,
           };
-          persistChangedNodes(server.data, rebasedChanges)->ignore;
+          switch (persist) {
+            | None => ()
+            | Some(fn) => persistChangedNodes(server.data, rebasedChanges, fn)->ignore;
+          };
           (server, `Rebase(items @ rebasedChanges, rebases))
       }
   };
@@ -287,7 +174,7 @@ module Client = {
       } else {
         /* these are the rebase changes, that we don't need right now */
         let (unsynced, syncing, _synced) =
-          History.partition(world.history.changes, newest, oldest);
+          History.partition(world.history, newest, oldest);
           /* replace the history from "newer" until "older", with the changes */
           /* can I just undo the unsynced things? that might not be perfect...
               but I should run a ton of tests or something */
