@@ -13,6 +13,8 @@ let makeFileWithNodes = (~title, ~id, ~nodes: list(Data.Node.t('a, 'b))) => {
       })
     })->List.toArray
   );
+  Dbs.getFileDb(meta.id)->Dbs.getHistoryDb->ignore;
+  Dbs.getFileDb(meta.id)->Dbs.getUnsyncedDb->ignore;
   Js.Promise.resolve(meta)
 };
 
@@ -59,20 +61,27 @@ let save = meta => Dbs.metasDb->Persistance.put(meta.id, meta);
 
 let getFile = id => Dbs.metasDb->Persistance.get(id);
 
+let toMap = nodes =>
+  nodes->Array.map(node => (node##key, node##value))->Map.String.fromArray->Js.Promise.resolve;
+
+let toList = nodes =>
+  nodes->Array.map(node => node##value)->List.fromArray->Js.Promise.resolve;
+
+let loadHistory = db => {
+  Js.Promise.all2((
+    db->Dbs.getUnsyncedDb->Persistance.getAll |> Js.Promise.then_(toMap),
+    db->Dbs.getHistoryDb->Persistance.getAll |> Js.Promise.then_(toMap),
+  ));
+};
+
 let loadNodes = db => {
-  let%Lets.Async nodes = db->Dbs.getNodesDb->Persistance.getAll;
-  let nodeMap = nodes->Array.map(node => (node##key, node##value))->Map.String.fromArray;
-  Js.Promise.resolve(nodeMap)
+  db->Dbs.getNodesDb->Persistance.getAll |> Js.Promise.then_(toMap)
 };
 
 let loadTags = db => {
-  let%Lets.Async tags = db->Dbs.getTagsDb->Persistance.getAll;
-  let tagMap = tags->Array.map(tag => (tag##key, tag##value))->Map.String.fromArray;
-  Js.Promise.resolve(tagMap)
+  db->Dbs.getTagsDb->Persistance.getAll |> Js.Promise.then_(toMap)
 };
 
 let loadContributors = db => {
-  let%Lets.Async nodes = db->Dbs.getContributorsDb->Persistance.getAll;
-  let nodeMap = nodes->Array.map(node => (node##key, node##value))->Map.String.fromArray;
-  Js.Promise.resolve(nodeMap)
+  db->Dbs.getContributorsDb->Persistance.getAll |> Js.Promise.then_(toMap)
 };
