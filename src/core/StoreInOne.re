@@ -157,73 +157,21 @@ module Client = {
     };
   };
 
-  /* let rebaseChanges = (origChanges, baseChanges) =>
-    origChanges
-    ->List.map(change =>
-        baseChanges
-        ->List.reduce(change, (current, base) =>
-            World.MultiChange.rebase(current, base.Sync.rebase)
-          )
-      ); */
-
-  /* let commitPartial = (world, newest, oldest) => {
-    let%Lets.OptForce latestId = world.history->History.latestId;
-    let snapshot =
-      if (latestId == newest) {
-        world.current;
-      } else {
-        /* these are the rebase changes, that we don't need right now */
-        let (unsynced, syncing, _synced) =
-          History.partition(world.history);
-          /* replace the history from "newer" until "older", with the changes */
-          /* can I just undo the unsynced things? that might not be perfect...
-              but I should run a ton of tests or something */
-
-          /* world.snapshot->applyHistorySubset(world.history.changes, newer, older) */
-        let (snapshot, _appliedChanges) =
-          syncing->World.reduceChanges(world.snapshot);
-        snapshot;
-      };
-    let history = world.history->History.resetSyncing(SyncedThrough(newest));
-    (snapshot, history);
-  }; */
-
   let commit = (world: world): Result.t(world, string) => {
     switch (world.history.sync) {
       | None => Result.Ok(world)
       | Some(latest) =>
         let (unsynced, syncing) =
           History.partition(world.history);
-        /* Js.log4("Committing", unsynced, syncing, world.snapshot); */
         let%Lets.Try (snapshot, _appliedChanges) =
           try%Lets.Try (syncing->List.reverse->World.reduceChanges(world.snapshot)) {
             | error =>
             Js.log(error);
             Result.Error("Unable to reduce changes")
           };
-        /* snapshot; */
         let history = world.history->History.commit;
         Ok({...world, history, snapshot})
     };
-    /* let%Lets.Try syncing = switch (world.history.sync) {
-      | Unsynced => Result.Error("invalid state")
-      | SyncedThrough(latest) => Result.Error("invalid state")
-      | Syncing(syncing) => Ok(syncing)
-    };
-    let%Lets.Try (snapshot, history) =
-      switch (syncing) {
-        | Empty => Result.Ok((world.current, world.history->History.resetSyncing(Unsynced)))
-        | All(latest) =>
-          Result.Ok(commitPartial(world, latest, None))
-        | From(newer, older) => {
-          Result.Ok(commitPartial(world, newer, Some(older)))
-        }
-      };
-    Ok({
-      ...world,
-      history,
-      snapshot,
-    }); */
   };
 
   let applyRebase = (world: world, changes, rebases): world => {
