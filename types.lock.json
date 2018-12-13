@@ -25,11 +25,6 @@
           "name": "serverFile"
         },
         {
-          "moduleName": "StoreInOne",
-          "modulePath": ["History"],
-          "name": "sync"
-        },
-        {
           "moduleName": "View",
           "modulePath": [],
           "name": "sharedViewData"
@@ -1988,122 +1983,6 @@
                       ],
                       []
                     ]
-                  ]
-                ]
-              ]
-            }
-          ]
-        ],
-        [
-          [
-            "StoreInOne",
-            ["History"],
-            "sync"
-          ],
-          [
-            [],
-            {
-              "name": "sync",
-              "variables": [],
-              "body": [
-                "Variant",
-                [
-                  [
-                    "Unsynced",
-                    [],
-                    null
-                  ],
-                  [
-                    "SyncedThrough",
-                    [
-                      [
-                        "Reference",
-                        [
-                          "Builtin",
-                          "string"
-                        ],
-                        []
-                      ]
-                    ],
-                    null
-                  ],
-                  [
-                    "Syncing",
-                    [
-                      [
-                        "Reference",
-                        [
-                          "Public",
-                          [
-                            "StoreInOne",
-                            ["History"],
-                            "syncing"
-                          ]
-                        ],
-                        []
-                      ]
-                    ],
-                    null
-                  ]
-                ]
-              ]
-            }
-          ]
-        ],
-        [
-          [
-            "StoreInOne",
-            ["History"],
-            "syncing"
-          ],
-          [
-            [],
-            {
-              "name": "syncing",
-              "variables": [],
-              "body": [
-                "Variant",
-                [
-                  [
-                    "Empty",
-                    [],
-                    null
-                  ],
-                  [
-                    "All",
-                    [
-                      [
-                        "Reference",
-                        [
-                          "Builtin",
-                          "string"
-                        ],
-                        []
-                      ]
-                    ],
-                    null
-                  ],
-                  [
-                    "From",
-                    [
-                      [
-                        "Reference",
-                        [
-                          "Builtin",
-                          "string"
-                        ],
-                        []
-                      ],
-                      [
-                        "Reference",
-                        [
-                          "Builtin",
-                          "string"
-                        ],
-                        []
-                      ]
-                    ],
-                    null
                   ]
                 ]
               ]

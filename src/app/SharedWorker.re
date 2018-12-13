@@ -164,13 +164,13 @@ let applyChange = (file, change, ports, dontSendToSession) => {
 };
 
 let onUndo = (file, auth, ports, sessionId) => {
-  let history = file.world.history.changes->StoreInOne.History.itemsSince(None);
+  let history = file.world.history->StoreInOne.History.allChanges;
   let%Lets.OptConsume change =
     World.getUndoChange(
       ~sessionId,
       ~author=auth.Session.userId,
       ~changeId=workerId ++ string_of_int(nextChangeNum()),
-      file.world.history.changes
+      history
     );
 
   applyChange(file, change, ports, None);

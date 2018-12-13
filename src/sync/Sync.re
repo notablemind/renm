@@ -46,7 +46,9 @@ let rec skipReduce = (list, initial, fn) =>
   | [one, ...rest] =>
     switch (fn(initial, one)) {
     | Result.Ok(result) => skipReduce(rest, result, fn)
-    | Error(_) => skipReduce(rest, initial, fn)
+    | Error(_) =>
+    Js.log2("Skipping change", one);
+    skipReduce(rest, initial, fn)
     }
   };
 
@@ -67,7 +69,7 @@ module F =
   /* TODO do I want to ignore & collect & report errors? or just abort... */
   let reduceChanges = (changes, initial) =>
     changes
-    ->skipReduce(
+    ->tryReduce(
         (initial, []),
         ((current, changes), change) => {
           let%Lets.Try (data, revert, rebase) =
@@ -128,7 +130,7 @@ module F =
     /* Js.log2("Items since", items); */
     switch (items) {
     | [] =>
-      let (current, _appliedChanges) =
+      let%Lets.TryForce (current, _appliedChanges) =
         changes->reduceChanges(current);
       `Commit(current);
     | _ =>

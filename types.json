@@ -6,9 +6,8 @@
   "entries": [
     {"file": "./src/app/WorkerProtocol.re", "type": "message"},
     {"file": "./src/app/WorkerProtocol.re", "type": "serverMessage"},
-    {"file": "./src/app/MetaData.re", "type": "t", "publicName": "metaData"},
-    {"file": "./src/app/StoreInOne.re", "type": "Server.serverFile", "publicName": "serverFile"},
-    {"file": "./src/app/StoreInOne.re", "type": "History.sync", "publicName": "historySync"},
+    {"file": "./src/core/MetaData.re", "type": "t", "publicName": "metaData"},
+    {"file": "./src/core/StoreInOne.re", "type": "Server.serverFile", "publicName": "serverFile"},
     {"file": "./src/core/View.re", "type": "sharedViewData"},
     {"file": "./src/World.re", "type": "MultiChange.rebaseItem", "publicName": "rebaseItem"},
     {"file": "./src/World.re", "type": "MultiChange.change", "publicName": "change"},

@@ -107,14 +107,6 @@ module Version1 =
       refreshToken: string ;
       expiresAt: float ;
       isConnected: bool }
-    and _StoreInOne__History__sync = StoreInOne.History.sync =
-      | Unsynced 
-      | SyncedThrough of string 
-      | Syncing of _StoreInOne__History__syncing 
-    and _StoreInOne__History__syncing = StoreInOne.History.syncing =
-      | Empty 
-      | All of string 
-      | From of string * string 
     and _StoreInOne__Server__serverFile = StoreInOne.Server.serverFile =
       {
       history: _World__thisChange list ;
@@ -1784,88 +1776,6 @@ module Version1 =
                   | ((Ok (data))[@explicit_arity ]) -> inner data))
         | _ -> ((Belt.Result.Error (["Expected an object"]))
             [@explicit_arity ])
-    and (deserialize_StoreInOne__History__sync :
-      Js.Json.t -> (_StoreInOne__History__sync, string list) Belt.Result.t) =
-      fun constructor ->
-        match Js.Json.classify constructor with
-        | JSONArray [|tag|] when
-            ((Js.Json.JSONString ("Unsynced"))[@explicit_arity ]) =
-              (Js.Json.classify tag)
-            -> Belt.Result.Ok (Unsynced : _StoreInOne__History__sync)
-        | JSONArray [|tag;arg0|] when
-            ((Js.Json.JSONString ("SyncedThrough"))[@explicit_arity ]) =
-              (Js.Json.classify tag)
-            ->
-            (match (fun string ->
-                      match Js.Json.classify string with
-                      | ((JSONString (string))[@explicit_arity ]) ->
-                          ((Belt.Result.Ok (string))[@explicit_arity ])
-                      | _ -> ((Error (["expected a string"]))
-                          [@explicit_arity ])) arg0
-             with
-             | Belt.Result.Ok arg0 ->
-                 Belt.Result.Ok
-                   (SyncedThrough (arg0) : _StoreInOne__History__sync)
-             | Error error -> Error ("constructor argument 0" :: error))
-        | JSONArray [|tag;arg0|] when
-            ((Js.Json.JSONString ("Syncing"))[@explicit_arity ]) =
-              (Js.Json.classify tag)
-            ->
-            (match deserialize_StoreInOne__History__syncing arg0 with
-             | Belt.Result.Ok arg0 ->
-                 Belt.Result.Ok (Syncing (arg0) : _StoreInOne__History__sync)
-             | Error error -> Error ("constructor argument 0" :: error))
-        | _ -> ((Belt.Result.Error (["Expected an array"]))
-            [@explicit_arity ])
-    and (deserialize_StoreInOne__History__syncing :
-      Js.Json.t -> (_StoreInOne__History__syncing, string list) Belt.Result.t)
-      =
-      fun constructor ->
-        match Js.Json.classify constructor with
-        | JSONArray [|tag|] when
-            ((Js.Json.JSONString ("Empty"))[@explicit_arity ]) =
-              (Js.Json.classify tag)
-            -> Belt.Result.Ok (Empty : _StoreInOne__History__syncing)
-        | JSONArray [|tag;arg0|] when
-            ((Js.Json.JSONString ("All"))[@explicit_arity ]) =
-              (Js.Json.classify tag)
-            ->
-            (match (fun string ->
-                      match Js.Json.classify string with
-                      | ((JSONString (string))[@explicit_arity ]) ->
-                          ((Belt.Result.Ok (string))[@explicit_arity ])
-                      | _ -> ((Error (["expected a string"]))
-                          [@explicit_arity ])) arg0
-             with
-             | Belt.Result.Ok arg0 ->
-                 Belt.Result.Ok (All (arg0) : _StoreInOne__History__syncing)
-             | Error error -> Error ("constructor argument 0" :: error))
-        | JSONArray [|tag;arg0;arg1|] when
-            ((Js.Json.JSONString ("From"))[@explicit_arity ]) =
-              (Js.Json.classify tag)
-            ->
-            (match (fun string ->
-                      match Js.Json.classify string with
-                      | ((JSONString (string))[@explicit_arity ]) ->
-                          ((Belt.Result.Ok (string))[@explicit_arity ])
-                      | _ -> ((Error (["expected a string"]))
-                          [@explicit_arity ])) arg1
-             with
-             | Belt.Result.Ok arg1 ->
-                 (match (fun string ->
-                           match Js.Json.classify string with
-                           | ((JSONString (string))[@explicit_arity ]) ->
-                               ((Belt.Result.Ok (string))[@explicit_arity ])
-                           | _ -> ((Error (["expected a string"]))
-                               [@explicit_arity ])) arg0
-                  with
-                  | Belt.Result.Ok arg0 ->
-                      Belt.Result.Ok
-                        (From (arg0, arg1) : _StoreInOne__History__syncing)
-                  | Error error -> Error ("constructor argument 0" :: error))
-             | Error error -> Error ("constructor argument 1" :: error))
-        | _ -> ((Belt.Result.Error (["Expected an array"]))
-            [@explicit_arity ])
     and (deserialize_StoreInOne__Server__serverFile :
       Js.Json.t ->
         (_StoreInOne__Server__serverFile, string list) Belt.Result.t)
@@ -3218,29 +3128,6 @@ module Version1 =
                ("expiresAt", (Js.Json.number record.expiresAt));("isConnected",
                                                                   (Js.Json.boolean
                                                                     record.isConnected))|])
-    and (serialize_StoreInOne__History__sync :
-      _StoreInOne__History__sync -> Js.Json.t) =
-      fun constructor ->
-        match constructor with
-        | Unsynced -> Js.Json.array [|(Js.Json.string "Unsynced")|]
-        | SyncedThrough arg0 ->
-            Js.Json.array
-              [|(Js.Json.string "SyncedThrough");(Js.Json.string arg0)|]
-        | Syncing arg0 ->
-            Js.Json.array
-              [|(Js.Json.string "Syncing");(serialize_StoreInOne__History__syncing
-                                              arg0)|]
-    and (serialize_StoreInOne__History__syncing :
-      _StoreInOne__History__syncing -> Js.Json.t) =
-      fun constructor ->
-        match constructor with
-        | Empty -> Js.Json.array [|(Js.Json.string "Empty")|]
-        | All arg0 ->
-            Js.Json.array [|(Js.Json.string "All");(Js.Json.string arg0)|]
-        | From (arg0, arg1) ->
-            Js.Json.array
-              [|(Js.Json.string "From");(Js.Json.string arg0);(Js.Json.string
-                                                                 arg1)|]
     and (serialize_StoreInOne__Server__serverFile :
       _StoreInOne__Server__serverFile -> Js.Json.t) =
       fun record ->
@@ -3615,25 +3502,6 @@ and deserializeServerFile data =
        | 1 ->
            (match Version1.deserialize_StoreInOne__Server__serverFile data
             with
-            | ((Belt.Result.Error (error))[@explicit_arity ]) ->
-                ((Belt.Result.Error (error))[@explicit_arity ])
-            | ((Ok (data))[@explicit_arity ]) -> ((Belt.Result.Ok (data))
-                [@explicit_arity ]))
-       | _ ->
-           ((Belt.Result.Error
-               (["Unexpected version " ^ (string_of_int version)]))
-           [@explicit_arity ]))
-let serializeHistorySync data =
-  wrapWithVersion currentVersion
-    (Version1.serialize_StoreInOne__History__sync data)
-and deserializeHistorySync data =
-  match parseVersion data with
-  | ((Belt.Result.Error (err))[@explicit_arity ]) ->
-      ((Belt.Result.Error ([err]))[@explicit_arity ])
-  | ((Ok (version, data))[@implicit_arity ]) ->
-      (match version with
-       | 1 ->
-           (match Version1.deserialize_StoreInOne__History__sync data with
             | ((Belt.Result.Error (error))[@explicit_arity ]) ->
                 ((Belt.Result.Error (error))[@explicit_arity ])
             | ((Ok (data))[@explicit_arity ]) -> ((Belt.Result.Ok (data))

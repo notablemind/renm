@@ -166,7 +166,7 @@ module Client = {
           )
       ); */
 
-  let commitPartial = (world, newest, oldest) => {
+  /* let commitPartial = (world, newest, oldest) => {
     let%Lets.OptForce latestId = world.history->History.latestId;
     let snapshot =
       if (latestId == newest) {
@@ -174,7 +174,7 @@ module Client = {
       } else {
         /* these are the rebase changes, that we don't need right now */
         let (unsynced, syncing, _synced) =
-          History.partition(world.history, newest, oldest);
+          History.partition(world.history);
           /* replace the history from "newer" until "older", with the changes */
           /* can I just undo the unsynced things? that might not be perfect...
               but I should run a ton of tests or something */
@@ -186,10 +186,26 @@ module Client = {
       };
     let history = world.history->History.resetSyncing(SyncedThrough(newest));
     (snapshot, history);
-  };
+  }; */
 
   let commit = (world: world): Result.t(world, string) => {
-    let%Lets.Try syncing = switch (world.history.sync) {
+    switch (world.history.sync) {
+      | None => Result.Ok(world)
+      | Some(latest) =>
+        let (unsynced, syncing) =
+          History.partition(world.history);
+        /* Js.log4("Committing", unsynced, syncing, world.snapshot); */
+        let%Lets.Try (snapshot, _appliedChanges) =
+          try%Lets.Try (syncing->List.reverse->World.reduceChanges(world.snapshot)) {
+            | error =>
+            Js.log(error);
+            Result.Error("Unable to reduce changes")
+          };
+        /* snapshot; */
+        let history = world.history->History.commit;
+        Ok({...world, history, snapshot})
+    };
+    /* let%Lets.Try syncing = switch (world.history.sync) {
       | Unsynced => Result.Error("invalid state")
       | SyncedThrough(latest) => Result.Error("invalid state")
       | Syncing(syncing) => Ok(syncing)
@@ -207,26 +223,18 @@ module Client = {
       ...world,
       history,
       snapshot,
-    });
+    }); */
   };
 
   let applyRebase = (world: world, changes, rebases): world => {
-    let (snapshot, changes) = changes->World.reduceChanges(world.snapshot);
+    let%Lets.TryForce (snapshot, changes) = changes->World.reduceChanges(world.snapshot);
 
-    let (unsynced, syncing, synced) = History.partitionT(world.history);
+    let (unsynced, syncing) = History.partition(world.history);
     let (current, unsynced) =
       unsynced->List.reverse->World.processRebases(snapshot, rebases);
 
     {
       history: world.history->History.applyRebase(unsynced, changes),
-      /* {
-        changes: unsynced @ changes @ synced,
-        sync:
-          switch (changes) {
-          | [] => Unsynced
-          | [{Sync.inner: {changeId}}, ..._] => SyncedThrough(changeId)
-          },
-      }, */
       snapshot,
       current,
     };
@@ -316,7 +324,7 @@ module MonoClient = {
         ~sessionId=session.sessionId,
         ~author=session.user.userId,
         ~changeId,
-        store.world.history.changes
+        allOfHistory
       );
 
     let (session, viewEvents) =

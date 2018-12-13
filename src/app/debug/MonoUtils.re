@@ -14,7 +14,7 @@ let startSync = (store: StoreInOne.MonoClient.t) => {
 };
 let finishSync = (root, store: StoreInOne.MonoClient.t) => {
   let id = StoreInOne.History.latestSyncedId(store.world.history);
-  let (_unsynced, syncing, _synced) = StoreInOne.History.partitionT(store.world.history);
+  let (_unsynced, syncing) = StoreInOne.History.partition(store.world.history);
   let (server, result) =
     StoreInOne.Server.processSyncRequest(root, id, syncing->List.reverse);
   let%Lets.TryForce world =

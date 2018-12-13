@@ -29,7 +29,8 @@ let makeChange = (id, apply, revert, rebase) => {
 };
 
 let h = {
-  sync: Unsynced,
+  sync: None,
+  unsynced: [],
   changes: [
     makeChange(
       "4",
@@ -70,25 +71,5 @@ let checks = [
 checks->List.mapWithIndex((index, (actual, expected)) => {
   check(actual, expected, "Test " ++ string_of_int(index))
 });
-
-let (un, ing, ed) = partitionT(prepareSync(h));
-check(un, [], "no changes unsynced");
-check(ing, h.changes, "All in progress");
-/* check(ed, [], "no synced") */
-
-let (un, ing, ed) = partitionT({...h, sync: Syncing(Empty)});
-check(un, h.changes, "All changes unsynced");
-check(ing, [], "no in progress");
-/* check(ed, [], "no synced") */
-
-let (un, ing, ed) = partitionT({...h, sync: Syncing(All("3"))});
-check(un, List.take(h.changes, 1)->Lets.Opt.force, "1 change unsynced");
-check(ing, List.drop(h.changes, 1)->Lets.Opt.force, "3 in progress");
-/* check(ed, [], "no synced") */
-
-let (un, ing, ed) = partitionT({...h, sync: Syncing(From("3", "1"))});
-check(un, List.take(h.changes, 1)->Lets.Opt.force, "1 change unsynced");
-check(ing, List.drop(h.changes, 1)->Lets.Opt.force->List.take(2)->Lets.Opt.force, "3 in progress");
-/* check(ed, List.drop(h.changes, 3)->Lets.Opt.force, "no synced") */
 
 Js.log("Done")

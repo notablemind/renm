@@ -135,7 +135,9 @@ type error =
 let changeContents = (node, change) =>
   Data.Node.({
     /* let contents = Delta.fromAny(contents); */
+    /* Js.log3("Composing", node.contents, change); */
     let newContents = Delta.compose(node.contents, change);
+    /* Js.log4("Change contents", node.contents, change, newContents); */
     let undo = Delta.diff(newContents, node.contents);
     Result.Ok(({...node, contents: newContents}, undo));
   });
