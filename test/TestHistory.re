@@ -3,7 +3,7 @@
  - partition
  - itemsSince
  */
-open StoreInOne.History;
+/* open StoreInOne.History; */
 
 open Sync;
 
@@ -28,10 +28,8 @@ let makeChange = (id, apply, revert, rebase) => {
   rebase,
 };
 
-let h = {
-  sync: None,
-  unsynced: [],
-  changes: [
+let h = History.empty->History.appendT(
+  [
     makeChange(
       "4",
       [Change.ChangeContents("root", Delta.makeInsert(0, "h4"))],
@@ -56,20 +54,20 @@ let h = {
       [Change.ChangeContents("root", Delta.makeDelete(0, 2))],
       [Change.Contents("root", Delta.makeInsert(0, "hi"))],
     ),
-  ],
-};
+  ]->List.reverse,
+);
 
 let check = (actual, expected, message) => if (actual != expected) {
   Js.log3(message, actual, expected)
 };
 
-let checks = [
+/* let checks = [
   (itemsSince(h.changes, Some("3"))->List.length, 1),
   (itemsSince(h.changes, Some("1"))->List.length, 3),
   (itemsSince(h.changes, None)->List.length, 4)
 ];
 checks->List.mapWithIndex((index, (actual, expected)) => {
   check(actual, expected, "Test " ++ string_of_int(index))
-});
+}); */
 
 Js.log("Done")

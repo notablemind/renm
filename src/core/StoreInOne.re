@@ -69,7 +69,7 @@ module Server = {
       | SharedTypes.Event.Node(id) => Some(id)
       | _ => None
     });
-    fn(ids)
+    fn(ids, changes)
   };
 
   let processSyncRequest = (server, ~persist=?, id, changes) => {
@@ -158,7 +158,7 @@ module Client = {
   };
 
   let commit = (world: world): Result.t(world, string) => {
-    switch (world.history.sync) {
+    switch (world.history->History.sync) {
       | None => Result.Ok(world)
       | Some(latest) =>
         let (unsynced, syncing) =
@@ -265,7 +265,7 @@ module MonoClient = {
     let session = {...session, changeSet: None};
 
     let allOfHistory =
-      store.world.history.changes->History.itemsSince(None);
+      store.world.history->History.allChanges;
 
     let%Lets.OptConsume change =
       World.getUndoChange(
@@ -294,7 +294,7 @@ module MonoClient = {
         ~sessionId=session.sessionId,
         ~author=session.user.userId,
         ~changeId,
-        store.world.history.changes
+        store.world.history->History.allChanges
       );
 
     let (session, viewEvents) =

@@ -95,7 +95,7 @@ let unique = items => {
   })
 };
 
-let persistChangedNodes = (file, changeEvents) => {
+let persistChangedNodes = (file, changeEvents, change) => {
   let changedIds = changeEvents->List.keepMap(evt => switch evt {
     | SharedTypes.Event.Node(id) => Some(id)
     | _ => None
@@ -145,7 +145,7 @@ let applyChange = (file, change, ports, dontSendToSession) => {
   file.world = world;
 
   sendChange(~excludeSession=?dontSendToSession, file.meta.id, ports, change);
-  persistChangedNodes(file, changeEvents);
+  persistChangedNodes(file, changeEvents, appliedChange);
   let title = switch (world.current.nodes->Map.String.get(world.current.root)) {
     | Some({contents}) => Delta.getText(contents)->Js.String.trim
     | _ => file.meta.title
@@ -181,7 +181,7 @@ let onRedo = (file, auth, ports, sessionId) => {
     ~sessionId,
     ~changeId=workerId ++ string_of_int(nextChangeNum()),
     ~author=auth.Session.userId,
-    file.world.history.changes
+    file.world.history->History.allChanges
   );
 
   applyChange(file, change, ports, None);
@@ -232,26 +232,17 @@ let arrayFind = (items, fn) => Array.reduce(items, None, (current, item) => swit
 let loadFile = id => {
   let db = Dbs.getFileDb(id);
   let%Lets.Async (
-    nodeMap,
-    tagMap,
-    contributorMap
-   ) = Js.Promise.all3((
-     MetaDataPersist.loadNodes(db),
-     MetaDataPersist.loadTags(db),
-     MetaDataPersist.loadContributors(db)
+    data,
+    history,
+   ) = Js.Promise.all2((
+     MetaDataPersist.loadData(db),
+     MetaDataPersist.loadHistory(db),
    ));
 
   let world =
     StoreInOne.Client.make(
-      {
-        root: "root",
-        nodes: nodeMap,
-        /* TODO TODO persist these */
-        contributors: contributorMap,
-        tags: tagMap,
-      },
-      /* TODO TODO persist and restore here */
-      StoreInOne.History.empty,
+      data,
+      history,
     );
 
   Js.Promise.resolve((db, world));

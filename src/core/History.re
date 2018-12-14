@@ -10,6 +10,8 @@ type t = {
   sync: option(string),
 };
 
+let sync = t => t.sync;
+
 let prepareSync = t => {
   ...t,
   sync: switch (t.unsynced) {
@@ -22,9 +24,11 @@ let allChanges = ({unsynced, changes}) => unsynced @ changes;
 
 let empty = {changes: [], sync: None, unsynced: []};
 
-let resetSyncing = (t, sync) => {...t, sync};
+let create = (unsynced, changes) => {changes, unsynced, sync: None};
 
-let latestId = t => List.head(t.changes)->Lets.Opt.map(c => c.Sync.inner.changeId);
+/* let resetSyncing = (t, sync) => {...t, sync}; */
+
+/* let latestId = t => List.head(t.changes)->Lets.Opt.map(c => c.Sync.inner.changeId); */
 
 let latestSyncedId = t => switch (t.changes) {
   | [] => None

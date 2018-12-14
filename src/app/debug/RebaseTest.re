@@ -63,7 +63,7 @@ let make = _children => {
   ...component,
   initialState: () => {
     root: (
-      {history: baseWorld.history.changes, data: baseWorld.current}: StoreInOne.Server.serverFile
+      {history: baseWorld.history->History.allChanges, data: baseWorld.current}: StoreInOne.Server.serverFile
     ),
     a: StoreInOne.MonoClient.fromWorld(~metaData=MetaData.blankMetaData(), ~sessionId="a", ~world=baseWorld, ~user),
     b: StoreInOne.MonoClient.fromWorld(~metaData=MetaData.blankMetaData(), ~sessionId="b", ~world=baseWorld, ~user),

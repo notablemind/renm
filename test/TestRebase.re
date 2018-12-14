@@ -51,11 +51,11 @@ type state = {
 
 let show = [%bs.raw {|x => JSON.stringify(x)|}];
 
-let showStore = ({StoreInOne.MonoClient.world: {current, history: {changes, sync}}, session}) => {
+let showStore = ({StoreInOne.MonoClient.world: {current, history}, session}) => {
   /* Js.log(show(WorkerProtocolSerde.serializeHistorySync(sync))); */
   /* Js.log(sync); */
   /* Js.log(changes) */
-  changes->List.map(change => change.inner.changeId)->Js.log;
+  history->History.allChanges->List.map(change => change.inner.changeId)->Js.log;
   /* changes->List.map(WorkerProtocolSerde.serializeHistoryItem)->List.forEach(item => {
     Js.log(show(item))
   }); */
@@ -162,7 +162,7 @@ let tests = [
 let runTest = ({title, changes, result}) => {
   Js.log(blue(title));
   let state = {
-    root: {history: baseWorld.history.changes, data: baseWorld.current},
+    root: {history: baseWorld.history->History.allChanges, data: baseWorld.current},
     left: StoreInOne.MonoClient.fromWorld(~metaData=MetaData.blankMetaData(), ~sessionId="left", ~world=baseWorld, ~user),
     right: StoreInOne.MonoClient.fromWorld(~metaData=MetaData.blankMetaData(), ~sessionId="right", ~world=baseWorld, ~user),
   };
@@ -171,8 +171,8 @@ let runTest = ({title, changes, result}) => {
   ->List.concat([Sync(Left), Sync(Right), Sync(Left), Sync(Right), Sync(Right), Sync(Left), Sync(Left)])
   ->List.reduce(state, process(false));
 
-  let lh = state.left.world.history.changes;
-  let rh = state.right.world.history.changes;
+  let lh = state.left.world.history->History.allChanges;
+  let rh = state.right.world.history->History.allChanges;
   let slh = lh->List.map(WorkerProtocolSerde.serializeHistoryItem)->List.map(Js.Json.stringify);
   let srh = rh->List.map(WorkerProtocolSerde.serializeHistoryItem)->List.map(Js.Json.stringify);
   if (slh != srh) {

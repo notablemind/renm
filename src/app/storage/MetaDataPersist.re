@@ -68,10 +68,11 @@ let toList = nodes =>
   nodes->Array.map(node => node##value)->List.fromArray->Js.Promise.resolve;
 
 let loadHistory = db => {
-  Js.Promise.all2((
-    db->Dbs.getUnsyncedDb->Persistance.getAll |> Js.Promise.then_(toMap),
-    db->Dbs.getHistoryDb->Persistance.getAll |> Js.Promise.then_(toMap),
+  let%Lets.Async.Wrap (unsynced, changes) = Js.Promise.all2((
+    db->Dbs.getUnsyncedDb->Persistance.getAll |> Js.Promise.then_(toList),
+    db->Dbs.getHistoryDb->Persistance.getAll |> Js.Promise.then_(toList),
   ));
+  History.create(unsynced, changes);
 };
 
 let loadNodes = db => {
@@ -85,3 +86,14 @@ let loadTags = db => {
 let loadContributors = db => {
   db->Dbs.getContributorsDb->Persistance.getAll |> Js.Promise.then_(toMap)
 };
+
+let loadData = db => {
+  let%Lets.Async.Wrap (nodes, tags, contributors) = Js.Promise.all3((
+    loadNodes(db),
+    loadTags(db),
+    loadContributors(db)
+  ));
+  {Data.tags, nodes, contributors, root: "root"}
+};
+
+
