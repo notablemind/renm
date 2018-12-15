@@ -20,6 +20,9 @@ let prepareSync = t => {
   }
 };
 
+let totalCount = t => t.changes->List.length + t.unsynced->List.length;
+let syncedCount = t => t.changes->List.length;
+
 let allChanges = ({unsynced, changes}) => unsynced @ changes;
 
 let empty = {changes: [], sync: None, unsynced: []};
@@ -52,20 +55,24 @@ let itemsSince = (list, id) =>
     loop(list, []);
   };
 
+let partitionList = (items, id) => {
+  let rec loop = changes =>
+    switch (changes) {
+    | [] => ([], [])
+    | [{Sync.inner: {changeId}}, ..._] when changeId == id => ([], changes)
+    | [one, ...rest] =>
+      let (unsynced, syncing) = loop(rest);
+      ([one, ...unsynced], syncing);
+    };
+  loop(items);
+};
+
 /* OK there are data structure things we could do to speed this up... if we wanted */
 let partition = ({unsynced, sync}) => {
   switch sync {
     | None => (unsynced, [])
     | Some(latest) =>
-      let rec loop = (changes) =>
-        switch changes {
-          | [] => ([], [])
-          | [{Sync.inner: {changeId}} , ..._] when changeId == latest => ([], changes)
-          | [one, ...rest] =>
-            let (unsynced, syncing) = loop(rest);
-            ([one, ...unsynced], syncing)
-        };
-      loop(unsynced);
+      partitionList(unsynced, latest);
   }
 };
 
