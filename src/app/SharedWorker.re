@@ -205,7 +205,7 @@ let onUndo = (file, auth, ports, sessionId) => {
     World.getUndoChange(
       ~sessionId,
       ~author=auth.Session.userId,
-      ~changeId=workerId ++ string_of_int(nextChangeNum()),
+      ~changeId=workerId ++ ":undo:" ++ string_of_int(nextChangeNum()),
       history
     );
 
@@ -215,7 +215,7 @@ let onUndo = (file, auth, ports, sessionId) => {
 let onRedo = (file, auth, ports, sessionId) => {
   let%Lets.OptConsume change = World.getRedoChange(
     ~sessionId,
-    ~changeId=workerId ++ string_of_int(nextChangeNum()),
+    ~changeId=workerId ++ ":redo:" ++ string_of_int(nextChangeNum()),
     ~author=auth.Session.userId,
     file.world.history.history->History.allChanges
   );

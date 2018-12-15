@@ -30,6 +30,7 @@ let load = db => {
          )
       |> Js.Promise.then_(MetaDataPersist.toList),
     ));
+  /* Js.log2("The changes I loaded", List.toArray(changes)); */
   let (unsynced, synced) =
     switch (id) {
     | None => (changes, [])
