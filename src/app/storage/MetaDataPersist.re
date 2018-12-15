@@ -4,17 +4,17 @@ open MetaData;
 let makeFileWithNodes = (~title, ~id, ~nodes: list(Data.Node.t('a, 'b))) => {
   let meta = newMeta(~title, ~id);
   let%Lets.Async _ = Dbs.metasDb->Persistance.put(meta.id, meta);
-  let%Lets.Async _ = Dbs.getFileDb(meta.id)->Dbs.getNodesDb->Persistance.batch(
+  let batch = 
     nodes->Belt.List.map(node => {
       Persistance.batchPut({
         "key": node.id,
         "type": "put",
         "value": node
       })
-    })->List.toArray
-  );
+    })->List.toArray;
+  let%Lets.Async _ = Dbs.getFileDb(meta.id)->Dbs.getSnapshotDb->Dbs.getNodesDb->Persistance.batch( batch);
+  let%Lets.Async _ = Dbs.getFileDb(meta.id)->Dbs.getCurrentDb->Dbs.getNodesDb->Persistance.batch( batch);
   Dbs.getFileDb(meta.id)->Dbs.getHistoryDb->ignore;
-  Dbs.getFileDb(meta.id)->Dbs.getUnsyncedDb->ignore;
   Js.Promise.resolve(meta)
 };
 
@@ -66,14 +66,6 @@ let toMap = nodes =>
 
 let toList = nodes =>
   nodes->Array.map(node => node##value)->List.fromArray->Js.Promise.resolve;
-
-let loadHistory = db => {
-  let%Lets.Async.Wrap (unsynced, changes) = Js.Promise.all2((
-    db->Dbs.getUnsyncedDb->Persistance.getAll |> Js.Promise.then_(toList),
-    db->Dbs.getHistoryDb->Persistance.getAll |> Js.Promise.then_(toList),
-  ));
-  History.create(unsynced, changes);
-};
 
 let loadNodes = db => {
   db->Dbs.getNodesDb->Persistance.getAll |> Js.Promise.then_(toMap)

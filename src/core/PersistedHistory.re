@@ -7,18 +7,35 @@ type t = {
 
 let idForIndex = index => BigInt.maxInt - index |> BigInt.singleString;
 
-let load = (db) => {
+let id_KEY = "id"
+
+let load = db => {
   let syncedIdDb = db->Persistance.subleveldownString("syncedId");
   let db = db->Dbs.getHistoryDb;
-  let%Lets.Async.Wrap (id, changes) = Js.Promise.all2((
-    syncedIdDb->Persistance.get(""),
-    db->Persistance.getAll |> Js.Promise.then_(items =>
-      Js.Array.sortInPlaceWith((one, two) => compare(one##key, two##key), items)
-      ->Js.Promise.resolve
-    ) |> Js.Promise.then_(MetaDataPersist.toList)
-  ));
-  let (unsynced, synced) = History.partitionList(changes, id);
-  {unsynced, synced}
+  let%Lets.Async.Wrap (id, changes) =
+    Js.Promise.all2((
+      {
+        let m = syncedIdDb->Persistance.get(id_KEY);
+        m
+        |> Js.Promise.then_(item => Js.Promise.resolve(Some(item)))
+        |> Js.Promise.catch(err => Js.Promise.resolve(None));
+      },
+      db->Persistance.getAll
+      |> Js.Promise.then_(items =>
+           Js.Array.sortInPlaceWith(
+             (one, two) => compare(one##key, two##key),
+             items,
+           )
+           ->Js.Promise.resolve
+         )
+      |> Js.Promise.then_(MetaDataPersist.toList),
+    ));
+  let (unsynced, synced) =
+    switch (id) {
+    | None => (changes, [])
+    | Some(id) => History.partitionList(changes, id)
+    };
+  {history: History.create(unsynced, synced), db, syncedIdDb};
 };
 
 let sync = t => t.history->History.sync;
@@ -34,7 +51,7 @@ let commit = t => {
   switch (t.history->History.sync) {
     | None => ()
     | Some(latest) =>
-      t.syncedIdDb->Persistance.put("", latest)->ignore;
+      t.syncedIdDb->Persistance.put(id_KEY, latest)->ignore;
       t.history = t.history->History.commit;
   }
 };
@@ -67,7 +84,7 @@ let applyRebase = (t, unsynced, rebased) => {
       })
     )->List.toArray
   )->ignore
-  t.syncedIdDb->Persistance.put("", lastSyncedId)->ignore;
+  t.syncedIdDb->Persistance.put(id_KEY, lastSyncedId)->ignore;
 
   t.history = t.history->History.applyRebase(unsynced, rebased);
 };

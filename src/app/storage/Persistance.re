@@ -3,6 +3,7 @@ type levelup('t);
 [@bs.module] external levelup: leveljs('t) => levelup('t) = "";
 [@bs.module] external leveljs: string => leveljs('t) = "level-js";
 [@bs.module] external subleveldownString: (levelup('a), string) => levelup(string) = "subleveldown";
+[@bs.module] external sublevel: (levelup('a), string) => levelup('b) = "subleveldown";
 [@bs.module] external subleveldown: (levelup('a), string, {.
   "valueEncoding": {.
     "encode": 'b => string,

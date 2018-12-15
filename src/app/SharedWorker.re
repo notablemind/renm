@@ -35,14 +35,20 @@ let messageToJson = WorkerProtocolSerde.serializeServerMessage;
  - scripture story (don't think this needs any file-level configs)
  */
 
+type world = {
+  mutable snapshot: World.MultiChange.data,
+  history: PersistedHistory.t,
+  mutable current: World.MultiChange.data,
+};
+
 type file = {
   mutable meta: MetaData.t,
   /* TODO maybe keep around a cache of recent changes to be able to get undo things sooner */
   /* mutable recentChanges */
 
-  mutable world: StoreInOne.Client.world,
-  mutable cursors: Hashtbl.t(string, (string, View.Range.range)),
-  db: Persistance.levelup(unit),
+  world,
+  cursors: Hashtbl.t(string, (string, View.Range.range)),
+  db: Persistance.levelup(Dbs.file),
 };
 
 /* file should have a list of attachments as well. with indicators whether they have been synced yet. */
@@ -95,14 +101,14 @@ let unique = items => {
   })
 };
 
-let persistChangedNodes = (file, changeEvents, change) => {
+let persistChangedNodes = (current, db, changeEvents, change) => {
   let changedIds = changeEvents->List.keepMap(evt => switch evt {
     | SharedTypes.Event.Node(id) => Some(id)
     | _ => None
   }) -> unique->List.toArray;
-  let nodesPromise = file.db->Dbs.getNodesDb->Persistance.batch(
+  let nodesPromise = db->Dbs.getNodesDb->Persistance.batch(
     changedIds->Array.keepMap(id => {
-      let%Lets.Opt node = file.world.current->Data.get(id);
+      let%Lets.Opt node = current->Data.get(id);
       Some(Persistance.batchPut({
         "key": id,
         "type": "put",
@@ -115,9 +121,9 @@ let persistChangedNodes = (file, changeEvents, change) => {
     | SharedTypes.Event.Tag(id) => Some(id)
     | _ => None
   }) -> unique->List.toArray;
-  let tagsPromise = file.db->Dbs.getTagsDb->Persistance.batch(
+  let tagsPromise = db->Dbs.getTagsDb->Persistance.batch(
     changedTagIds->Array.keepMap(id => {
-      let%Lets.Opt tag = file.world.current.tags->Map.String.get(id);
+      let%Lets.Opt tag = current.tags->Map.String.get(id);
       Some(Persistance.batchPut({
         "key": id,
         "type": "put",
@@ -137,16 +143,12 @@ let applyChange = (file, change, ports, dontSendToSession) => {
     try%Lets.Try (World.applyChange_(file.world.current, change)) {
     | _ => Error("Failed to apply change")
     };
-  let world = {
-    ...file.world,
-    current,
-    history: StoreInOne.History.appendT(file.world.history, [appliedChange])
-  };
-  file.world = world;
+  file.world.history->PersistedHistory.append(appliedChange);
+  file.world.current = current;
 
   sendChange(~excludeSession=?dontSendToSession, file.meta.id, ports, change);
-  persistChangedNodes(file, changeEvents, appliedChange);
-  let title = switch (world.current.nodes->Map.String.get(world.current.root)) {
+  persistChangedNodes(file.world.current, file.db->Dbs.getCurrentDb, changeEvents, appliedChange);
+  let title = switch (file.world.current.nodes->Map.String.get(file.world.current.root)) {
     | Some({contents}) => Delta.getText(contents)->Js.String.trim
     | _ => file.meta.title
   };
@@ -155,7 +157,7 @@ let applyChange = (file, change, ports, dontSendToSession) => {
     title,
     lastModified: Js.Date.now(),
     /* TODO maybe only count non-deleted ones? */
-    nodeCount: world.current.nodes->Map.String.size,
+    nodeCount: file.world.current.nodes->Map.String.size,
   };
   sendMetaDataChange(ports, file.meta);
 
@@ -163,8 +165,42 @@ let applyChange = (file, change, ports, dontSendToSession) => {
   let%Lets.Async.Consume () = MetaDataPersist.save(file.meta);
 };
 
+
+
+let commit = (world: world): Result.t(unit, string) => {
+  switch (world.history->PersistedHistory.sync) {
+    | None => Result.Ok(())
+    | Some(latest) =>
+      let (unsynced, syncing) =
+        History.partition(world.history.history);
+      let%Lets.Try (snapshot, _appliedChanges) =
+        try%Lets.Try (syncing->List.reverse->World.reduceChanges(world.snapshot)) {
+          | error =>
+          Js.log(error);
+          Result.Error("Unable to reduce changes")
+        };
+      /* let history = world.history->History.commit; */
+      world.history->PersistedHistory.commit;
+      world.snapshot = snapshot;
+      Ok(())
+  };
+};
+
+let applyRebase = (world: world, changes, rebases): unit => {
+  let%Lets.TryForce (snapshot, changes) = changes->World.reduceChanges(world.snapshot);
+
+  let (unsynced, syncing) = History.partition(world.history.history);
+  let (current, unsynced) =
+    unsynced->List.reverse->World.processRebases(snapshot, rebases);
+
+  world.history->PersistedHistory.applyRebase(unsynced, changes);
+};
+
+
+
+
 let onUndo = (file, auth, ports, sessionId) => {
-  let history = file.world.history->StoreInOne.History.allChanges;
+  let history = file.world.history.history->History.allChanges;
   let%Lets.OptConsume change =
     World.getUndoChange(
       ~sessionId,
@@ -181,7 +217,7 @@ let onRedo = (file, auth, ports, sessionId) => {
     ~sessionId,
     ~changeId=workerId ++ string_of_int(nextChangeNum()),
     ~author=auth.Session.userId,
-    file.world.history->History.allChanges
+    file.world.history.history->History.allChanges
   );
 
   applyChange(file, change, ports, None);
@@ -232,18 +268,20 @@ let arrayFind = (items, fn) => Array.reduce(items, None, (current, item) => swit
 let loadFile = id => {
   let db = Dbs.getFileDb(id);
   let%Lets.Async (
-    data,
+    snapshot,
+    current,
     history,
-   ) = Js.Promise.all2((
-     MetaDataPersist.loadData(db),
-     MetaDataPersist.loadHistory(db),
+   ) = Js.Promise.all3((
+     MetaDataPersist.loadData(db->Persistance.sublevel("snapshot")),
+     MetaDataPersist.loadData(db->Persistance.sublevel("current")),
+     PersistedHistory.load(db),
    ));
 
-  let world =
-    StoreInOne.Client.make(
-      data,
-      history,
-    );
+  let world = {
+    snapshot,
+    current,
+    history,
+  }
 
   Js.Promise.resolve((db, world));
 };

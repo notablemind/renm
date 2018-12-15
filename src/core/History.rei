@@ -8,7 +8,7 @@ let itemsSince:
   (Belt.List.t(Sync.change('a, 'b, 'c)), option(string)) =>
   Belt.List.t(Sync.change('a, 'b, 'c));
 let partition: t => (list(World.thisChange), list(World.thisChange));
-let partitionList: (list(World.thisChange), int) => (
+let partitionList: (list(World.thisChange), string) => (
   list(World.thisChange),
   list(World.thisChange)
 );

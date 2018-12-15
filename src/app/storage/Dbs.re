@@ -50,7 +50,8 @@ let homeDb: Persistance.levelup(string) =
       },
     );
 
-let getFileDb: string => Persistance.levelup(unit) =
+type file;
+let getFileDb: string => Persistance.levelup(file) =
   id => getDb("nm:doc:" ++ id);
 
 let historyEncoder = getEncoder(
@@ -59,7 +60,12 @@ let historyEncoder = getEncoder(
           WorkerProtocolSerde.deserializeHistoryItem,
         );
 
-let getHistoryDb: Persistance.levelup(unit) => Persistance.levelup(World.thisChange) =
+/* for keeping track of things that can be files */
+type data;
+let getSnapshotDb: Persistance.levelup(file) => Persistance.levelup(data) = db => Persistance.sublevel(db, "snapshot");
+let getCurrentDb: Persistance.levelup(file) => Persistance.levelup(data) = db => Persistance.sublevel(db, "current");
+
+let getHistoryDb: Persistance.levelup(file) => Persistance.levelup(World.thisChange) =
   fileDb =>
     fileDb
     ->Persistance.subleveldown(
@@ -67,15 +73,7 @@ let getHistoryDb: Persistance.levelup(unit) => Persistance.levelup(World.thisCha
         historyEncoder,
       );
 
-let getUnsyncedDb: Persistance.levelup(unit) => Persistance.levelup(World.thisChange) =
-  fileDb =>
-    fileDb
-    ->Persistance.subleveldown(
-        "unsynced",
-        historyEncoder,
-      );
-
-let getNodesDb: Persistance.levelup(unit) => Persistance.levelup(NodeType.t) =
+let getNodesDb: Persistance.levelup(data) => Persistance.levelup(NodeType.t) =
   fileDb =>
     fileDb
     ->Persistance.subleveldown(
@@ -87,7 +85,7 @@ let getNodesDb: Persistance.levelup(unit) => Persistance.levelup(NodeType.t) =
         ),
       );
 
-let getTagsDb: Persistance.levelup(unit) => Persistance.levelup(Data.Tag.t) =
+let getTagsDb: Persistance.levelup(data) => Persistance.levelup(Data.Tag.t) =
   fileDb =>
     fileDb
     ->Persistance.subleveldown(
@@ -99,7 +97,7 @@ let getTagsDb: Persistance.levelup(unit) => Persistance.levelup(Data.Tag.t) =
         ),
       );
 
-let getContributorsDb: Persistance.levelup(unit) => Persistance.levelup(Data.user) =
+let getContributorsDb: Persistance.levelup(data) => Persistance.levelup(Data.user) =
   fileDb =>
     fileDb
     ->Persistance.subleveldown(
