@@ -414,13 +414,13 @@ let getAndCheckAuth = (current) => {
         Js.log2("Google auth", google);
          Js.Promise.resolve({
            ...auth,
-           google: Some({...google, isConnected: true}),
+           google: Some({...google, connection: Some(Normal)}),
          })
       })
     |> Js.Promise.catch(err =>
          Js.Promise.resolve({
            ...auth,
-           google: Some({...google, isConnected: false}),
+           google: Some({...google, connection: None}),
          })
        )
   };

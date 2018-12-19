@@ -97,6 +97,9 @@ module Version1 =
       userId: string ;
       loginDate: float ;
       google: _Session__google option }
+    and _Session__connection = Session.connection =
+      | RealTime 
+      | Normal 
     and _Session__google = Session.google =
       {
       googleId: string ;
@@ -106,7 +109,7 @@ module Version1 =
       accessToken: string ;
       refreshToken: string ;
       expiresAt: float ;
-      isConnected: bool }
+      connection: _Session__connection option }
     and _StoreInOne__Server__serverFile = StoreInOne.Server.serverFile =
       {
       history: _World__thisChange list ;
@@ -1601,12 +1604,26 @@ module Version1 =
                   | ((Ok (data))[@explicit_arity ]) -> inner data))
         | _ -> ((Belt.Result.Error (["Expected an object"]))
             [@explicit_arity ])
+    and (deserialize_Session____connection :
+      Js.Json.t -> (_Session__connection, string list) Belt.Result.t) =
+      fun constructor ->
+        match Js.Json.classify constructor with
+        | JSONArray [|tag|] when
+            ((Js.Json.JSONString ("RealTime"))[@explicit_arity ]) =
+              (Js.Json.classify tag)
+            -> Belt.Result.Ok (RealTime : _Session__connection)
+        | JSONArray [|tag|] when
+            ((Js.Json.JSONString ("Normal"))[@explicit_arity ]) =
+              (Js.Json.classify tag)
+            -> Belt.Result.Ok (Normal : _Session__connection)
+        | _ -> ((Belt.Result.Error (["Expected an array"]))
+            [@explicit_arity ])
     and (deserialize_Session____google :
       Js.Json.t -> (_Session__google, string list) Belt.Result.t) =
       fun record ->
         match Js.Json.classify record with
         | ((JSONObject (dict))[@explicit_arity ]) ->
-            let inner attr_isConnected =
+            let inner attr_connection =
               let inner attr_expiresAt =
                 let inner attr_refreshToken =
                   let inner attr_accessToken =
@@ -1623,7 +1640,7 @@ module Version1 =
                                 accessToken = attr_accessToken;
                                 refreshToken = attr_refreshToken;
                                 expiresAt = attr_expiresAt;
-                                isConnected = attr_isConnected
+                                connection = attr_connection
                               } in
                           match Js.Dict.get dict "googleId" with
                           | None ->
@@ -1756,22 +1773,30 @@ module Version1 =
                        ((Belt.Result.Error (("attribute expiresAt" :: error)))
                        [@explicit_arity ])
                    | ((Ok (data))[@explicit_arity ]) -> inner data) in
-            (match Js.Dict.get dict "isConnected" with
-             | None -> ((Belt.Result.Error (["No attribute isConnected"]))
-                 [@explicit_arity ])
+            (match Js.Dict.get dict "connection" with
+             | None -> inner None
              | ((Some (json))[@explicit_arity ]) ->
-                 (match (fun bool ->
-                           match Js.Json.classify bool with
-                           | JSONTrue -> ((Belt.Result.Ok (true))
-                               [@explicit_arity ])
-                           | JSONFalse -> ((Belt.Result.Ok (false))
-                               [@explicit_arity ])
-                           | _ -> ((Belt.Result.Error (["Expected a bool"]))
-                               [@explicit_arity ])) json
+                 (match ((fun transformer ->
+                            fun option ->
+                              match Js.Json.classify option with
+                              | JSONNull -> ((Belt.Result.Ok (None))
+                                  [@explicit_arity ])
+                              | _ ->
+                                  (match transformer option with
+                                   | ((Belt.Result.Error
+                                       (error))[@explicit_arity ]) ->
+                                       ((Belt.Result.Error
+                                           (("optional value" :: error)))
+                                       [@explicit_arity ])
+                                   | ((Ok (value))[@explicit_arity ]) ->
+                                       ((Ok
+                                           (((Some (value))
+                                             [@explicit_arity ])))
+                                       [@explicit_arity ])))
+                           deserialize_Session____connection) json
                   with
                   | ((Belt.Result.Error (error))[@explicit_arity ]) ->
-                      ((Belt.Result.Error
-                          (("attribute isConnected" :: error)))
+                      ((Belt.Result.Error (("attribute connection" :: error)))
                       [@explicit_arity ])
                   | ((Ok (data))[@explicit_arity ]) -> inner data))
         | _ -> ((Belt.Result.Error (["Expected an object"]))
@@ -3111,6 +3136,12 @@ module Version1 =
                            transformer inner
                        | None -> Js.Json.null)) serialize_Session____google)
                     record.google))|])
+    and (serialize_Session____connection : _Session__connection -> Js.Json.t)
+      =
+      fun constructor ->
+        match constructor with
+        | RealTime -> Js.Json.array [|(Js.Json.string "RealTime")|]
+        | Normal -> Js.Json.array [|(Js.Json.string "Normal")|]
     and (serialize_Session____google : _Session__google -> Js.Json.t) =
       fun record ->
         Js.Json.object_
@@ -3125,9 +3156,23 @@ module Version1 =
                ("accessToken", (Js.Json.string record.accessToken));("refreshToken",
                                                                     (Js.Json.string
                                                                     record.refreshToken));
-               ("expiresAt", (Js.Json.number record.expiresAt));("isConnected",
-                                                                  (Js.Json.boolean
-                                                                    record.isConnected))|])
+               ("expiresAt", (Js.Json.number record.expiresAt));("connection",
+                                                                  ((((fun
+                                                                    transformer
+                                                                    ->
+                                                                    function
+                                                                    | 
+                                                                    ((Some
+                                                                    (inner))
+                                                                    [@explicit_arity
+                                                                    ]) ->
+                                                                    transformer
+                                                                    inner
+                                                                    | 
+                                                                    None ->
+                                                                    Js.Json.null))
+                                                                    serialize_Session____connection)
+                                                                    record.connection))|])
     and (serialize_StoreInOne__Server__serverFile :
       _StoreInOne__Server__serverFile -> Js.Json.t) =
       fun record ->

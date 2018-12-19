@@ -152,38 +152,6 @@ let refresh = refreshToken => {
   });
 };
 
-let getFile = (token, fileId, etag) => {
-  let%Lets.Async response = fetch(
-    "https://www.googleapis.com/drive/v2/files/" ++ fileId ++ "?alt=media",
-    {
-      "headers": {
-        "Authorization": "Bearer " ++ token,
-        "If-None-Match": "\"" ++ etag ++ "\"",
-      },
-    },
-  );
-  if (response##status == 200) {
-    let etag = response##headers->get("etag");
-    let%Lets.Async.Wrap data = response->json;
-    Some((data, etag))
-  } else {
-    Js.Promise.resolve(None)
-  }
-};
-
-let putFile = (token, fileId, contents) => {
-  fetch(
-    "https://www.googleapis.com/upload/drive/v2/files/" ++ fileId,
-    {
-      "headers": {
-        "Authorization": "Bearer " ++ token,
-      },
-      "method": "PUT",
-      "body": contents,
-    },
-  );
-}
-
 let getProfile = token => {
   let%Lets.Async response = fetch(
     /* "https://www.googleapis.com/oauth2/v2/userinfo?key=" */
@@ -206,7 +174,7 @@ let getProfile = token => {
         Session.accessToken: token.accessToken,
         expiresAt: token.expiresAt,
         refreshToken: token.refreshToken,
-        isConnected: true,
+        connection: Some(Normal),
 
         googleId: data##id,
         /* userName: data##name,

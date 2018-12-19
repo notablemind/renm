@@ -1861,7 +1861,7 @@
           [
             "Session",
             [],
-            "google"
+            "connection"
           ],
           [
             [
@@ -1890,6 +1890,35 @@
                 ]
               ]
             ],
+            {
+              "name": "connection",
+              "variables": [],
+              "body": [
+                "Variant",
+                [
+                  [
+                    "RealTime",
+                    [],
+                    null
+                  ],
+                  [
+                    "Normal",
+                    [],
+                    null
+                  ]
+                ]
+              ]
+            }
+          ]
+        ],
+        [
+          [
+            "Session",
+            [],
+            "google"
+          ],
+          [
+            [],
             {
               "name": "google",
               "variables": [],
@@ -1974,14 +2003,27 @@
                     ]
                   ],
                   [
-                    "isConnected",
+                    "connection",
                     [
                       "Reference",
                       [
                         "Builtin",
-                        "bool"
+                        "option"
                       ],
-                      []
+                      [
+                        [
+                          "Reference",
+                          [
+                            "Public",
+                            [
+                              "Session",
+                              [],
+                              "connection"
+                            ]
+                          ],
+                          []
+                        ]
+                      ]
                     ]
                   ]
                 ]
