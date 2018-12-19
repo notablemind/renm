@@ -223,8 +223,8 @@ let onRedo = (file, auth, ports, sessionId) => {
   applyChange(file, change, ports, None);
 };
 
-  /* TODO go through events to see what needs to be persisted */
-  /* TODO debounced sync w/ server */
+/* TODO go through events to see what needs to be persisted */
+/* TODO debounced sync w/ server */
 
 let cursorsForSession = (cursors, sid) =>
   Hashtbl.fold(
@@ -410,12 +410,13 @@ let getAndCheckAuth = (current) => {
   | None => Js.Promise.resolve(auth)
   | Some(google) =>
     GoogleSync.checkSavedAuth(google)
-    |> Js.Promise.then_(google =>
+    |> Js.Promise.then_(google => {
+        Js.log2("Google auth", google);
          Js.Promise.resolve({
            ...auth,
            google: Some({...google, isConnected: true}),
          })
-       )
+      })
     |> Js.Promise.catch(err =>
          Js.Promise.resolve({
            ...auth,

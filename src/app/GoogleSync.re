@@ -79,7 +79,10 @@ let getGoogleCode = () => {
   }
 };
 
-type response;
+type headers;
+[@bs.send] external get: (headers, string) => string = "";
+
+type response = {."headers": headers, "status": int};
 
 [@bs.val] external fetch: (string, 'config) => Js.Promise.t(response) = "";
 [@bs.send] external json: response => Js.Promise.t(Js.t('a)) = "";
@@ -148,6 +151,38 @@ let refresh = refreshToken => {
     }
   });
 };
+
+let getFile = (token, fileId, etag) => {
+  let%Lets.Async response = fetch(
+    "https://www.googleapis.com/drive/v2/files/" ++ fileId ++ "?alt=media",
+    {
+      "headers": {
+        "Authorization": "Bearer " ++ token,
+        "If-None-Match": "\"" ++ etag ++ "\"",
+      },
+    },
+  );
+  if (response##status == 200) {
+    let etag = response##headers->get("etag");
+    let%Lets.Async.Wrap data = response->json;
+    Some((data, etag))
+  } else {
+    Js.Promise.resolve(None)
+  }
+};
+
+let putFile = (token, fileId, contents) => {
+  fetch(
+    "https://www.googleapis.com/upload/drive/v2/files/" ++ fileId,
+    {
+      "headers": {
+        "Authorization": "Bearer " ++ token,
+      },
+      "method": "PUT",
+      "body": contents,
+    },
+  );
+}
 
 let getProfile = token => {
   let%Lets.Async response = fetch(
