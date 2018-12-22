@@ -90,21 +90,29 @@ type tokenResponse = {.
 };
 
 let getToken = data => {
-  let query = Js.Obj.assign({
-      "client_id": config##clientId,
-      "client_secret": config##clientSecret,
-      "redirect_uri": config##redirectUri,
-  }, data);
+  let query =
+    Js.Obj.assign(
+      {
+        "client_id": config##clientId,
+        "client_secret": config##clientSecret,
+        "redirect_uri": config##redirectUri,
+      },
+      data,
+    );
 
-  let%Lets.Async response = fetch(config##tokenUrl, {
-    "headers": {
-      "Accept": "application/json",
-      "Content-type": "application/x-www-form-urlencoded",
-    },
-    "method": "POST",
-    "body": stringify(query),
-  });
-  response->json
+  let%Lets.Async response =
+    fetch(
+      config##tokenUrl,
+      {
+        "headers": {
+          "Accept": "application/json",
+          "Content-type": "application/x-www-form-urlencoded",
+        },
+        "method": "POST",
+        "body": stringify(query),
+      },
+    );
+  response->json;
 };
 
 let getExpiresAt = expiresIn => Js.Date.now() +. expiresIn *. 1000.;
