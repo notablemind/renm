@@ -358,6 +358,27 @@ let createFile = (state, google: Session.google, ~rootFolder, file) => {
   let%Lets.Async.Consume () = MetaDataPersist.save(file.meta);
 };
 
+let syncFile = (state, google: Session.google, remote, fileid, etag, file) => {
+  module A = Lets.Async.Consume;
+  let%A contents = GoogleDrive.getFile(google.accessToken, fileid, etag);
+  switch (contents) {
+    | None => Js.log("File hasn't changed")
+    | Some((data, newEtag)) =>
+      Js.log3("File has changed", etag, newEtag);
+      switch (WorkerProtocolSerde.deserializeServerFile(Obj.magic(data))) {
+        | Result.Error(error) => Js.log2("Failed to deserialize server file", error)
+        | Ok({history, data}) =>
+          Js.log("Got the server file!")
+          file.meta = {
+            ...file.meta,
+            sync: Some({remote, etag: newEtag, lastSyncTime: Js.Date.now()})
+          };
+          sendMetaDataChange(state.ports, file.meta);
+          let%Lets.Async.Consume () = MetaDataPersist.save(file.meta);
+      }
+  }
+};
+
 let timedSync = (state, file) => {
   Js.log("Timed synced");
   module O = Lets.OptConsume;
@@ -365,8 +386,8 @@ let timedSync = (state, file) => {
   let%O () = google.connected ? Some(()) : None;
   switch (file.meta.sync) {
     | None => createFile(state, google, ~rootFolder=google.folderId, file)
-    | Some({remote: Google(username, fileid), lastSyncTime, etag}) =>
-      ()
+    | Some({remote: Google(username, fileid) as remote, lastSyncTime, etag}) =>
+      syncFile(state, google, remote, fileid, etag, file);
     | Some(_) =>
       /* TODO */
       ()
@@ -385,7 +406,7 @@ let getCachedFile = (state, sessionId, docId) => {
     state.fileTimers->Hashtbl.replace(file.meta.id, Js.Global.setInterval(() => {
       timedSync(state, file);
     }, 5 * 60 * 1000))
-    timedSync(state.auth, file);
+    timedSync(state, file);
   };
 
   file.meta = {

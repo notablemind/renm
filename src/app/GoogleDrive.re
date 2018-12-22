@@ -152,6 +152,13 @@ let createFile = (token, ~fileId, ~rootFolder, ~title, ~contents) => {
   }
 };
 
+let stripWeak = etag =>
+  if (etag |> Js.String.startsWith("W/")) {
+    Js.String.sliceToEnd(~from=2, etag);
+  } else {
+    etag;
+  };
+
 let getEtag = (token, fileId) => {
   let%Lets.Async response = fetch(
     "https://www.googleapis.com/drive/v2/files/" ++ fileId ++ "?alt=media",
@@ -164,6 +171,7 @@ let getEtag = (token, fileId) => {
   );
   if (response##status == 200) {
     let etag = response##headers->get("etag");
+    let etag = stripWeak(etag);
     Js.Promise.resolve(Some(etag))
   } else {
     Js.Promise.resolve(None)
@@ -176,12 +184,12 @@ let getFile = (token, fileId, etag) => {
     {
       "headers": {
         "Authorization": "Bearer " ++ token,
-        "If-None-Match": "\"" ++ etag ++ "\"",
+        "If-None-Match": etag,
       },
     },
   );
   if (response##status == 200) {
-    let etag = response##headers->get("etag");
+    let etag = response##headers->get("etag") |> stripWeak;
     let%Lets.Async.Wrap data = response->json;
     Some((data, etag))
   } else {
