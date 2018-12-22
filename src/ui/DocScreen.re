@@ -111,7 +111,7 @@ module Header = {
                   height(px(8)),
                   borderRadius(px(4)),
                   marginRight(px(8)),
-                  backgroundColor(google.connection != None ? hex("afa") : hex("ddd"))
+                  backgroundColor(google.connected ? hex("afa") : hex("ddd"))
                 ])) />
                 {ReasonReact.string(google.userName)}
               </div>

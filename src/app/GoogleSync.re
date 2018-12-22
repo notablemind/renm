@@ -35,10 +35,7 @@ Ok, so all we really need is the data & the history.
 
 */
 
-[@bs.module "querystring"] external stringify: Js.t('a) => string = "";
-[@bs.module] external authConfig: {. "clientId": string, "clientSecret": string} = "../../auth.json";
-
-[@bs.module "url"] external urlParse: (string, bool) => {. "query": Js.nullable({. "error": Js.nullable(string), "code": Js.nullable(string)})} = "parse";
+open GoogleShared;
 
 let config = {
   "clientId": authConfig##clientId,
@@ -78,14 +75,6 @@ let getGoogleCode = () => {
     | Some(query) => query##code->Js.toOption
   }
 };
-
-type headers;
-[@bs.send] external get: (headers, string) => string = "";
-
-type response = {."headers": headers, "status": int};
-
-[@bs.val] external fetch: (string, 'config) => Js.Promise.t(response) = "";
-[@bs.send] external json: response => Js.Promise.t(Js.t('a)) = "";
 
 type token = {
   refreshToken: string,
@@ -163,24 +152,27 @@ let getProfile = token => {
       },
     },
   );
-  let%Lets.Async.Wrap data = response->json;
+  let%Lets.Async data = response->json;
   switch (Js.toOption(data##error)) {
     | Some(error) =>
       Js.log3("Failed to get use", data, token);
-      failwith("Unable to login with google")
+      Js.Promise.reject(Failure("Unable to login with google"))
     | None =>
-      Js.log2("Google profile", data);
+      let%Lets.Async.Wrap folderId = GoogleDrive.getOrCreateRoot(token.accessToken);
+      Js.log3("Google profile", data, folderId);
       {
         Session.accessToken: token.accessToken,
         expiresAt: token.expiresAt,
         refreshToken: token.refreshToken,
-        connection: Some(Normal),
 
         googleId: data##id,
+        connected: true,
         /* userName: data##name,
         emailAddress: data##email,
         profilePic: data##picture, */
-        
+
+        folderId,
+
         userName: data##displayName,
         profilePic: data##image##url,
         emailAddress: switch (data##emails[0]) {

@@ -1861,7 +1861,7 @@
           [
             "Session",
             [],
-            "connection"
+            "google"
           ],
           [
             [
@@ -1890,35 +1890,6 @@
                 ]
               ]
             ],
-            {
-              "name": "connection",
-              "variables": [],
-              "body": [
-                "Variant",
-                [
-                  [
-                    "RealTime",
-                    [],
-                    null
-                  ],
-                  [
-                    "Normal",
-                    [],
-                    null
-                  ]
-                ]
-              ]
-            }
-          ]
-        ],
-        [
-          [
-            "Session",
-            [],
-            "google"
-          ],
-          [
-            [],
             {
               "name": "google",
               "variables": [],
@@ -2003,27 +1974,25 @@
                     ]
                   ],
                   [
-                    "connection",
+                    "folderId",
                     [
                       "Reference",
                       [
                         "Builtin",
-                        "option"
+                        "string"
                       ],
+                      []
+                    ]
+                  ],
+                  [
+                    "connected",
+                    [
+                      "Reference",
                       [
-                        [
-                          "Reference",
-                          [
-                            "Public",
-                            [
-                              "Session",
-                              [],
-                              "connection"
-                            ]
-                          ],
-                          []
-                        ]
-                      ]
+                        "Builtin",
+                        "bool"
+                      ],
+                      []
                     ]
                   ]
                 ]

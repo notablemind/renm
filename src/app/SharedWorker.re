@@ -43,6 +43,7 @@ type world = {
 
 type file = {
   mutable meta: MetaData.t,
+  mutable syncTime: Js.Global.timeoutId,
   /* TODO maybe keep around a cache of recent changes to be able to get undo things sooner */
   /* mutable recentChanges */
 
@@ -135,6 +136,14 @@ let persistChangedNodes = (current, db, changeEvents, change) => {
   let%Lets.Async.Consume ((), ()) = Js.Promise.all2((nodesPromise, tagsPromise));
 };
 
+let createFile = () => {
+
+};
+
+let saveFile = () => {
+
+};
+
 let applyChange = (file, change, ports, dontSendToSession) => {
   let%Lets.TryLog changeEvents =
     Change.eventsForChanges(file.world.current.nodes, change.Sync.apply);
@@ -148,6 +157,23 @@ let applyChange = (file, change, ports, dontSendToSession) => {
 
   sendChange(~excludeSession=?dontSendToSession, file.meta.id, ports, change);
   persistChangedNodes(file.world.current, file.db->Dbs.getCurrentDb, changeEvents, appliedChange);
+
+  switch (file.meta.sync) {
+    | None => 
+    /* Ok maybe I should read things */
+    ()
+    | Some(sync) =>
+      Js.Global.clearTimeout(file.syncTime);
+      file.syncTime = Js.Global.setTimeout(() => {
+        switch (sync.remote) {
+          | Google(username, fileId) =>
+          /**TODO sync the file here */
+            ()
+          | _ => ()
+        }
+      }, 30 * 1000);
+  }
+
   let title = switch (file.world.current.nodes->Map.String.get(file.world.current.root)) {
     | Some({contents}) => Delta.getText(contents)->Js.String.trim
     | _ => file.meta.title
@@ -296,6 +322,7 @@ let getFile = (docId) => {
     meta,
     db,
     world,
+    syncTime: Obj.magic(0),
     cursors: Hashtbl.create(10)
   })
 };
@@ -329,10 +356,6 @@ let authKey = "nm:auth";
 let saveAuth = auth => {
   Dbs.settingsDb->Persistance.put("current", auth)->ignore;
   auth
-  /* LocalStorage.setItem(authKey, Js.Json.stringify(
-    WorkerProtocolSerde.serializeAuth(auth)
-  ));
-  auth */
 };
 
 let rec handleMessage = (state, port, file, sessionId, evt) =>
@@ -351,7 +374,6 @@ let rec handleMessage = (state, port, file, sessionId, evt) =>
       state.ports->HashMap.String.remove(sessionId);
       sendCursors(file.cursors, state.ports, sessionId, file.meta.id);
     | SelectionChanged(nodeId, range) =>
-      /* Js.log2(nodeId, range); */
       Hashtbl.replace(file.cursors, sessionId, (nodeId, range));
       sendCursors(file.cursors, state.ports, sessionId, file.meta.id);
 
@@ -414,13 +436,13 @@ let getAndCheckAuth = (current) => {
         Js.log2("Google auth", google);
          Js.Promise.resolve({
            ...auth,
-           google: Some({...google, connection: Some(Normal)}),
+           google: Some({...google, connected: true}),
          })
       })
     |> Js.Promise.catch(err =>
          Js.Promise.resolve({
            ...auth,
-           google: Some({...google, connection: None}),
+           google: Some({...google, connected: false}),
          })
        )
   };

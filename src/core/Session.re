@@ -5,10 +5,6 @@ Sessions persist across file opens. Each client instance (e.g. tab) gets its own
 which lives for the life of the tab.
 */
 
-type connection =
-  | RealTime
-  | Normal;
-
 type google = {
   googleId: string,
   userName: string,
@@ -17,7 +13,8 @@ type google = {
   accessToken: string,
   refreshToken: string,
   expiresAt: float,
-  connection: option(connection),
+  folderId: string,
+  connected: bool,
 };
 
 /* I think I need a way to indicate whether a user's been able to successfully authenticate with saved credentials.
