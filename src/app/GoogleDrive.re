@@ -103,24 +103,37 @@ let makeBody = (boundary, metadata, contentType, contents) => {
   ++ close_delim;
 };
 
-let uploadFile = (token, fileId, title, contents) => {
-  fetch(
+let rec findUniqueNumber = (contents) => {
+  let number = Js.Math.random()->string_of_float;
+  if (Js.String.includes(number, contents)) {
+    findUniqueNumber(contents)
+  } else {
+    number
+  }
+};
+
+let createFile = (token, ~fileId, ~rootFolder, ~title, ~contents) => {
+  let boundary = "----" ++ findUniqueNumber(contents);
+  let%Lets.Async response = fetch(
     "https://www.googleapis.com/upload/drive/v2/files?uploadType=multipart",
     {
       "method": "post",
       "headers": {
-        "Content-Type": {|multipart/mixed; boundary="awesome"|},
+        "Content-Type": "multipart/mixed; boundary=\"" ++ boundary ++ "\"",
         "Authorization": "Bearer " ++ token,
       },
       "body":
         makeBody(
-          "awesome",
+          boundary,
           Js.Json.stringifyAny({
             "title": title,
             "mimeType": "application/x-notablemind",
+            "parents": [|{
+              "id": rootFolder
+            }|],
             "properties": [|
               {
-                "key": "fileId",
+                "key": "nmId",
                 "value": fileId
               }
             |],
@@ -130,6 +143,13 @@ let uploadFile = (token, fileId, title, contents) => {
         ),
     },
   );
+  let%Lets.Async.Wrap data = response->json;
+  switch (parseGoogleFile(data)) {
+    | None =>
+      Js.log(data);
+      failwith("Invalid file data")
+    | Some(data) => data
+  }
 };
 
 let getEtag = (token, fileId) => {
@@ -169,7 +189,7 @@ let getFile = (token, fileId, etag) => {
   }
 };
 
-let putFile = (token, fileId, contents: string) => {
+let updateFileContents = (token, fileId, contents: string) => {
   fetch(
     "https://www.googleapis.com/upload/drive/v2/files/" ++ fileId,
     {

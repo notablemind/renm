@@ -136,14 +136,6 @@ let persistChangedNodes = (current, db, changeEvents, change) => {
   let%Lets.Async.Consume ((), ()) = Js.Promise.all2((nodesPromise, tagsPromise));
 };
 
-let createFile = () => {
-
-};
-
-let saveFile = () => {
-
-};
-
 let applyChange = (file, change, ports, dontSendToSession) => {
   let%Lets.TryLog changeEvents =
     Change.eventsForChanges(file.world.current.nodes, change.Sync.apply);
@@ -185,6 +177,7 @@ let applyChange = (file, change, ports, dontSendToSession) => {
     /* TODO maybe only count non-deleted ones? */
     nodeCount: file.world.current.nodes->Map.String.size,
   };
+  /* maybe debounce this. */
   sendMetaDataChange(ports, file.meta);
 
   /* FUTURE(optimize): Probably debounce metadata persistence */
@@ -330,8 +323,54 @@ let getFile = (docId) => {
 
 type sharedState = {
   filePromises: Hashtbl.t(option(string), Js.Promise.t(file)),
+  fileTimers: Hashtbl.t(string, Js.Global.intervalId),
   ports: HashMap.String.t((string, port)),
   mutable auth: Session.auth,
+};
+
+let createFile = (state, google: Session.google, ~rootFolder, file) => {
+  Js.log("Creating file");
+  let serverFile = {
+    StoreInOne.Server.data: file.world.current,
+    history: file.world.history.PersistedHistory.history->History.allChanges
+  };
+  let serialized = WorkerProtocolSerde.serializeServerFile(serverFile);
+  let%Lets.Async.Consume (nmId, fileId, fileTitle) = GoogleDrive.createFile(
+    google.accessToken,
+    ~fileId=file.meta.id,
+    ~rootFolder,
+    ~title=file.meta.title,
+    ~contents=Js.Json.stringify(serialized)
+  );
+  Js.log2("Created file, getting etag", fileId);
+  let%Lets.Async.Consume etag = GoogleDrive.getEtag(google.accessToken, fileId);
+  Js.log2("etag", etag);
+  let%Lets.OptForce etag = etag;
+  file.meta = {
+    ...file.meta,
+    sync: Some({
+      remote: Google(google.googleId, fileId),
+      lastSyncTime: Js.Date.now(),
+      etag,
+    })
+  }
+  sendMetaDataChange(state.ports, file.meta);
+  let%Lets.Async.Consume () = MetaDataPersist.save(file.meta);
+};
+
+let timedSync = (state, file) => {
+  Js.log("Timed synced");
+  module O = Lets.OptConsume;
+  let%O google = state.auth.Session.google;
+  let%O () = google.connected ? Some(()) : None;
+  switch (file.meta.sync) {
+    | None => createFile(state, google, ~rootFolder=google.folderId, file)
+    | Some({remote: Google(username, fileid), lastSyncTime, etag}) =>
+      ()
+    | Some(_) =>
+      /* TODO */
+      ()
+  }
 };
 
 let getCachedFile = (state, sessionId, docId) => {
@@ -342,6 +381,13 @@ let getCachedFile = (state, sessionId, docId) => {
       promise
     | promise => promise
   };
+  if (!state.fileTimers->Hashtbl.mem(file.meta.id)) {
+    state.fileTimers->Hashtbl.replace(file.meta.id, Js.Global.setInterval(() => {
+      timedSync(state, file);
+    }, 5 * 60 * 1000))
+    timedSync(state.auth, file);
+  };
+
   file.meta = {
     ...file.meta,
     lastOpened: Js.Date.now()
@@ -452,6 +498,7 @@ let hasCheckedAuth = ref(false);
 
 let state = {
   filePromises: Hashtbl.create(10),
+  fileTimers: Hashtbl.create(10),
   auth: {
     userId: Utils.newId(),
     google: None,
