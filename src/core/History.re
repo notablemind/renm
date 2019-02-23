@@ -20,6 +20,7 @@ let prepareSync = t => {
   }
 };
 
+let hasUnsynced = t => t.unsynced != [];
 let totalCount = t => t.changes->List.length + t.unsynced->List.length;
 let syncedCount = t => t.changes->List.length;
 

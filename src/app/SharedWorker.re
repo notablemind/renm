@@ -200,6 +200,7 @@ let commit = (world: world): Result.t(unit, string) => {
         };
       /* let history = world.history->History.commit; */
       world.history->PersistedHistory.commit;
+      /* um do I persist this? TODO TODO this needs persistence */
       world.snapshot = snapshot;
       Ok(())
   };
@@ -328,12 +329,14 @@ type sharedState = {
   mutable auth: Session.auth,
 };
 
+let currentToServerFile = file => {
+  StoreInOne.Server.data: file.world.current,
+  history: file.world.history.PersistedHistory.history->History.allChanges,
+};
+
 let createFile = (state, google: Session.google, ~rootFolder, file) => {
   Js.log("Creating file");
-  let serverFile = {
-    StoreInOne.Server.data: file.world.current,
-    history: file.world.history.PersistedHistory.history->History.allChanges
-  };
+  let serverFile = currentToServerFile(file);
   let serialized = WorkerProtocolSerde.serializeServerFile(serverFile);
   let%Lets.Async.Consume (nmId, fileId, fileTitle) = GoogleDrive.createFile(
     google.accessToken,
@@ -363,12 +366,59 @@ let syncFile = (state, google: Session.google, remote, fileid, etag, file) => {
   let%A contents = GoogleDrive.getFile(google.accessToken, fileid, etag);
   switch (contents) {
     | None => Js.log("File hasn't changed")
+      if (file.world.history.PersistedHistory.history->History.hasUnsynced) {
+        let serverFile = currentToServerFile(file);
+        let serialized = WorkerProtocolSerde.serializeServerFile(serverFile);
+        let%A _ = GoogleDrive.updateFileContents(google.accessToken, fileid, Js.Json.stringify(serialized))
+        let%A etag = GoogleDrive.getEtag(google.accessToken, fileid);
+        Js.log2("etag", etag);
+        let%Lets.OptForce etag = etag;
+
+        file.world.history->PersistedHistory.prepareSync;
+        let%Lets.TryForce () = commit(file.world);
+
+        file.meta = {
+          ...file.meta,
+          sync: Some({remote, etag, lastSyncTime: Js.Date.now()})
+        };
+        sendMetaDataChange(state.ports, file.meta);
+        let%Lets.Async.Consume () = MetaDataPersist.save(file.meta);
+      } else {
+        Js.log("Up to date!")
+      }
     | Some((data, newEtag)) =>
       Js.log3("File has changed", etag, newEtag);
       switch (WorkerProtocolSerde.deserializeServerFile(Obj.magic(data))) {
         | Result.Error(error) => Js.log2("Failed to deserialize server file", error)
-        | Ok({history, data}) =>
-          Js.log("Got the server file!")
+        | Ok(server) =>
+          Js.log("Got the server file!");
+          file.world.history->PersistedHistory.prepareSync;
+          let latestId = file.world.history.PersistedHistory.history->History.latestSyncedId;
+          let (unsynced, syncing) = file.world.history.PersistedHistory.history->History.partition;
+          /* TODO TODO here's my chance to do change compression. */
+          let (server, result) = StoreInOne.Server.processSyncRequest(server, latestId, syncing);
+
+          let needsPush = switch result {
+            | `Commit =>
+              let%Lets.TryForce () = commit(file.world);
+              true
+            | `Rebase(changes, rebases) =>
+              let () = applyRebase(file.world, changes, rebases);
+              syncing != []
+          };
+
+          let%Lets.Async.Consume etag = if (needsPush) {
+            Js.log("Pushing");
+            let serialized = WorkerProtocolSerde.serializeServerFile(server);
+            let%Lets.Async _ = GoogleDrive.updateFileContents(google.accessToken, fileid, Js.Json.stringify(serialized))
+            let%Lets.Async etag = GoogleDrive.getEtag(google.accessToken, fileid);
+            Js.log2("etag", etag);
+            let%Lets.OptForce etag = etag;
+            Js.Promise.resolve(etag)
+          } else {
+            Js.Promise.resolve(newEtag)
+          };
+
           file.meta = {
             ...file.meta,
             sync: Some({remote, etag: newEtag, lastSyncTime: Js.Date.now()})

@@ -14,6 +14,7 @@ let partitionList: (list(World.thisChange), string) => (
 );
 let totalCount: t => int;
 let syncedCount: t => int;
+let hasUnsynced: t => bool;
 
 /* modify */
 let prepareSync: t => t;
