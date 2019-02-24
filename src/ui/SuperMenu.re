@@ -76,7 +76,7 @@ let addScores = (items, text) => {
   })
 };
 
-let make = (~placeholder, ~getResults, ~onClose, _) => {
+let make = (~placeholder, ~getResults, ~header=ReasonReact.null, ~onClose, _) => {
   ...component,
   initialState: () => {search: "", selected: 0, results: getResults("")->sort},
   reducer: (action, state) => ReasonReact.Update(switch action {
@@ -92,6 +92,7 @@ let make = (~placeholder, ~getResults, ~onClose, _) => {
   render: ({state, send}) => {
     ();
     <Dialog onClose>
+      {header}
       <input
         className=Styles.input
         autoFocus=true

@@ -320,10 +320,59 @@ let fileLinkCommands = (store: ClientStore.t('a, 'b, 'c), sendMessage) => {
 let wrapper = Css.(style([
   color(Colors.black),
   maxWidth(px(800)),
-  margin2(~v=px(0), ~h=`auto)
+  margin2(~v=px(0), ~h=`auto),
+  position(`relative),
   /* backgroundColor(Colors.gray80), */
   /* color(Colors.offWhite), */
 ]));
+
+let headerStyle = Css.(style([
+  position(`absolute),
+  bottom(`percent(100.)),
+  backgroundColor(hex("eee")),
+  paddingBottom(px(4)),
+]));
+
+let headerButton = Css.(style([
+  marginRight(px(4)),
+  borderStyle(`none),
+  cursor(`pointer),
+  backgroundColor(hex("eee")),
+  borderRadius(px(4)),
+  hover([
+    backgroundColor(hex("fafafa")),
+  ]),
+  disabled([
+    fontWeight(600),
+    backgroundColor(white),
+    color(black),
+    opacity(1.),
+    hover([
+      backgroundColor(white),
+    ])
+  ])
+]))
+
+let superHeader = (current, send) => {
+  let tabs = [|
+    ("Commands", SuperMenu),
+    ("Go to file", FileMenu),
+    ("Link to file", FileLink),
+  |];
+  <div className={headerStyle}>
+    {ReasonReact.array(
+      tabs->Array.map(((title, v)) =>
+      <button
+        disabled={v == current}
+        onClick={(evt) => send(ShowDialog(v))}
+        className={headerButton}
+      >
+        {ReasonReact.string(title)}
+      </button>
+        )
+    )}
+  </div>
+};
 
 let make = (~setupWorker, _) => {
   ...component,
@@ -408,6 +457,7 @@ let make = (~setupWorker, _) => {
           <SuperMenu
             key="commands"
             placeholder="Search for a command"
+            header={superHeader(SuperMenu, send)}
             getResults={getCommands(store, send)}
             onClose={() => send(HideDialog(SuperMenu))}
           />
@@ -415,6 +465,7 @@ let make = (~setupWorker, _) => {
           <SuperMenu
             placeholder="Select file to open"
             key="file-menu"
+            header={superHeader(FileMenu, send)}
             getResults={fileOpenCommands(store, sendMessage)}
             onClose={() => send(HideDialog(FileMenu))}
           />
@@ -422,6 +473,7 @@ let make = (~setupWorker, _) => {
           <SuperMenu
             key="link-files"
             placeholder="Select file to link"
+            header={superHeader(FileLink, send)}
             getResults={fileLinkCommands(store, sendMessage)}
             onClose={() => send(HideDialog(FileLink))}
           />

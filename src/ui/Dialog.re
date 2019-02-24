@@ -16,6 +16,7 @@ module Styles = {
   ]);
   let container = style([
     backgroundColor(white),
+    position(`relative),
     width(px(600)),
     borderRadius(px(5)),
     boxShadow(~x=px(0), ~y=px(2), ~blur=px(10), hex("ccc")),
