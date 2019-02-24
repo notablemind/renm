@@ -18,6 +18,7 @@ module Version1 =
       | CreateTag of _Data__Tag__t 
       | ModifyTag of _Data__Tag__t 
       | DeleteTag of _Data__Tag__t 
+      | UpdateContributor of _Data__user 
     and _Change__data = (_Delta__delta, _NodeType__prefix option) _Data__data
     and _Change__rebaseItem = Change.rebaseItem =
       | Nothing 
@@ -441,6 +442,14 @@ module Version1 =
             (match deserialize_Data__Tag__t arg0 with
              | Belt.Result.Ok arg0 ->
                  Belt.Result.Ok (DeleteTag (arg0) : _Change__change)
+             | Error error -> Error ("constructor argument 0" :: error))
+        | JSONArray [|tag;arg0|] when
+            ((Js.Json.JSONString ("UpdateContributor"))[@explicit_arity ]) =
+              (Js.Json.classify tag)
+            ->
+            (match deserialize_Data____user arg0 with
+             | Belt.Result.Ok arg0 ->
+                 Belt.Result.Ok (UpdateContributor (arg0) : _Change__change)
              | Error error -> Error ("constructor argument 0" :: error))
         | _ -> ((Belt.Result.Error (["Expected an array"]))
             [@explicit_arity ])
@@ -2930,6 +2939,10 @@ module Version1 =
         | DeleteTag arg0 ->
             Js.Json.array
               [|(Js.Json.string "DeleteTag");(serialize_Data__Tag__t arg0)|]
+        | UpdateContributor arg0 ->
+            Js.Json.array
+              [|(Js.Json.string "UpdateContributor");(serialize_Data____user
+                                                        arg0)|]
     and (serialize_Change____data : _Change__data -> Js.Json.t) =
       fun value ->
         (serialize_Data____data serialize_Delta____delta

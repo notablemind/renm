@@ -70,6 +70,8 @@ type change =
   | CreateTag(Tag.t)
   | ModifyTag(Tag.t)
   | DeleteTag(Tag.t)
+
+  | UpdateContributor(Data.user)
   ;
   /* TODO create / modify / add / remove tags */
 
@@ -84,6 +86,7 @@ let events = (data: Map.String.t(NodeType.t), change) =>
   | UnTrash(id) =>
     let%Try node = data->Map.String.get(id)->Opt.orError("No node " ++ id);
     Ok([Event.Node(id), Event.Node(node.parent)]);
+  | UpdateContributor(user) => Ok([]) /* TODO add an event for contributor update */
   | RemoveNode(id) =>
     let%Try node = data->Map.String.get(id)->Opt.orError("No node " ++ id);
     Ok([Event.Node(id), Event.Node(node.parent)]);
@@ -251,6 +254,13 @@ let apply = (data: data, change) =>
     );
 
   /* OTHER NODE THINGS */
+
+  | UpdateContributor(user) => Ok((
+    {...data, contributors: data.contributors->Map.String.set(user.id, user)},
+    /* TODO this doesn't actually undo :shrug: but maybe its best that way */
+    UpdateContributor(user),
+    Nothing
+  ))
 
   | SetCompleted(id, completed) =>
     let%Lets.TryWrap node =

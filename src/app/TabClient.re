@@ -43,6 +43,25 @@ type state = {
 
 let handleActions = (~state, ~port, ~preSelection, ~postSelection, actions) => {
   let prevSession = state.session;
+
+  let actions = {
+    switch (state.session.user.google) {
+      | Some(google) =>
+        let contributor = Data.{
+          id: state.session.user.userId,
+          loginDate: state.session.user.loginDate,
+          source: Google(google.googleId),
+          name: google.userName,
+          profilePic: Some(google.profilePic)
+        };
+        /* If we don't already have the contributor in the list, add it! */
+        switch (state.data.contributors->Map.String.get(state.session.user.userId)) {
+          | Some(contrib) when contrib == contributor => actions
+          | _ => [Actions.UpdateContributor(contributor), ...actions]
+        }
+      | None => actions
+    }
+  };
   actions
   ->List.forEach(action => {
       let%Lets.TryLog (change, session, viewEvents) =

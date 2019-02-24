@@ -5,6 +5,8 @@ type action =
   | SetPrefix(Node.id, option(NodeType.prefix))
   | SetCompleted(Node.id, bool)
 
+  | UpdateContributor(Data.user)
+
   | ChangeContents(Node.id, Delta.delta)
   | Move(list(Node.id), Node.id, int)
   | Create(int, NodeType.t)
@@ -20,6 +22,8 @@ let processAction =
       [RemoveNode(id)],
       [View.SetActive(focusNext, Default)],
     ))
+
+  | UpdateContributor(user) => Ok(([UpdateContributor(user)], []))
 
   | SetContents(id, contents) =>
     Ok(([SetContents(id, contents)], []))
