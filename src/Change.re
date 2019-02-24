@@ -86,7 +86,7 @@ let events = (data: Map.String.t(NodeType.t), change) =>
   | UnTrash(id) =>
     let%Try node = data->Map.String.get(id)->Opt.orError("No node " ++ id);
     Ok([Event.Node(id), Event.Node(node.parent)]);
-  | UpdateContributor(user) => Ok([]) /* TODO add an event for contributor update */
+  | UpdateContributor(user) => Ok([Contributor(user.id)]) /* TODO add an event for contributor update */
   | RemoveNode(id) =>
     let%Try node = data->Map.String.get(id)->Opt.orError("No node " ++ id);
     Ok([Event.Node(id), Event.Node(node.parent)]);

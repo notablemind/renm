@@ -133,7 +133,22 @@ let persistChangedNodes = (current, db, changeEvents, change) => {
     })
   );
 
-  let%Lets.Async.Consume ((), ()) = Js.Promise.all2((nodesPromise, tagsPromise));
+  let changedContributorIds = changeEvents->List.keepMap(evt => switch evt {
+    | SharedTypes.Event.Contributor(id) => Some(id)
+    | _ => None
+  })->unique->List.toArray;
+  let contributorsPromise = db->Dbs.getContributorsDb->Persistance.batch(
+    changedContributorIds->Array.keepMap(id => {
+      let%Lets.Opt user = current.contributors->Map.String.get(id);
+      Some(Persistance.batchPut({
+        "key": id,
+        "type": "put",
+        "value": user
+      }))
+    })
+  );
+
+  let%Lets.Async.Consume ((), (), ()) = Js.Promise.all3((nodesPromise, tagsPromise, contributorsPromise));
 };
 
 let applyChange = (file, change, ports, dontSendToSession) => {

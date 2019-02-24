@@ -224,7 +224,12 @@ let make =
                 Js.log2(node.author, store.data().contributors)
                 switch author {
                   | None => ReasonReact.string("Unknown author")
-                  | Some(user) => ReasonReact.string(user.name)
+                  | Some({profilePic: Some(url)}) =>
+                  <img src=url style={ReactDOMRe.Style.(make(
+                    ~borderRadius="10px",
+                    ~width="20px", ~height="20px", ()))} />
+                  | Some({name}) =>
+                  ReasonReact.string(name)
                 }
                 /* ReasonReact.null */
             }}
