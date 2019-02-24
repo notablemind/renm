@@ -219,7 +219,14 @@ let make =
                   store.act([SetCompleted(node.id, !node.completed)])
                 }}
                 checked={node.completed} />
-              | Some(Attribution) => ReasonReact.null
+              | Some(Attribution) =>
+                let author = store.data().contributors->Belt.Map.String.get(node.author);
+                Js.log2(node.author, store.data().contributors)
+                switch author {
+                  | None => ReasonReact.string("Unknown author")
+                  | Some(user) => ReasonReact.string(user.name)
+                }
+                /* ReasonReact.null */
             }}
             <div style=ReactDOMRe.Style.(make(~flex="1", ()))>
               {renderContents(store, node, registerFocus, editPos, collapsed)}
