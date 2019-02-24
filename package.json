@@ -34,6 +34,8 @@
     "quill": "jaredly/quill#jared-dist",
     "quill-cursors": "^1.0.3",
     "quill-delta": "^3.6.3",
+    "quill-image-drop-module": "^1.0.3",
+    "quill-image-resize-module": "jaredly/quill-image-resize-module#76ba3ef5b41c7aff02b2c615317197d356cc7cf4",
     "quill-mention": "^2.0.0",
     "raw-loader": "^0.5.1",
     "react": "^16.2.0",

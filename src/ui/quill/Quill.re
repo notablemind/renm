@@ -30,9 +30,15 @@ let historyClass = [%bs.raw
 
 /* let getFileName: ref(string => option(string)) = ref((id: string) => None); */
 
+[@bs.module "quill-image-drop-module"] external imageDrop: quillModule = "ImageDrop";
+[@bs.module "quill-image-resize-module"] external imageResize: quillModule = "default";
+/* import { ImageDrop } from 'quill-image-drop-module'; */
+
 register({
   "modules/history": historyClass,
   "modules/cursors": quillCursors,
+  "modules/imageDrop": imageDrop,
+  "modules/imageResize": imageResize,
   /* "formats/link": myLink(id => getFileName^(id)), */
 });
 
@@ -146,6 +152,7 @@ let quillConfig = (props: ref(propsType), registry) => {
   "registry": registry,
   "placeholder": " ",
   "modules": {
+    "imageResize": Js.Obj.empty(),
     "cursors": true,
     /* "mention": {
       "mentionDenotationChars": [|"/"|],
