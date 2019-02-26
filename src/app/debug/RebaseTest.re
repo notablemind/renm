@@ -103,21 +103,21 @@ let make = _children => {
         <button onClick={_ev => doSync(a)}>
           {ReasonReact.string("Sync")}
         </button>
-        <Tree store=a->StoreInOne.MonoClient.clientStore />
+        <Tree store=a->StoreInOne.MonoClient.clientStore(0) />
         <DebugStoreView store=a />
       </div>
       <div className=Css.(style([flex(1)]))>
         <button onClick={_ev => doSync(b)}>
           {ReasonReact.string("Sync")}
         </button>
-        <Tree store=b->StoreInOne.MonoClient.clientStore />
+        <Tree store=b->StoreInOne.MonoClient.clientStore(0) />
         <DebugStoreView store=b />
       </div>
       <div className=Css.(style([flex(1)]))>
         <button onClick={_ev => doSync(c)}>
           {ReasonReact.string("Sync")}
         </button>
-        <Tree store=c->StoreInOne.MonoClient.clientStore />
+        <Tree store=c->StoreInOne.MonoClient.clientStore(0) />
         <DebugStoreView store=c />
       </div>
     </div>;

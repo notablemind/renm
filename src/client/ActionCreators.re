@@ -13,7 +13,7 @@ let shiftSelect = (store, node: Data.Node.t('a, 'b)) => {
     let%O xn = TreeTraversal.childPos(parent.children, node.id);
     let small = min(xa, xn);
     let large = max(xa, xn);
-    let rec loop = i => i > large ? store.session().view.selection :
+    let rec loop = i => i > large ? store.view().selection :
       loop(i + 1)->Set.String.add(parent.children->List.getExn(i));
     store.actView(View.SetSelection(loop(small)))
   }
@@ -68,7 +68,7 @@ let focus = (store, node: Data.Node.t('a, 'p)) =>
 
 let indent = (store, node: Data.Node.t('t, 'p)) => {
   module Opt = OptConsume;
-  let%Opt () = node.id != store.session().view.root ? Some() : None;
+  let%Opt () = node.id != store.view().root ? Some() : None;
   let%Opt parent = store.data()->Data.get(node.parent);
   let%Opt prev = TreeTraversal.prevChild(parent.children, node.id);
   let%Opt prevNode = store.data()->Data.get(prev);
@@ -79,8 +79,8 @@ let indent = (store, node: Data.Node.t('t, 'p)) => {
 let dedent = (store, node: Data.Node.t('t, 'p)) => {
   module Opt = OptConsume;
   let%Opt () =
-    node.id != store.session().view.root
-    && node.parent != store.session().view.root ?
+    node.id != store.view().root
+    && node.parent != store.view().root ?
       Some() : None;
   let%Opt parent = store.data()->Data.get(node.parent);
   let%Opt grandParent = store.data()->Data.get(parent.parent);

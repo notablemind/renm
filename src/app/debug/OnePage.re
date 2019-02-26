@@ -48,5 +48,5 @@ let make = _ => {
     store;
   },
   reducer: ((), _) => ReasonReact.NoUpdate,
-  render: ({state}) => <Tree store=state->StoreInOne.MonoClient.clientStore />,
+  render: ({state}) => <Tree store=state->StoreInOne.MonoClient.clientStore(0) />,
 };

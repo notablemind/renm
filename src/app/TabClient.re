@@ -127,7 +127,7 @@ let handleMessage = (~state, ~port, ~message: WorkerProtocol.serverMessage) =>
       sharedViewData:
         View.ensureVisible(
           data,
-          state.session.view,
+          state.session->Session.activeView,
           state.session.sharedViewData,
         ),
     };
@@ -161,13 +161,10 @@ let handleMessage = (~state, ~port, ~message: WorkerProtocol.serverMessage) =>
       ->List.fromArray,
     );
   | RemoteCursors(cursors) =>
-    let oldCursors = state.session.view.remoteCursors;
+    let oldCursors = state.session.remoteCursors;
     state.session = {
       ...state.session,
-      view: {
-        ...state.session.view,
-        remoteCursors: cursors,
-      },
+      remoteCursors: cursors,
     };
     Subscription.trigger(
       state.session.subs,
@@ -186,17 +183,14 @@ let makeSession = (~metaData, ~sessionId, ~data, ~cursors, ~user) => {
       | None => session.sharedViewData
       | Some(d) => d
     },
-    view: {
-      ...session.view,
-      remoteCursors: cursors,
-    },
+    remoteCursors: cursors,
   };
   session
 };
 
-let actView = (state, action) => {
+let actView = (state, viewId, action) => {
   let (session, events) =
-    Session.actView_(state.session, action);
+    Session.actView_(state.session, 0, action);
   if (session.sharedViewData != state.session.sharedViewData) {
     saveSharedViewData(~fileId=state.session.metaData.id, session.sharedViewData);
   };
@@ -213,6 +207,7 @@ let initStore = (~onSetup, ~metaData, ~sessionId, ~port, ~user, data, cursors) =
   let clientStore = {
     ClientStore.session: () => state.session,
     data: () => state.data,
+    view: () => state.session.views->Map.Int.getExn(0),
     cursorChange: (nodeId, range) => {
       port
       ->postMessage(
@@ -222,9 +217,9 @@ let initStore = (~onSetup, ~metaData, ~sessionId, ~port, ~user, data, cursors) =
         View.Range.indexGet(range)
       );
       let length = View.Range.lengthGet(range) |> int_of_float;
-      if (state.session.view.editPos != View.Exactly(start, length)) {
+      if (state.session->Session.activeView.editPos != View.Exactly(start, length)) {
         /* TODO use this to handle undo selection change */
-        state->actView(View.Edit(View.Exactly(
+        state->actView(0, View.Edit(View.Exactly(
           start,
           length
         )));
@@ -233,9 +228,8 @@ let initStore = (~onSetup, ~metaData, ~sessionId, ~port, ~user, data, cursors) =
     },
     act: (~preSelection=?, ~postSelection=?, actions) => {
       handleActions(~state, ~port, ~preSelection, ~postSelection, actions);
-      /* Js.log(state.session.view) */
     },
-    actView: actView(state),
+    actView: actView(state, 0),
     undo: () => port->postMessage(messageToJson(UndoRequest)),
     redo: () => port->postMessage(messageToJson(RedoRequest)),
   };

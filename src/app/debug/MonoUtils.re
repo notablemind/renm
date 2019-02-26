@@ -25,7 +25,7 @@ let finishSync = (root, store: StoreInOne.MonoClient.t) => {
       Ok(StoreInOne.Client.applyRebase(store.world, changes, rebases))
     };
   let rec loop = (id, expanded) =>
-    if (id == store.session.view.root || id == world.current.root) {
+    if (id == store.session->Session.activeView.root || id == world.current.root) {
       expanded;
     } else {
       {
@@ -41,7 +41,7 @@ let finishSync = (root, store: StoreInOne.MonoClient.t) => {
     sharedViewData: {
       expanded:
         loop(
-          store.session.view.active,
+          store.session->Session.activeView.active,
           store.session.sharedViewData.expanded,
         ),
     },

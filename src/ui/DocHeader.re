@@ -81,10 +81,10 @@ let make = (~store, _) => {
   render: (_) => {
     <EventListener
       store
-      events=[SharedTypes.Event.View(Root), SharedTypes.Event.User]
+      events=[SharedTypes.Event.View(Root(store.view().id)), SharedTypes.Event.User]
       render={() => {
         Js.log("header render");
-        let view = store.session().view;
+        let view = store.view();
         let data = store.data();
         let user = store.session().user;
         let path = getPath(data, view.root);

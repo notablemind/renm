@@ -8,7 +8,7 @@ type action = ShowDialog(dialog) | HideDialog(dialog);
 
 module Commands = {
   let prefixes = (store: NodeBody.clientStore, send) => {
-    let view = store.session().view;
+    let view = store.view();
     let%Lets.OptDefault node = (store.data()->Data.get(view.active), [||]);
     let clear = {
       SuperMenu.title: "Prefix: clear",
@@ -95,7 +95,7 @@ let getCommands = (store: ClientStore.t('a, 'b, 'c), showDialog, text) => {
       sort: 0.,
       action: () => {
         let delta = {"ops": [|
-          {"insert": {"symlink": store.session().view.active}}
+          {"insert": {"symlink": store.view().active}}
         |]};
         triggerCopy({
           "application/x-delta": Js.Json.stringifyAny(delta),
@@ -159,13 +159,13 @@ let fileLinkCommands = (store: ClientStore.t('a, 'b, 'c), sendMessage) => {
   fileCommands(
     store,
     ~onSelect=(meta) => {
-          let session = store.session();
-          switch (session.view.editPos) {
+          let view = store.view();
+          switch (view.editPos) {
             | Exactly(start, length) =>
               let attributes = {"link": "nm://" ++ meta.id};
                 store.act(
                   [Actions.ChangeContents(
-                    session.view.active,
+                    view.active,
                     length == 0
                     ? Delta.makeInsert(~attributes, start, meta.title)
                     : Delta.makeAttributes(start, length, attributes)
@@ -175,15 +175,15 @@ let fileLinkCommands = (store: ClientStore.t('a, 'b, 'c), sendMessage) => {
           }
     },
     ~onCreate=text => {
-      let session = store.session();
-      switch (session.view.editPos) {
+      let view = store.view();
+      switch (view.editPos) {
         | Exactly(start, length) =>
           let id = Utils.newId();
           sendMessage(WorkerProtocol.CreateFile(id, text));
           let attributes ={"link": "nm://" ++ id};
           store.act(
             [Actions.ChangeContents(
-              session.view.active,
+              view.active,
               length == 0
               ? Delta.makeInsert(~attributes, start, text)
               : Delta.makeAttributes(start, length, attributes)

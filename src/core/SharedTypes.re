@@ -4,8 +4,10 @@ module Event = {
   module View = {
     type event =
       | Node(Data.Node.id)
-      | Root
-      | Mode;
+      /* single-view-specific */
+      | NodeStatus(int, Data.Node.id)
+      | Root(int)
+      | Mode(int);
   };
   type t =
     | View(View.event)

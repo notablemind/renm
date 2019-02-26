@@ -90,12 +90,12 @@ let process = (debug, state, change) => {
     {...state, root: root};
   | Change(Left, actions) =>
     if (debug) {Js.log(yellow(">>") ++ " Change left");};
-    (state.left->StoreInOne.MonoClient.clientStore).act(actions);
+    (state.left->StoreInOne.MonoClient.clientStore(0)).act(actions);
      if (debug) {showStore(state.left);};
     state
   | Change(Right, actions) =>
     if (debug) {Js.log(yellow(">>") ++ " Change right");};
-    (state.right->StoreInOne.MonoClient.clientStore).act(actions);
+    (state.right->StoreInOne.MonoClient.clientStore(0)).act(actions);
      if (debug) {showStore(state.right);};
     state
 };

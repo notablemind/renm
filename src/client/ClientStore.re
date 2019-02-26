@@ -1,4 +1,5 @@
 type t('contents, 'prefix, 'selection) = {
+  view: unit => View.view,
   session: unit => Session.session,
   cursorChange: (Data.Node.id, View.Range.range) => unit,
   data: unit => Data.data('contents, 'prefix),
@@ -26,5 +27,5 @@ let getNode = (store, id) => {
 };
 
 let activeNode = (store) => {
-  store->getNode(store.session().view.active);
+  store->getNode(store.view().active);
 };

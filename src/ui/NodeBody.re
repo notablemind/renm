@@ -14,11 +14,11 @@ let getData = (store: ClientStore.t('a, 'b, 'c), id) =>
     Some({
       node,
       editPos:
-        id == store.session().view.active ?
-          Some(store.session().view.editPos) : None,
-      selected: Set.String.has(store.session().view.selection, id),
+        id == store.view().active ?
+          Some(store.view().editPos) : None,
+      selected: Set.String.has(store.view().selection, id),
       collapsed:
-        id == store.session().view.root ?
+        id == store.view().root ?
           false : !Set.String.has(store.session().sharedViewData.expanded, id),
     })
   };
@@ -50,7 +50,7 @@ let renderContents =
         editPos,
         registerFocus,
         remoteCursors:
-          store.session().view.remoteCursors
+          store.session().remoteCursors
           ->Belt.List.keep(cursor => cursor.node == node.id),
         onRedo: () => store.redo(),
         onUndo: () => store.undo(),
@@ -192,7 +192,7 @@ let make =
                 }
             }>
             {
-              node.id != store.session().view.root ?
+              node.id != store.view().root ?
                 renderHandle(
                   ~onMouseDown=evt => {
                     if (ReactEvent.Mouse.metaKey(evt)) {

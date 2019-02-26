@@ -53,7 +53,6 @@ type view = {
   selection: Set.String.t,
   editPos,
   active: Data.Node.id,
-  remoteCursors: list(cursor),
   prevActive: option(Data.Node.id),
   lastEdited: option(Data.Node.id),
 };
@@ -81,7 +80,6 @@ let emptyView = (~id, ~root) => {
   hideCompleted: false,
   editPos: Default,
   active: root,
-  remoteCursors: [],
   prevActive: None,
   lastEdited: None,
 };
@@ -103,17 +101,17 @@ let processViewAction = (view, sharedViewData, action) =>
         sharedViewData,
         (
           id != view.active ?
-            [Event.View(Node(view.active)), Event.View(Node(id))] :
-            [Event.View(Node(id))]
+            [Event.View(NodeStatus(view.id, view.active)), Event.View(NodeStatus(view.id, id))] :
+            [Event.View(NodeStatus(view.id, id))]
         )
         @ Set.String.toList(view.selection)
-          ->List.map(id => Event.View(Node(id))),
+          ->List.map(id => Event.View(NodeStatus(view.id, id))),
       );
     } else {
       (view, sharedViewData, []);
     }
 
-  | SetMode(mode) => ({...view, mode}, sharedViewData, [Event.View(Mode)])
+  | SetMode(mode) => ({...view, mode}, sharedViewData, [Event.View(Mode(view.id))])
 
   | SetCollapsed(id, collapsed) =>
     if (sharedViewData.expanded->Set.String.has(id) != !collapsed) {
@@ -126,7 +124,7 @@ let processViewAction = (view, sharedViewData, action) =>
               id,
             ),
         },
-        [Event.View(Node(id))],
+        [Event.View(NodeStatus(view.id ,id))],
       );
     } else {
       (view, sharedViewData, []);
@@ -135,14 +133,14 @@ let processViewAction = (view, sharedViewData, action) =>
   | AddToSelection(id) => (
       {...view, selection: view.selection->Set.String.add(id)},
       sharedViewData,
-      [Event.View(Node(id))],
+      [Event.View(NodeStatus(view.id, id))],
     )
   | SetSelection(selection) => (
       {...view, selection: selection->Set.String.add(view.active)},
       sharedViewData,
       selection
       ->Set.String.reduce([], (evts, id) =>
-          [Event.View(Node(id)), ...evts]
+          [Event.View(NodeStatus(view.id, id)), ...evts]
         ),
     )
 
@@ -151,14 +149,14 @@ let processViewAction = (view, sharedViewData, action) =>
       sharedViewData,
       view.selection
       ->Set.String.reduce([], (evts, id) =>
-          [Event.View(Node(id)), ...evts]
+          [Event.View(NodeStatus(view.id, id)), ...evts]
         ),
     )
 
   | Edit(editPos) => (
       {...view, editPos},
       sharedViewData,
-      [Event.View(Node(view.active))],
+      [Event.View(NodeStatus(view.id, view.active))],
     )
 
   | Rebase(root) => ({
@@ -167,9 +165,9 @@ let processViewAction = (view, sharedViewData, action) =>
       selection: Set.String.empty->Set.String.add(root),
       active: root,
       editPos: End,
-    }, sharedViewData, [Event.View(Root), Event.View(Node(root))]
+    }, sharedViewData, [Event.View(Root(view.id)), Event.View(NodeStatus(view.id, root))]
         @ Set.String.toList(view.selection)
-          ->List.map(id => Event.View(Node(id)))
+          ->List.map(id => Event.View(NodeStatus(view.id, id)))
     )
 
   | HideCompleted(_) => (view, sharedViewData, [])

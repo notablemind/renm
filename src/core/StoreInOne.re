@@ -306,14 +306,15 @@ module MonoClient = {
     onChange(store, session, events @ viewEvents);
   };
 
-  let clientStore = store => {
+  let clientStore = (store, viewId) => {
     ClientStore.session: () => store.session,
     data: () => store.world.current,
+    view: () => store.session.views->Map.Int.getExn(viewId),
     cursorChange: (_, _) => (),
     act: (~preSelection=?, ~postSelection=?, actions) =>
       actions->List.forEach(act(~preSelection?, ~postSelection?, store)),
     actView: action => {
-      let (session, events) = Session.actView_(store.session, action);
+      let (session, events) = Session.actView_(store.session, 0, action);
       store.session = session;
 
       Subscription.trigger(session.subs, events);
