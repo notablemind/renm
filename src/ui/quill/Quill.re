@@ -14,6 +14,9 @@ external makeQuill: ('element, 'config) => quill = "default";
 [@bs.send] external registerQuill: (quill, 'a) => unit = "register";
 
 [@bs.module]
+external symlinkModule: (string => option(Delta.delta)) => quillModule = "./Symlink.js";
+
+[@bs.module]
 external linkModule: (string => option(string)) => quillModule = "./Link.js";
 
 [%bs.raw "window.quill = Quill"];
@@ -318,7 +321,11 @@ let setupQuill =
     (element, props: ref(propsType), registerFocus) => {
 
   let registry = customRegistry([|
-    linkModule(id => props^.store->ClientStore.getFileName(id))
+    linkModule(id => props^.store->ClientStore.getFileName(id)),
+    symlinkModule(id => switch (props^.store->ClientStore.getNode(id)) {
+      | None => None
+      | Some(node) => Some(node.contents)
+    })
   |]);
   let quill =
     makeQuill(

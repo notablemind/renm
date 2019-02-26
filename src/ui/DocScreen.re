@@ -1,7 +1,7 @@
 
 
 module EventListener = {
-  let component = ReasonReact.reducerComponent("MetaDataProvider");
+  let component = ReasonReact.reducerComponent("EventListener");
   let make = (~store, ~render, ~events, _) => {
     ...component,
     initialState: () => (),
@@ -90,7 +90,7 @@ module Header = {
           let path = getPath(data, view.root);
           <div className=Styles.breadcrumbs>
             {path->List.toArray->Array.map(node => {
-              <div className=Styles.bread onClick={evt => store.actView(Rebase(node.id))}>
+              <div key={node.id} className=Styles.bread onClick={evt => store.actView(Rebase(node.id))}>
                 {ReasonReact.string(Delta.getText(node.contents))}
               </div>
             })->ReasonReact.array}
@@ -209,6 +209,27 @@ module Commands = {
   };
 };
 
+let triggerCopy = [%bs.raw {|
+function(formats) {
+  const prev = document.activeElement
+  const input = document.createElement('input')
+  // input.style.visibility='hidden'
+  document.body.appendChild(input)
+  console.log('formatting', formats)
+  input.oncopy = evt => {
+    console.log('copying', formats)
+    Object.keys(formats).forEach(key => {
+      evt.clipboardData.setData(key, formats[key])
+    })
+    return false
+  }
+  input.focus()
+  document.execCommand('copy')
+  // input.parentElement.removeChild(input)
+  prev.focus()
+}
+|}];
+
 let getCommands = (store: ClientStore.t('a, 'b, 'c), send, text) => {
   let text = text->Js.String.toLowerCase;
   let items = [|
@@ -220,6 +241,20 @@ let getCommands = (store: ClientStore.t('a, 'b, 'c), send, text) => {
         send(ShowDialog(FileLink))
       }
     },
+    {
+      SuperMenu.title: "Copy Symlink",
+      description: "Copy current node as symlink",
+      sort: 0.,
+      action: () => {
+        let delta = {"ops": [|
+          {"insert": {"symlink": store.session().view.active}}
+        |]};
+        triggerCopy({
+          "application/x-delta": Js.Json.stringifyAny(delta),
+          "text/plain": "Holla"
+        })
+      }
+    }
   |]->Array.concat(Commands.prefixes(store, send));
   items->SuperMenu.addScores(text)
 };
