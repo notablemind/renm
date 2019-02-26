@@ -41,7 +41,7 @@ type state = {
   /* files: Hashtbl.t(string, WorkerProtocol.metaData) */
 };
 
-let handleActions = (~state, ~port, ~preSelection, ~postSelection, actions) => {
+let handleActions = (~state, ~port, ~preSelection, ~postSelection, viewId, actions) => {
   let prevSession = state.session;
 
   let actions = {
@@ -70,6 +70,7 @@ let handleActions = (~state, ~port, ~preSelection, ~postSelection, actions) => {
           ~postSelection=Session.makeSelection(state.session, postSelection),
           state.data,
           state.session,
+          viewId,
           action,
         );
       state.session = session;
@@ -136,6 +137,7 @@ let handleMessage = (~state, ~port, ~message: WorkerProtocol.serverMessage) =>
       if (change.sessionInfo.sessionId == state.session.sessionId) {
         Session.applyView(
           state.session,
+          state.session.activeView,
           View.selectionEvents(change.sessionInfo.postSelection),
         );
       } else {
@@ -190,11 +192,11 @@ let makeSession = (~metaData, ~sessionId, ~data, ~cursors, ~user) => {
 
 let actView = (state, viewId, action) => {
   let (session, events) =
-    Session.actView_(state.session, 0, action);
+    Session.actView_(state.session, viewId, action);
   if (session.sharedViewData != state.session.sharedViewData) {
     saveSharedViewData(~fileId=state.session.metaData.id, session.sharedViewData);
   };
-  state.session = session;
+  state.session = {...session, activeView: viewId};
   Subscription.trigger(session.subs, events);
 };
 
@@ -204,34 +206,43 @@ let initStore = (~onSetup, ~metaData, ~sessionId, ~port, ~user, data, cursors) =
     data,
   };
 
-  let clientStore = {
-    ClientStore.session: () => state.session,
-    data: () => state.data,
-    view: () => state.session.views->Map.Int.getExn(0),
-    cursorChange: (nodeId, range) => {
-      port
-      ->postMessage(
-          messageToJson(WorkerProtocol.SelectionChanged(nodeId, range)),
-        );
-      let start = int_of_float(
-        View.Range.indexGet(range)
-      );
-      let length = View.Range.lengthGet(range) |> int_of_float;
-      if (state.session->Session.activeView.editPos != View.Exactly(start, length)) {
-        /* TODO use this to handle undo selection change */
-        state->actView(0, View.Edit(View.Exactly(
-          start,
-          length
-        )));
-        /* Js.log(state.session.view) */
+  let clientStore = viewId => {
+    if (!state.session.views->Map.Int.has(viewId)) {
+      state.session = {
+        ...state.session,
+        views: state.session.views->Map.Int.set(viewId, View.emptyView(~id=viewId, ~root=state.data.root))
       }
-    },
-    act: (~preSelection=?, ~postSelection=?, actions) => {
-      handleActions(~state, ~port, ~preSelection, ~postSelection, actions);
-    },
-    actView: actView(state, 0),
-    undo: () => port->postMessage(messageToJson(UndoRequest)),
-    redo: () => port->postMessage(messageToJson(RedoRequest)),
+    };
+
+    {
+      ClientStore.session: () => state.session,
+      data: () => state.data,
+      view: () => state.session.views->Map.Int.getExn(viewId),
+      cursorChange: (nodeId, range) => {
+        port
+        ->postMessage(
+            messageToJson(WorkerProtocol.SelectionChanged(nodeId, range)),
+          );
+        let start = int_of_float(
+          View.Range.indexGet(range)
+        );
+        let length = View.Range.lengthGet(range) |> int_of_float;
+        if (state.session.views->Map.Int.getExn(viewId).editPos != View.Exactly(start, length)) {
+          /* TODO use this to handle undo selection change */
+          state->actView(viewId, View.Edit(View.Exactly(
+            start,
+            length
+          )));
+          /* Js.log(state.session.view) */
+        }
+      },
+      act: (~preSelection=?, ~postSelection=?, actions) => {
+        handleActions(~state, ~port, ~preSelection, ~postSelection, viewId, actions);
+      },
+      actView: actView(state, viewId),
+      undo: () => port->postMessage(messageToJson(UndoRequest)),
+      redo: () => port->postMessage(messageToJson(RedoRequest)),
+    };
   };
 
   port

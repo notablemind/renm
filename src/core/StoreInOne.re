@@ -248,6 +248,7 @@ module MonoClient = {
         ~postSelection,
         store.world.current,
         store.session,
+        0,
         action,
       );
     store.session = session;
@@ -276,7 +277,7 @@ module MonoClient = {
       );
 
     let (session, viewEvents) =
-      Session.applyView(session, View.selectionEvents(change.sessionInfo.postSelection));
+      Session.applyView(session, 0, View.selectionEvents(change.sessionInfo.postSelection));
 
     store.session = session;
     let%Lets.TryLog (world, events) = apply(store.world, change);
@@ -298,7 +299,7 @@ module MonoClient = {
       );
 
     let (session, viewEvents) =
-      Session.applyView(session, View.selectionEvents(change.sessionInfo.postSelection));
+      Session.applyView(session, 0, View.selectionEvents(change.sessionInfo.postSelection));
 
     store.session = session;
     let%Lets.TryLog (world, events) = apply(store.world, change);

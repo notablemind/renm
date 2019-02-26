@@ -78,18 +78,18 @@ let actView_ = (store, viewId, action) => {
   ({...store, sharedViewData, views: store.views->Map.Int.set(viewId, view)}, events);
 };
 
-let applyView = (session, viewActions) => {
+let applyView = (session, viewId, viewActions) => {
   let (view, sharedViewData, viewEvents) =
     viewActions
     ->List.reduce(
-        (session->activeView, session.sharedViewData, []),
+        (session.views->Map.Int.getExn(viewId), session.sharedViewData, []),
         ((v, svd, evts), action) => {
           let (v, svg, nevts) = View.processViewAction(v, svd, action);
           (v, svg, nevts @ evts);
         },
       );
 
-  ({...session, sharedViewData}->updateActiveView(view), viewEvents);
+  ({...session, sharedViewData, views: session.views->Map.Int.set(viewId, view)}, viewEvents);
 };
 
 /** TODO test this to see if it makes sense */
@@ -144,12 +144,12 @@ let makeChange = (~changeId, ~preSelection, ~postSelection, session, change, lin
 };
 
 
-let prepareChange = (~preSelection, ~postSelection, data, session, action) => {
+let prepareChange = (~preSelection, ~postSelection, data, session, viewId, action) => {
   let (changeId, session) = getChangeId(session);
   let%Lets.Try (changes, viewActions) =
     Actions.processAction(data, action);
   let (session, viewEvents) =
-    session->updateChangeSet(~changeId, action)->applyView(viewActions);
+    session->updateChangeSet(~changeId, action)->applyView(viewId, viewActions);
   let (change) =
     makeChange(~changeId, ~preSelection, ~postSelection, session, changes, None);
   Ok((change, session, viewEvents));

@@ -1,11 +1,11 @@
 
 type state('a, 'b, 'c) = {
-  store: option((ClientStore.t('a, 'b, 'c), WorkerProtocol.message => unit)),
+  store: option((int => ClientStore.t('a, 'b, 'c), WorkerProtocol.message => unit)),
   focus: ref(unit => unit),
 };
 
 type actions('a, 'b, 'c) =
-  | Store(ClientStore.t('a, 'b, 'c), WorkerProtocol.message => unit);
+  | Store(int => ClientStore.t('a, 'b, 'c), WorkerProtocol.message => unit);
 
 let component = ReasonReact.reducerComponent("OnePage");
 
@@ -27,7 +27,7 @@ let make = (~setupWorker, _) => {
   ...component,
   initialState: () => {store: None, focus: ref(() => ())},
   reducer: (action, state) => ReasonReact.Update(switch action {
-    | Store(store, sendMessage) => {...state, store: Some((store, sendMessage))}
+    | Store(getStore, sendMessage) => {...state, store: Some((getStore, sendMessage))}
   }),
   didMount: self => {
     let docId = switch (Js.String.sliceToEnd(~from=1, location##hash)) {
@@ -35,11 +35,11 @@ let make = (~setupWorker, _) => {
       | id => Some(id)
     };
     let sender = ref(None);
-    setupWorker(docId, (store, sendMessage) => {
-      Js.log2("Setting up worker", store.ClientStore.session().metaData.id);
-      [%bs.raw "window.store = store"]->ignore;
+    setupWorker(docId, (getStore, sendMessage) => {
+      Js.log2("Setting up worker", getStore(0).ClientStore.session().metaData.id);
+      [%bs.raw "window.store = getStore(0)"]->ignore;
       sender := Some(sendMessage);
-      self.send(Store(store, sendMessage));
+      self.send(Store(getStore, sendMessage));
     });
 
     Webapi.Dom.window |> Webapi.Dom.Window.addEventListener("hashchange", evt => {
@@ -68,17 +68,31 @@ let make = (~setupWorker, _) => {
   render: ({state, send}) =>
     switch (state.store) {
     | None => <div> {ReasonReact.string("Connecting...")} </div>
-    | Some((store, sendMessage)) =>
-    Js.log("Meta id " ++ store.session().metaData.id);
+    | Some((getStore, sendMessage)) =>
+      let store = getStore(0);
+      let store2 = getStore(1);
+      /* Js.log("Meta id " ++ store.session().metaData.id); */
       <div className=wrapper>
-      <DocHeader store={store}/>
-      <Tree
-        key={store.session().metaData.id}
-        store
-        registerFocus={fn => {
-          state.focus := fn
-        }}
-      />
+      <div>
+        <DocHeader store={store}/>
+        <Tree
+          key={store.session().metaData.id}
+          store
+          registerFocus={fn => {
+            state.focus := fn
+          }}
+        />
+      </div>
+      <div>
+        <DocHeader store={store2}/>
+        <Tree
+          key={store2.session().metaData.id}
+          store={store2}
+          registerFocus={fn => {
+            state.focus := fn
+          }}
+        />
+      </div>
       <DocMenus store sendMessage />
     </div>
     },

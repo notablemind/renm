@@ -47,7 +47,7 @@ let renderContents =
         NodeTypes.value: text,
         id: node.id,
         store,
-        editPos,
+        editPos: store.view().id == store.session().activeView ? editPos : None,
         registerFocus,
         remoteCursors:
           store.session().remoteCursors

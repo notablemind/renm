@@ -447,7 +447,9 @@ let make = (~props: propsType, _children) => {
       let sel = getSelection(quill);
       Js.log3("Resetting contents on didUpdate, also resetting cursor", props.value, getContents(quill));
       quill->setContents(props.value, "silent");
-      quill->setSelectionRange(sel);
+      if (!Js.isNullable(sel)) {
+        quill->setSelectionRange(sel);
+      }
     };
     if (newSelf.state.prevCursors^ !== props.remoteCursors) {
       (newSelf.state.prevCursors^)
