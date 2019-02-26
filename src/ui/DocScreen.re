@@ -213,7 +213,7 @@ let triggerCopy = [%bs.raw {|
 function(formats) {
   const prev = document.activeElement
   const input = document.createElement('input')
-  // input.style.visibility='hidden'
+  input.style.opacity='0'
   document.body.appendChild(input)
   console.log('formatting', formats)
   input.oncopy = evt => {
@@ -251,7 +251,7 @@ let getCommands = (store: ClientStore.t('a, 'b, 'c), send, text) => {
         |]};
         triggerCopy({
           "application/x-delta": Js.Json.stringifyAny(delta),
-          "text/plain": "Holla"
+          "text/plain": "Cannot paste a symlink outside of notablemind."
         })
       }
     }
