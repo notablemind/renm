@@ -1,28 +1,13 @@
 
 type state('a, 'b, 'c) = {
   store: option((ClientStore.t('a, 'b, 'c), WorkerProtocol.message => unit)),
-  dialog: option(DocMenus.dialog),
   focus: ref(unit => unit),
 };
 
 type actions('a, 'b, 'c) =
-  | Store(ClientStore.t('a, 'b, 'c), WorkerProtocol.message => unit)
-  | ShowDialog(DocMenus.dialog)
-  | HideDialog(DocMenus.dialog)
+  | Store(ClientStore.t('a, 'b, 'c), WorkerProtocol.message => unit);
 
 let component = ReasonReact.reducerComponent("OnePage");
-
-let isMac: bool = [%bs.raw "navigator.platform === 'MacIntel'"];
-
-let keyEvt = evt => {
-  open Webapi.Dom.KeyboardEvent;
-  KeyManager.key(
-    ~shift=shiftKey(evt),
-    ~cmdCtrl=isMac ? metaKey(evt) : ctrlKey(evt),
-    ~alt=altKey(evt),
-    key(evt)
-  )
-};
 
 [@bs.val] external location: {. "search": string, "hash": string} = "";
 
@@ -40,13 +25,9 @@ let wrapper = Css.(style([
 
 let make = (~setupWorker, _) => {
   ...component,
-  initialState: () => {store: None, dialog: None, focus: ref(() => ())},
+  initialState: () => {store: None, focus: ref(() => ())},
   reducer: (action, state) => ReasonReact.Update(switch action {
     | Store(store, sendMessage) => {...state, store: Some((store, sendMessage))}
-    | ShowDialog(dialog) => {...state, dialog: Some(dialog)}
-    | HideDialog(dialog) => if (state.dialog == Some(dialog)) {
-      {...state, dialog: None}
-    } else { state }
   }),
   didMount: self => {
     let docId = switch (Js.String.sliceToEnd(~from=1, location##hash)) {
@@ -75,24 +56,6 @@ let make = (~setupWorker, _) => {
       }
     });
 
-    let keys = KeyManager.makeHandlers([
-      ("cmd+shift+p", evt => {
-        self.send(ShowDialog(SuperMenu))
-      }),
-      ("cmd+k", evt => {
-        self.send(ShowDialog(FileLink))
-      }),
-      ("cmd+p", evt => {
-        self.send(ShowDialog(FileMenu))
-      }),
-    ]);
-
-    let state = ref(KeyManager.init(keys));
-    open Webapi.Dom;
-    document |> Document.addKeyDownEventListener(evt => {
-      state := state^ -> KeyManager.handle(keyEvt(evt), evt)
-    });
-
     body |> Webapi.Dom.Element.addBlurEventListenerUseCapture(_ => {
       Js.Global.setTimeout(() => {
         if ([%bs.raw "document.activeElement == document.body"]) {
@@ -116,10 +79,7 @@ let make = (~setupWorker, _) => {
           state.focus := fn
         }}
       />
-      {switch (state.dialog) {
-        | Some(dialog) => DocMenus.show(store, dialog, d => send(ShowDialog(d)), d => send(HideDialog(d)), sendMessage)
-        | None => ReasonReact.null
-      }}
+      <DocMenus store sendMessage />
     </div>
     },
 };

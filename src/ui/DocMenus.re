@@ -4,6 +4,8 @@ type dialog =
   | FileMenu
   | FileLink;
 
+type action = ShowDialog(dialog) | HideDialog(dialog);
+
 module Commands = {
   let prefixes = (store: NodeBody.clientStore, send) => {
     let view = store.session().view;
@@ -268,3 +270,58 @@ let show = (store, dialog, showDialog, hideDialog, sendMessage) =>
       onClose=(() => hideDialog(FileLink))
     />
   };
+
+let isMac: bool = [%bs.raw "navigator.platform === 'MacIntel'"];
+
+let keyEvt = evt => {
+  open Webapi.Dom.KeyboardEvent;
+  KeyManager.key(
+    ~shift=shiftKey(evt),
+    ~cmdCtrl=isMac ? metaKey(evt) : ctrlKey(evt),
+    ~alt=altKey(evt),
+    key(evt)
+  )
+};
+
+let component = ReasonReact.reducerComponent("DocMenus");
+
+let make = (~store, ~sendMessage, _) => {
+  ...component,
+  initialState: () => None,
+  reducer: (action, state) => ReasonReact.Update(switch action {
+    | ShowDialog(dialog) => Some(dialog)
+    | HideDialog(dialog) => if (state == Some(dialog)) {
+      None
+    } else { state }
+  }),
+  didMount: self => {
+
+    let keys = KeyManager.makeHandlers([
+      ("cmd+shift+p", evt => {
+        self.send(ShowDialog(SuperMenu))
+      }),
+      ("cmd+k", evt => {
+        self.send(ShowDialog(FileLink))
+      }),
+      ("cmd+p", evt => {
+        self.send(ShowDialog(FileMenu))
+      }),
+    ]);
+
+    let state = ref(KeyManager.init(keys));
+    open Webapi.Dom;
+    document |> Document.addKeyDownEventListener(evt => {
+      state := state^ -> KeyManager.handle(keyEvt(evt), evt)
+    });
+    ()
+  },
+  render: ({state, send}) => {
+    <div>
+      {switch (state) {
+        | Some(dialog) => show(store, dialog, d => send(ShowDialog(d)), d => send(HideDialog(d)), sendMessage)
+        | None => ReasonReact.null
+      }}
+      </div>
+
+  }
+}
