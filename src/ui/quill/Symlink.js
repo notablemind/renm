@@ -2,8 +2,8 @@ const Quill = require('quill/quill').default
 const QuillDeltaToHtmlConverter = require('quill-delta-to-html').QuillDeltaToHtmlConverter
 
 module.exports = (getContents) => {
-  const BlockEmbed = Quill.import('blots/block/embed');
-  class SymlinkBlot extends BlockEmbed {
+  const Embed = Quill.import('blots/embed');
+  class SymlinkBlot extends Embed {
     static create(value) {
       const node = super.create(value)
       node.setAttribute('contenteditable', false)
@@ -25,11 +25,14 @@ module.exports = (getContents) => {
         evt.preventDefault()
         evt.stopPropagation()
       }, true)
-      node.style.backgroundColor = '#eee'
-      node.style.boxShadow = '0 0 5px inset #aaa'
-      node.style.padding = '8px'
-      node.style.borderRadius = '4px'
-      node.innerHTML = contents
+      const inner = document.createElement('div');
+      inner.style.backgroundColor = '#eee'
+      inner.style.boxShadow = '0 0 5px inset #aaa'
+      inner.style.padding = '8px'
+      inner.style.borderRadius = '4px'
+      inner.style.display = 'inline-flex'
+      inner.innerHTML = contents
+      node.appendChild(inner)
       return node
     }
 
@@ -38,14 +41,15 @@ module.exports = (getContents) => {
     }
 
     // TODO: what is this for?
+    // Ok I think it's the "semantic html" thing
     html() {
       const {symlink} = this.value();
-      return `<div>${symlink}</div>`
+      return `<span>${symlink}</span>`
     }
   }
 
   SymlinkBlot.blotName = 'symlink';
   SymlinkBlot.className = 'ql-symlink';
-  SymlinkBlot.tagName = 'DIV';
+  SymlinkBlot.tagName = 'span';
   return SymlinkBlot
 }
