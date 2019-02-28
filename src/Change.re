@@ -133,6 +133,7 @@ type error =
   /* id, node.parent, pid */
   | ParentMismatch(Node.id, Node.id, Node.id)
   | WrongNodeType(Node.id, string)
+  | InvalidDelta
   | Cycle(Node.id, Node.id);
 
 let changeContents = (node, change) =>
@@ -140,9 +141,14 @@ let changeContents = (node, change) =>
     /* let contents = Delta.fromAny(contents); */
     /* Js.log3("Composing", node.contents, change); */
     let newContents = Delta.compose(node.contents, change);
+    if (newContents->Delta.isDocument) {
+      let undo = Delta.diff(newContents, node.contents);
+      Result.Ok(({...node, contents: newContents}, undo));
+    } else {
+      Result.Error(InvalidDelta)
+    }
+    // Js.log2(node.contents, change);
     /* Js.log4("Change contents", node.contents, change, newContents); */
-    let undo = Delta.diff(newContents, node.contents);
-    Result.Ok(({...node, contents: newContents}, undo));
   });
 
 let rebasePosAdd = (pid, idx, pid2, idx2) =>

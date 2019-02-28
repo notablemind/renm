@@ -28,6 +28,12 @@ let getText: delta => string = [%bs.raw
 }|}
 ];
 
+let isDocument: delta => bool = [%bs.raw {|
+function(delta) {
+  return delta.ops.every(op => !!op.insert)
+}
+|}];
+
 external toJson: delta => Js.Json.t = "%identity";
 let fromJson = json =>
   switch (Js.Json.classify(json)) {

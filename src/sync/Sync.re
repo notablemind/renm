@@ -28,16 +28,20 @@ let rec tryReduceReverse = (list, initial, fn) =>
   switch (list) {
   | [] => Result.Ok(initial)
   | [one, ...rest] =>
-    let%Lets.Try result = tryReduceReverse(rest, initial, fn);
-    fn(result, one);
+    switch (tryReduceReverse(rest, initial, fn)) {
+      | Result.Error(e) => Error(e)
+      | Ok(result) => fn(result, one);
+    }
   };
 
 let rec tryReduce = (list, initial, fn) =>
   switch (list) {
   | [] => Result.Ok(initial)
   | [one, ...rest] =>
-    let%Lets.Try result = fn(initial, one);
-    tryReduce(rest, result, fn);
+    switch (fn(initial, one)) {
+      | Result.Error(e) => Error(e)
+      | Ok(result) => tryReduce(rest, result, fn);
+    }
   };
 
 let rec skipReduce = (list, initial, fn) =>

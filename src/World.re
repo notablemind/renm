@@ -15,16 +15,16 @@ module MultiChange = {
   let apply = (data, changes) => {
     /* this returns reverts in the reverse order as the changes,
        but the rebases in the same order as the changes */
-    let rec loop = (data, changes, reverts) =>
+    let rec loop = (data, changes, reverts, rebases) =>
       switch (changes) {
-      | [] => Result.Ok((data, reverts, []))
+      | [] => Result.Ok((data, reverts, rebases->List.reverse))
       | [one, ...rest] =>
-        let%Lets.Try (data, revert, rebase) = Change.apply(data, one);
-        let%Lets.Try (data, reverts, rebases) =
-          loop(data, rest, [revert, ...reverts]);
-        Ok((data, reverts, [rebase, ...rebases]));
+        switch (Change.apply(data, one)) {
+          | Error(e) => Error(e)
+          | Ok((data, revert, rebase)) => loop(data, rest, [revert, ...reverts], [rebase, ...rebases])
+        }
       };
-    loop(data, changes, []);
+    loop(data, changes, [], []);
   };
 };
 
