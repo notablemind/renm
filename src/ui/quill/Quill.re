@@ -445,7 +445,7 @@ let make = (~props: propsType, _children) => {
     let props = newSelf.state.props^;
     if (!Delta.deepEqual(props.value, getContents(quill))) {
       let sel = getSelection(quill);
-      Js.log3("Resetting contents on didUpdate, also resetting cursor", props.value, getContents(quill));
+      // Js.log3("Resetting contents on didUpdate, also resetting cursor", props.value, getContents(quill));
       quill->setContents(props.value, "silent");
       if (!Js.isNullable(sel)) {
         quill->setSelectionRange(sel);

@@ -124,7 +124,7 @@ let processViewAction = (view, sharedViewData, action) =>
               id,
             ),
         },
-        [Event.View(NodeStatus(view.id ,id))],
+        [Event.View(Node(id))],
       );
     } else {
       (view, sharedViewData, []);

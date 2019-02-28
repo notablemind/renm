@@ -169,7 +169,7 @@ let make =
               make(
                 ~display="flex",
                 ~flexDirection="row",
-                ~alignItems="center",
+                ~alignItems="flex-start",
                 ~margin="1px",
                 ~outline=
                   editPos != None ?
@@ -215,17 +215,19 @@ let make =
               | None => ReasonReact.null
               | Some(NodeType.Todo) => <input
                 type_="checkbox"
+                className=Css.(style([marginTop(px(7))]))
                 onChange={evt => {
                   store.act([SetCompleted(node.id, !node.completed)])
                 }}
                 checked={node.completed} />
               | Some(Attribution) =>
                 let author = store.data().contributors->Belt.Map.String.get(node.author);
-                Js.log2(node.author, store.data().contributors)
                 switch author {
                   | None => ReasonReact.string("Unknown author")
                   | Some({profilePic: Some(url)}) =>
-                  <img src=url style={ReactDOMRe.Style.(make(
+                  <img 
+                  className=Css.(style([marginTop(px(7))]))
+                  src=url style={ReactDOMRe.Style.(make(
                     ~borderRadius="10px",
                     ~width="20px", ~height="20px", ()))} />
                   | Some({name}) =>
