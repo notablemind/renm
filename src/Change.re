@@ -123,7 +123,7 @@ let eventsForChanges = (nodes, changes) =>
 type error =
   | MissingChange(string)
   | MissingTag(Tag.id)
-  | MissingNode(Node.id)
+  | MissingNode(Node.id, string)
   /* parent, id */
   | MissingParent(Node.id, Node.id)
   /* parent, id */
@@ -206,8 +206,8 @@ let rec checkCycle = (id, data, parent: Node.t('a, 'b)) =>
 let apply = (data: data, change) =>
   switch (change) {
     /* TODO implement */
-  | Trash(id, time) => Result.Error(MissingNode(id))
-  | UnTrash(id) => Result.Error(MissingNode(id))
+  | Trash(id, time) => Result.Error(MissingNode(id, "trash"))
+  | UnTrash(id) => Result.Error(MissingNode(id, "untrash"))
 
   /* TAGS */
 
@@ -236,7 +236,7 @@ let apply = (data: data, change) =>
   | AddTagToNodes(tid, nodes) =>
     let%Lets.TryWrap dataNodes = nodes->Sync.tryReduce(data.nodes, (map, id) => {
       let%Lets.TryWrap node =
-        map->Map.String.get(id)->Lets.Opt.orError(MissingNode(id));
+        map->Map.String.get(id)->Lets.Opt.orError(MissingNode(id, "add tag to nodes"));
         map->Map.String.set(id, {...node, tags: node.tags->Set.String.add(tid)})
     });
 
@@ -249,7 +249,7 @@ let apply = (data: data, change) =>
   | RemoveTagFromNodes(tid, nodes) =>
     let%Lets.TryWrap dataNodes = nodes->Sync.tryReduce(data.nodes, (map, id) => {
       let%Lets.TryWrap node =
-        map->Map.String.get(id)->Lets.Opt.orError(MissingNode(id));
+        map->Map.String.get(id)->Lets.Opt.orError(MissingNode(id, "remove tag from nodes"));
         map->Map.String.set(id, {...node, tags: node.tags->Set.String.remove(tid)})
     });
 
@@ -270,7 +270,7 @@ let apply = (data: data, change) =>
 
   | SetCompleted(id, completed) =>
     let%Lets.TryWrap node =
-      data.nodes->Map.String.get(id)->Lets.Opt.orError(MissingNode(id));
+      data.nodes->Map.String.get(id)->Lets.Opt.orError(MissingNode(id, "set completed"));
 
     (
       {...data, nodes: data.nodes->Map.String.set(id, {...node, completed})},
@@ -280,7 +280,7 @@ let apply = (data: data, change) =>
 
   | SetPrefix(id, prefix) =>
     let%Lets.TryWrap node =
-      data.nodes->Map.String.get(id)->Lets.Opt.orError(MissingNode(id));
+      data.nodes->Map.String.get(id)->Lets.Opt.orError(MissingNode(id, "set prefix"));
 
     (
       {...data, nodes: data.nodes->Map.String.set(id, {...node, prefix})},
@@ -290,7 +290,7 @@ let apply = (data: data, change) =>
 
   | SetContents(id, contents) =>
     let%Lets.TryWrap node =
-      data.nodes->Map.String.get(id)->Lets.Opt.orError(MissingNode(id));
+      data.nodes->Map.String.get(id)->Lets.Opt.orError(MissingNode(id, "set contents"));
 
     (
       {...data, nodes: data.nodes->Map.String.set(id, {...node, contents})},
@@ -300,7 +300,7 @@ let apply = (data: data, change) =>
 
   | ChangeContents(id, delta) =>
     let%Lets.Try node =
-      data.nodes->Map.String.get(id)->Lets.Opt.orError(MissingNode(id));
+      data.nodes->Map.String.get(id)->Lets.Opt.orError(MissingNode(id, "change contents"));
     let%Lets.TryWrap (node, undoDelta) = changeContents(node, delta);
     (
       {...data, nodes: data.nodes->Map.String.set(id, node)},
@@ -331,7 +331,7 @@ let apply = (data: data, change) =>
     );
   | RemoveNode(id) =>
     let%Lets.Try node =
-      data.nodes->Map.String.get(id)->Lets.Opt.orError(MissingNode(id));
+      data.nodes->Map.String.get(id)->Lets.Opt.orError(MissingNode(id, "remove node"));
     let%Lets.Try parent =
       data.nodes
       ->Map.String.get(node.parent)
@@ -360,7 +360,7 @@ let apply = (data: data, change) =>
   | MoveNode(nextPid, nidx, id) =>
     open Lets;
     let%Try node =
-      data.nodes->Map.String.get(id)->Opt.orError(MissingNode(id));
+      data.nodes->Map.String.get(id)->Opt.orError(MissingNode(id, "move node"));
     let%Try parent =
       data.nodes
       ->Map.String.get(node.parent)
