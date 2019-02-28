@@ -15,12 +15,39 @@ let component = ReasonReact.reducerComponent("OnePage");
 [@bs.val] external body: Dom.element = "document.body";
 [@bs.get] external hash: Dom.location => string = "hash";
 
-let wrapper = Css.(style([
-  color(Colors.black),
-  maxWidth(px(800)),
-  margin2(~v=px(0), ~h=`auto),
-  position(`relative),
-]));
+module Styles = {
+  open Css;
+
+  let wrapper = (style([
+    color(Colors.black),
+    position(absolute),
+    top(px(0)),
+    left(px(0)),
+    right(px(0)),
+    bottom(px(0)),
+    display(`flex),
+    flexDirection(`column),
+  ]));
+
+  let docWrapper = (style([
+    position(`relative),
+    display(`flex),
+    flexDirection(`column),
+    flex(1),
+  ]));
+
+  let scroll = style([
+    flex(1),
+    overflow(`scroll),
+    `declaration("WebkitOverflowScrolling", "touch"),
+    `declaration("overscrollBehavior", "contain"),
+  ]);
+
+  let scrollInner = style([
+    maxWidth(px(800)),
+    margin2(~v=px(0), ~h=`auto),
+  ])
+};
 
 let make = (~setupWorker, _) => {
   ...component,
@@ -75,10 +102,13 @@ let make = (~setupWorker, _) => {
       // let store = getStore(0);
       // let store2 = getStore(1);
       /* Js.log("Meta id " ++ store.session().metaData.id); */
-      <div className=wrapper>
+      let singleStore = state.stores->Array.length == 1;
+      <div className=Styles.wrapper>
         {state.stores->Array.map(store => (
-          <div key={store.view().id->string_of_int}>
-            <DocHeader store={store}/>
+          <div key={store.view().id->string_of_int} className=Styles.docWrapper>
+            <DocHeader store={store} singleStore />
+            <div className=Styles.scroll>
+            <div className=Styles.scrollInner>
             <Tree
               key={store.session().metaData.id}
               store
@@ -86,6 +116,8 @@ let make = (~setupWorker, _) => {
                 state.focus := fn
               }}
             />
+            </div>
+            </div>
           </div>
         ))->ReasonReact.array}
       <DocMenus store={state.stores->Array.getExn(0)} sendMessage />

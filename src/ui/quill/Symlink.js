@@ -12,7 +12,11 @@ module.exports = (getContents) => {
         const delta = getContents(value)
         if (delta) {
           console.log('converting', delta)
-          contents = new QuillDeltaToHtmlConverter(delta.ops, {}).convert()
+          if (delta.ops.length == 1 && delta.ops[0].attributes == null && typeof delta.ops[0].insert === 'string') {
+            contents = `<p>${delta.ops[0].insert}</p>`
+          } else {
+            contents = new QuillDeltaToHtmlConverter(delta.ops, {}).convert()
+          }
         } else {
           console.log('no symlink for', value)
           contents = 'Symlinked node not found'

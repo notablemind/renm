@@ -102,7 +102,18 @@ let getCommands = (store: ClientStore.t('a, 'b, 'c), showDialog, text) => {
           "text/plain": "Cannot paste a symlink outside of notablemind."
         })
       }
-    }
+    },
+    {
+      SuperMenu.title: "Export contents as json delta",
+      description: "",
+      sort: 0.,
+      action: () => {
+        let%Lets.OptConsume node = store->ClientStore.activeNode;
+        triggerCopy({
+          "text/plain": Js.Json.stringifyAny(node.contents)
+        })
+      }
+    },
   |]->Array.concat(Commands.prefixes(store, showDialog));
   items->SuperMenu.addScores(text)
 };
