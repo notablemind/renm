@@ -156,6 +156,8 @@ let createChild = (store, node: Data.Node.t('a, 'b)) => {
       ~children=[],
     );
   store.act([Create(0, nnode)]);
+  let (expanded, _sharedViewData) = View.ensureVisible(store.data(), store.view(), store.session().sharedViewData);
+  expanded->List.map(id => View.SetCollapsed(id, false))->List.forEach(store.actView);
 }
 
 let backspace = (store, node, currentValue) => {

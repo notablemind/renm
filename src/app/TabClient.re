@@ -123,14 +123,14 @@ let handleMessage = (~state, ~port, ~message: WorkerProtocol.serverMessage) =>
       World.MultiChange.apply(state.data, change.apply);
 
     state.data = data;
-    state.session = {
-      ...state.session,
-      sharedViewData:
-        View.ensureVisible(
+    let (expanded, sharedViewData) = View.ensureVisible(
           data,
           state.session->Session.activeView,
           state.session.sharedViewData,
-        ),
+        )
+    state.session = {
+      ...state.session,
+      sharedViewData,
     };
 
     let (session, viewEvents) =
@@ -144,6 +144,8 @@ let handleMessage = (~state, ~port, ~message: WorkerProtocol.serverMessage) =>
         (state.session, []);
       };
     state.session = session;
+
+    let viewEvents = viewEvents @ expanded->List.map(id => SharedTypes.Event.View(Node(id)));
 
     Subscription.trigger(
       session.Session.subs,

@@ -86,6 +86,22 @@ let emptyView = (~id, ~root) => {
 
 open SharedTypes;
 
+
+let rebase = (view, sharedViewData, root) => {
+({
+      ...view,
+      root,
+      selection: Set.String.empty->Set.String.add(root),
+      active: root,
+      editPos: End,
+    }, sharedViewData, [Event.View(Root(view.id)), Event.View(NodeStatus(view.id, root))]
+        @ Set.String.toList(view.selection)
+          ->List.map(id => Event.View(NodeStatus(view.id, id)))
+    )
+};
+
+
+
 let processViewAction = (view, sharedViewData, action) =>
   switch (action) {
   /*** TODO clear selection if id is same */
@@ -161,37 +177,30 @@ let processViewAction = (view, sharedViewData, action) =>
       [Event.View(NodeStatus(view.id, view.active))],
     )
 
-  | Rebase(root) => ({
-      ...view,
-      root,
-      selection: Set.String.empty->Set.String.add(root),
-      active: root,
-      editPos: End,
-    }, sharedViewData, [Event.View(Root(view.id)), Event.View(NodeStatus(view.id, root))]
-        @ Set.String.toList(view.selection)
-          ->List.map(id => Event.View(NodeStatus(view.id, id)))
-    )
+  | Rebase(root) => rebase(view, sharedViewData, root)
 
   | HideCompleted(_) => (view, sharedViewData, [])
   };
 
 let ensureVisible = (data, view, sharedViewData) => {
-  let rec loop = (id, expanded) =>
+  let rec loop = (id, changed, expanded) =>
     if (id == view.root || id == data.Data.root) {
-      expanded;
+      (changed, expanded);
     } else {
       {
         let%Lets.OptWrap node = data.nodes->Map.String.get(id);
+        let changed = expanded->Set.String.has(node.parent) ? changed : [node.parent, ...changed];
         let expanded = expanded->Set.String.add(node.parent);
         if (node.id == node.parent) {
-          expanded;
+          (changed, expanded);
         } else {
-          loop(node.parent, expanded);
+          loop(node.parent, changed, expanded);
         };
       }
-      ->Lets.OptDefault.or_(expanded);
+      ->Lets.OptDefault.or_((changed, expanded));
     };
-  {expanded: loop(view.active, sharedViewData.expanded)};
+  let (changed, expanded) = loop(view.active, [], sharedViewData.expanded);
+  (changed, {expanded: expanded});
 };
 
 let selectionEvents = ((id, set, (pos, length))) => [
