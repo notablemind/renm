@@ -302,6 +302,34 @@ let quillConfig = (props: ref(propsType), registry) => {
             [@bs.this]
             (this => !(atBottom(this##quill) && props^.onDown() != None)),
         },
+        "create-child": {
+          "key": "o",
+          "shortKey": true,
+          "collapsed": true,
+          "handler": () => {
+            props^.onCreateChild();
+            false;
+          },
+        },
+        "create-aunt": {
+          "key": "o",
+          "shiftKey": true,
+          "shortKey": true,
+          "collapsed": true,
+          "handler": () => {
+            props^.onCreateAunt();
+            false;
+          },
+        },
+        "shift-enter": {
+          "key": "Enter",
+          "shortKey": true,
+          "collapsed": true,
+          "handler": () => {
+            props^.onShortEnter();
+            false;
+          },
+        },
         "enter": {
           "key": "Enter",
           "collapsed": true,

@@ -294,28 +294,30 @@ let keyEvt = evt => {
   )
 };
 
-let component = ReasonReact.reducerComponent("DocMenus");
+let component = ReasonReact.statelessComponent("DocMenus");
 
-let make = (~store, ~sendMessage, _) => {
-  ...component,
-  initialState: () => None,
-  reducer: (action, state) => ReasonReact.Update(switch action {
+let reduce = (action, state) => switch action {
     | ShowDialog(dialog) => Some(dialog)
     | HideDialog(dialog) => if (state == Some(dialog)) {
       None
     } else { state }
-  }),
+  };
+
+let make = (~store, ~state, ~send, ~sendMessage, _) => {
+  ...component,
+  // initialState: () => None,
+  // reducer: (action, state) => ReasonReact.Update(reduce(action, state)),
   didMount: self => {
 
     let keys = KeyManager.makeHandlers([
       ("cmd+shift+p", evt => {
-        self.send(ShowDialog(SuperMenu))
+        send(ShowDialog(SuperMenu))
       }),
       ("cmd+k", evt => {
-        self.send(ShowDialog(FileLink))
+        send(ShowDialog(FileLink))
       }),
       ("cmd+p", evt => {
-        self.send(ShowDialog(FileMenu))
+        send(ShowDialog(FileMenu))
       }),
     ]);
 
@@ -327,7 +329,7 @@ let make = (~store, ~sendMessage, _) => {
 
     ()
   },
-  render: ({state, send}) => {
+  render: (_) => {
     <div>
       {switch (state) {
         | Some(dialog) => show(store, dialog, d => send(ShowDialog(d)), d => send(HideDialog(d)), sendMessage)

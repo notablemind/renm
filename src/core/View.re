@@ -91,6 +91,8 @@ let processViewAction = (view, sharedViewData, action) =>
   /*** TODO clear selection if id is same */
   | SetActive(id, editPos) =>
     if (id != view.active || (view.editPos != editPos && editPos != Default)) {
+      /* Find path to root. If it's outside of the current root, then rebase to it.
+         otherwise, ensure all parents are uncollapsed. */
       (
         {
           ...view,

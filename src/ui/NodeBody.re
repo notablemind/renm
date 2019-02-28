@@ -67,6 +67,8 @@ let renderContents =
           false;
         },
         onEnter: () => ActionCreators.createAfter(store, node),
+        onCreateChild: () => ActionCreators.createChild(store, node),
+        onCreateAunt: () => ActionCreators.createAunt(store, node),
         onIndent: () => {
           ActionCreators.indent(store, node);
           true;
@@ -75,6 +77,7 @@ let renderContents =
           ActionCreators.dedent(store, node);
           true;
         },
+        onShortEnter: () => store.act([SetCompleted(node.id, !node.completed)]),
         onDown: () => ActionCreators.down(store, node),
         onRight: () => ActionCreators.right(store, node),
         onLeft: () => ActionCreators.left(store, node),

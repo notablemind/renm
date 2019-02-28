@@ -108,12 +108,55 @@ let createAfter = (store, node) => {
       ~parent=pid,
       ~author=store.session().user.userId,
       ~contents=Delta.fromString("\n"),
-      ~prefix=None,
+      ~prefix=switch (node.prefix) {
+        | Some(NodeType.Todo) => Some(NodeType.Todo)
+        | _ => None
+      },
       ~children=[],
     );
-  let%Lets.OptConsume parent = Data.get(store.data(), pid);
   store.act([Create(index, nnode)]);
 };
+
+let createAunt = (store, node: Data.Node.t('a, 'b)) => {
+  module Opt = Lets.OptConsume;
+  let%Lets.OptConsume (pid, index, prefix) = TreeTraversal.nextAuntPosition(store.data(), node);
+  let nid = Utils.newId();
+  /* TODO I think I want to abstract out the node contents stuff? */
+  let nnode =
+    Data.Node.create(
+      ~id=nid,
+      ~parent=pid,
+      ~author=store.session().user.userId,
+      ~contents=Delta.fromString("\n"),
+      ~prefix=switch (prefix) {
+        | Some(NodeType.Todo) => Some(NodeType.Todo)
+        | _ => None
+      },
+      ~children=[],
+    );
+  store.act([Create(index, nnode)]);
+};
+
+let createChild = (store, node: Data.Node.t('a, 'b)) => {
+  let nid = Utils.newId();
+  let prefix = switch (node.children->List.head) {
+    | None => None
+    | Some(id) => switch (store->ClientStore.getNode(id)) {
+      | Some({prefix: Some(NodeType.Todo)}) => Some(NodeType.Todo)
+      | _ => None
+    }
+  };
+  let nnode =
+    Data.Node.create(
+      ~id=nid,
+      ~parent=node.id,
+      ~author=store.session().user.userId,
+      ~contents=Delta.fromString("\n"),
+      ~prefix,
+      ~children=[],
+    );
+  store.act([Create(0, nnode)]);
+}
 
 let backspace = (store, node, currentValue) => {
   let%Opt prevId =

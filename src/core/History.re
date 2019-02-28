@@ -57,15 +57,13 @@ let itemsSince = (list, id) =>
   };
 
 let partitionList = (items, id) => {
-  let rec loop = changes =>
+  let rec loop = (unsynced, changes) =>
     switch (changes) {
-    | [] => ([], [])
-    | [{Sync.inner: {changeId}}, ..._] when changeId == id => ([], changes)
-    | [one, ...rest] =>
-      let (unsynced, syncing) = loop(rest);
-      ([one, ...unsynced], syncing);
+    | [] => (unsynced, [])
+    | [{Sync.inner: {changeId}}, ..._] when changeId == id => (unsynced, changes)
+    | [one, ...rest] => loop([one, ...unsynced], rest);
     };
-  loop(items);
+  loop([], items);
 };
 
 /* OK there are data structure things we could do to speed this up... if we wanted */

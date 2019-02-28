@@ -173,10 +173,19 @@ module LocalHeader = {
 };
 
 let component = ReasonReact.statelessComponent("Header");
-let make = (~store, ~singleStore, ~split, _) => {
+let make = (~store, ~singleStore, ~onMenu, ~split, _) => {
   ...component,
   render: (_) => {
     <div className={Styles.wrapper}>
+      {singleStore ? <img
+        src="/assets/Icon.iconset/icon_64x64.png"
+        onClick={evt => onMenu()}
+        className=Css.(style([
+          height(px(24)),
+          margin(px(4)),
+          cursor(`pointer)
+        ]))
+      /> :ReasonReact.null}
       <LocalHeader store />
       // {singleStore ? <div className=Css.(style([flex(1)])) /> :ReasonReact.null}
       {singleStore ? <UserButton store /> :ReasonReact.null}

@@ -44,11 +44,13 @@ type state('a, 'b, 'c) = {
   store: option((int => ClientStore.t('a, 'b, 'c), WorkerProtocol.message => unit)),
   stores: list(ClientStore.t('a, 'b, 'c)),
   storeId: int,
+  menu: option(DocMenus.dialog),
   focus: ref(unit => unit),
 };
 
 type actions('a, 'b, 'c) =
   | NewStore(int)
+  | Menu(DocMenus.action)
   | Store(int => ClientStore.t('a, 'b, 'c), WorkerProtocol.message => unit);
 
 let component = ReasonReact.reducerComponent("OnePage");
@@ -60,13 +62,14 @@ let component = ReasonReact.reducerComponent("OnePage");
 
 let make = (~setupWorker, _) => {
   ...component,
-  initialState: () => {storeId: 0, store: None, stores: [], focus: ref(() => ())},
+  initialState: () => {storeId: 0, menu: None, store: None, stores: [], focus: ref(() => ())},
   reducer: (action, state) => ReasonReact.Update(switch action {
     | Store(getStore, sendMessage) => {
       ...state,
       store: Some((getStore, sendMessage)),
       stores: [getStore(0)]
     }
+    | Menu(action) => {...state, menu: DocMenus.reduce(action, state.menu)}
     | NewStore(index) => switch (state.store) {
       | None => state
       | Some((getStore, _)) => {
@@ -128,6 +131,7 @@ let make = (~setupWorker, _) => {
             <DocHeader
               store={store}
               singleStore
+              onMenu={() => send(Menu(ShowDialog(SuperMenu)))}
               split={() => send(NewStore(index))}
             />
             <div className=Styles.scroll>
@@ -144,7 +148,12 @@ let make = (~setupWorker, _) => {
           </div>
         ))->List.toArray->ReasonReact.array}
         </div>
-        <DocMenus store=store0 sendMessage />
+        <DocMenus
+          store=store0
+          sendMessage
+          state={state.menu}
+          send={action => send(Menu(action))}
+        />
     </div>
     },
 };

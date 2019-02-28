@@ -67,6 +67,19 @@ let nextChildPosition =
     ->(OptDefault.or_((node.id, 0)));
   };
 
+let nextAuntPosition = (data: Data.data('a, 'b), node: Data.Node.t('a, 'b)) => {
+  let%Opt () = node.id == data.root || node.parent == data.root ? None : Some(());
+  let%Opt parent = data->Data.get(node.parent);
+  let%Opt grand = data->Data.get(parent.parent);
+  let%Opt index = childPos(grand.children, parent.id);
+  let nextPrefix = {
+    let%Opt id = grand.children->List.get(index + 1);
+    let%Opt sib = data->Data.get(id);
+    sib.prefix;
+  };
+  Some((grand.id, index + 1, nextPrefix))
+};
+
 let rec lastOpenChild =
         (data: Data.data('a, 'b), expanded, node: Data.Node.t('a, 'b)) =>
   if (Set.String.has(expanded, node.id) && node.children != []) {
