@@ -1,6 +1,7 @@
 
 type state('a, 'b, 'c) = {
   store: option((int => ClientStore.t('a, 'b, 'c), WorkerProtocol.message => unit)),
+  stores: array(ClientStore.t('a, 'b, 'c)),
   focus: ref(unit => unit),
 };
 
@@ -19,15 +20,17 @@ let wrapper = Css.(style([
   maxWidth(px(800)),
   margin2(~v=px(0), ~h=`auto),
   position(`relative),
-  /* backgroundColor(Colors.gray80), */
-  /* color(Colors.offWhite), */
 ]));
 
 let make = (~setupWorker, _) => {
   ...component,
-  initialState: () => {store: None, focus: ref(() => ())},
+  initialState: () => {store: None, stores: [||], focus: ref(() => ())},
   reducer: (action, state) => ReasonReact.Update(switch action {
-    | Store(getStore, sendMessage) => {...state, store: Some((getStore, sendMessage))}
+    | Store(getStore, sendMessage) => {
+      ...state,
+      store: Some((getStore, sendMessage)),
+      stores: [|getStore(0)|]
+    }
   }),
   didMount: self => {
     let docId = switch (Js.String.sliceToEnd(~from=1, location##hash)) {
@@ -36,8 +39,8 @@ let make = (~setupWorker, _) => {
     };
     let sender = ref(None);
     setupWorker(docId, (getStore, sendMessage) => {
-      Js.log2("Setting up worker", getStore(0).ClientStore.session().metaData.id);
-      [%bs.raw "window.store = getStore(0)"]->ignore;
+      // Js.log2("Setting up worker", getStore(0).ClientStore.session().metaData.id);
+      // [%bs.raw "window.store = getStore(0)"]->ignore;
       sender := Some(sendMessage);
       self.send(Store(getStore, sendMessage));
     });
@@ -69,31 +72,23 @@ let make = (~setupWorker, _) => {
     switch (state.store) {
     | None => <div> {ReasonReact.string("Connecting...")} </div>
     | Some((getStore, sendMessage)) =>
-      let store = getStore(0);
-      let store2 = getStore(1);
+      // let store = getStore(0);
+      // let store2 = getStore(1);
       /* Js.log("Meta id " ++ store.session().metaData.id); */
       <div className=wrapper>
-      <div>
-        <DocHeader store={store}/>
-        <Tree
-          key={store.session().metaData.id}
-          store
-          registerFocus={fn => {
-            state.focus := fn
-          }}
-        />
-      </div>
-      <div>
-        <DocHeader store={store2}/>
-        <Tree
-          key={store2.session().metaData.id}
-          store={store2}
-          registerFocus={fn => {
-            state.focus := fn
-          }}
-        />
-      </div>
-      <DocMenus store sendMessage />
+        {state.stores->Array.map(store => (
+          <div key={store.view().id->string_of_int}>
+            <DocHeader store={store}/>
+            <Tree
+              key={store.session().metaData.id}
+              store
+              registerFocus={fn => {
+                state.focus := fn
+              }}
+            />
+          </div>
+        ))->ReasonReact.array}
+      <DocMenus store={state.stores->Array.getExn(0)} sendMessage />
     </div>
     },
 };

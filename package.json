@@ -48,7 +48,7 @@
     "webpack": "^4.20.2"
   },
   "devDependencies": {
-    "bs-platform": "^4.0.3",
+    "bs-platform": "^4.0.18",
     "webpack-cli": "^3.1.1"
   }
 }

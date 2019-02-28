@@ -286,7 +286,9 @@ let setupWorker = (docId, onSetup) => {
   port->start;
   let sessionId = Utils.newId();
   window->addUnloadEvent(() => port->postMessage(messageToJson(Close)));
-  port->postMessage(messageToJson(Init(sessionId, docId, googleAuth)));
+  let data = messageToJson(Init(sessionId, docId, googleAuth));
+  Js.log(data)
+  port->postMessage(data);
 
   port
   ->onmessage(evt => {
