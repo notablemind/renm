@@ -1,20 +1,4 @@
 
-type state('a, 'b, 'c) = {
-  store: option((int => ClientStore.t('a, 'b, 'c), WorkerProtocol.message => unit)),
-  stores: array(ClientStore.t('a, 'b, 'c)),
-  focus: ref(unit => unit),
-};
-
-type actions('a, 'b, 'c) =
-  | Store(int => ClientStore.t('a, 'b, 'c), WorkerProtocol.message => unit);
-
-let component = ReasonReact.reducerComponent("OnePage");
-
-[@bs.val] external location: {. "search": string, "hash": string} = "";
-
-[@bs.val] external body: Dom.element = "document.body";
-[@bs.get] external hash: Dom.location => string = "hash";
-
 module Styles = {
   open Css;
 
@@ -28,6 +12,12 @@ module Styles = {
     display(`flex),
     flexDirection(`column),
   ]));
+
+  let docs = style([
+    flex(1),
+    flexDirection(`row),
+    display(`flex),
+  ]);
 
   let docWrapper = (style([
     position(`relative),
@@ -46,17 +36,46 @@ module Styles = {
   let scrollInner = style([
     maxWidth(px(800)),
     margin2(~v=px(0), ~h=`auto),
+    padding2(~v=px(0), ~h=px(16)),
   ])
 };
 
+type state('a, 'b, 'c) = {
+  store: option((int => ClientStore.t('a, 'b, 'c), WorkerProtocol.message => unit)),
+  stores: list(ClientStore.t('a, 'b, 'c)),
+  storeId: int,
+  focus: ref(unit => unit),
+};
+
+type actions('a, 'b, 'c) =
+  | NewStore(int)
+  | Store(int => ClientStore.t('a, 'b, 'c), WorkerProtocol.message => unit);
+
+let component = ReasonReact.reducerComponent("OnePage");
+
+[@bs.val] external location: {. "search": string, "hash": string} = "";
+
+[@bs.val] external body: Dom.element = "document.body";
+[@bs.get] external hash: Dom.location => string = "hash";
+
 let make = (~setupWorker, _) => {
   ...component,
-  initialState: () => {store: None, stores: [||], focus: ref(() => ())},
+  initialState: () => {storeId: 0, store: None, stores: [], focus: ref(() => ())},
   reducer: (action, state) => ReasonReact.Update(switch action {
     | Store(getStore, sendMessage) => {
       ...state,
       store: Some((getStore, sendMessage)),
-      stores: [|getStore(0)|]
+      stores: [getStore(0)]
+    }
+    | NewStore(index) => switch (state.store) {
+      | None => state
+      | Some((getStore, _)) => {
+        ...state,
+        storeId: state.storeId + 1,
+        stores: state.stores->List.reduceWithIndex([], (stores, store, i) => {
+          i == index ? [getStore(state.storeId + 1), store, ...stores] : [store, ...stores]
+        })->List.reverse
+      }
     }
   }),
   didMount: self => {
@@ -99,14 +118,18 @@ let make = (~setupWorker, _) => {
     switch (state.store) {
     | None => <div> {ReasonReact.string("Connecting...")} </div>
     | Some((getStore, sendMessage)) =>
-      // let store = getStore(0);
-      // let store2 = getStore(1);
-      /* Js.log("Meta id " ++ store.session().metaData.id); */
-      let singleStore = state.stores->Array.length == 1;
+      let singleStore = state.stores->List.length == 1;
+      let store0 = state.stores->List.getExn(0);
       <div className=Styles.wrapper>
-        {state.stores->Array.map(store => (
+        {singleStore ? ReasonReact.null : <DocHeader.Global store=store0 />}
+        <div className=Styles.docs>
+        {state.stores->List.mapWithIndex((index, store) => (
           <div key={store.view().id->string_of_int} className=Styles.docWrapper>
-            <DocHeader store={store} singleStore />
+            <DocHeader
+              store={store}
+              singleStore
+              split={() => send(NewStore(index))}
+            />
             <div className=Styles.scroll>
             <div className=Styles.scrollInner>
             <Tree
@@ -119,8 +142,9 @@ let make = (~setupWorker, _) => {
             </div>
             </div>
           </div>
-        ))->ReasonReact.array}
-      <DocMenus store={state.stores->Array.getExn(0)} sendMessage />
+        ))->List.toArray->ReasonReact.array}
+        </div>
+        <DocMenus store=store0 sendMessage />
     </div>
     },
 };

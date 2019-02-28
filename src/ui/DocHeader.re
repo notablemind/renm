@@ -56,13 +56,12 @@ module Styles = {
   let wrapper = style([
     display(`flex),
     flexDirection(`row),
-    // height(px(24)),
+    alignItems(`center),
     fontFamily("sans-serif"),
     fontSize(em(0.7)),
     justifyContent(`spaceBetween),
-    // marginBottom(px(8)),
-    // marginTop(px(8)),
   ]);
+
   let breadcrumbs = style([
     padding(px(8)),
     display(`flex),
@@ -130,6 +129,20 @@ module UserButton = {
   };
 };
 
+module Global = {
+  let component = ReasonReact.statelessComponent("Global");
+  let make = (~store, _) => {
+    ...component,
+    render: (_) => {
+      <div className={Styles.wrapper}>
+        {ReasonReact.string("Notablemind")}
+        <div className=Css.(style([flex(1)])) />
+        <UserButton store />
+      </div>
+    }
+  };
+};
+
 module LocalHeader = {
   let component = ReasonReact.statelessComponent("LocalHeader");
   let make = (~store, _) => {
@@ -160,13 +173,16 @@ module LocalHeader = {
 };
 
 let component = ReasonReact.statelessComponent("Header");
-let make = (~store, ~singleStore, _) => {
+let make = (~store, ~singleStore, ~split, _) => {
   ...component,
   render: (_) => {
     <div className={Styles.wrapper}>
       <LocalHeader store />
       // {singleStore ? <div className=Css.(style([flex(1)])) /> :ReasonReact.null}
       {singleStore ? <UserButton store /> :ReasonReact.null}
+      <button onClick={(_) => split()}>
+        {ReasonReact.string("[|]")}
+      </button>
     </div>
   }
 };

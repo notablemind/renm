@@ -324,6 +324,7 @@ let make = (~store, ~sendMessage, _) => {
     document |> Document.addKeyDownEventListener(evt => {
       state := state^ -> KeyManager.handle(keyEvt(evt), evt)
     });
+
     ()
   },
   render: ({state, send}) => {
@@ -332,7 +333,6 @@ let make = (~store, ~sendMessage, _) => {
         | Some(dialog) => show(store, dialog, d => send(ShowDialog(d)), d => send(HideDialog(d)), sendMessage)
         | None => ReasonReact.null
       }}
-      </div>
-
+    </div>
   }
 }
