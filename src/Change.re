@@ -57,6 +57,7 @@ type change =
   | UnTrash(Node.id)
   | RemoveNode(Node.id)
   | AddNode(int, NodeType.t)
+  | ImportNodes(Node.id, int, Node.id, Map.String.t(NodeType.t))
   /* nextPid, idx, id */
   | MoveNode(Node.id, int, Node.id)
   | ChangeContents(Node.id, Delta.delta)
@@ -91,6 +92,7 @@ let events = (data: Map.String.t(NodeType.t), change) =>
     let%Try node = data->Map.String.get(id)->Opt.orError("No node " ++ id);
     Ok([Event.Node(id), Event.Node(node.parent)]);
   | AddNode(_, node) => Ok([Event.Node(node.id), Event.Node(node.parent)])
+  | ImportNodes(pid, idx, rid, nodes) => Ok([Event.Node(pid)])
   | MoveNode(nextPid, _, id) =>
     let%Try node = data->Map.String.get(id)->Opt.orError("No node " ++ id);
     Ok([Event.Node(id), Event.Node(node.parent), Event.Node(nextPid)]);
@@ -300,13 +302,32 @@ let apply = (data: data, change) =>
 
   | ChangeContents(id, delta) =>
     let%Lets.Try node =
-      data.nodes->Map.String.get(id)->Lets.Opt.orError(MissingNode(id, "change contents"));
+      data.nodes->Map.String.get(id)->Lets.Opt.orError(MissingNode(id, "change contents" ++ Lets.Opt.force(Js.Json.stringifyAny(delta))));
     let%Lets.TryWrap (node, undoDelta) = changeContents(node, delta);
     (
       {...data, nodes: data.nodes->Map.String.set(id, node)},
       ChangeContents(id, undoDelta), /* TODO undo */
       Contents(id, delta),
     );
+  | ImportNodes(pid, idx, rid, nodes) =>
+    let%Lets.TryWrap parent =
+      data.nodes
+      ->Map.String.get(pid)
+      ->Lets.Opt.orError(MissingParent(pid, rid));
+    let nodes = data.nodes->Map.String.mergeMany(nodes->Map.String.toArray)
+          ->Map.String.set(
+              pid,
+              {
+                ...parent,
+                children: Utils.insertIntoList(parent.children, idx, rid),
+              },
+            );
+    (
+      {...data, nodes},
+      RemoveNode(rid),
+      AddChild(pid, idx)
+    )
+
   | AddNode(idx, node) =>
     let%Lets.TryWrap parent =
       data.nodes

@@ -8,6 +8,8 @@ module Version1 =
       | UnTrash of _Data__Node__id 
       | RemoveNode of _Data__Node__id 
       | AddNode of int * _NodeType__t 
+      | ImportNodes of _Data__Node__id * int * _Data__Node__id * _NodeType__t
+      _Belt_MapString__t 
       | MoveNode of _Data__Node__id * int * _Data__Node__id 
       | ChangeContents of _Data__Node__id * _Delta__delta 
       | SetPrefix of _Data__Node__id * _NodeType__prefix option 
@@ -242,6 +244,37 @@ module Version1 =
                       Belt.Result.Ok (AddNode (arg0, arg1) : _Change__change)
                   | Error error -> Error ("constructor argument 0" :: error))
              | Error error -> Error ("constructor argument 1" :: error))
+        | JSONArray [|tag;arg0;arg1;arg2;arg3|] when
+            ((Js.Json.JSONString ("ImportNodes"))[@explicit_arity ]) =
+              (Js.Json.classify tag)
+            ->
+            (match (deserialize_Belt_MapString____t deserialize_NodeType____t)
+                     arg3
+             with
+             | Belt.Result.Ok arg3 ->
+                 (match deserialize_Data__Node__id arg2 with
+                  | Belt.Result.Ok arg2 ->
+                      (match (fun number ->
+                                match Js.Json.classify number with
+                                | ((JSONNumber (number))[@explicit_arity ])
+                                    ->
+                                    ((Belt.Result.Ok ((int_of_float number)))
+                                    [@explicit_arity ])
+                                | _ -> ((Error (["Expected a float"]))
+                                    [@explicit_arity ])) arg1
+                       with
+                       | Belt.Result.Ok arg1 ->
+                           (match deserialize_Data__Node__id arg0 with
+                            | Belt.Result.Ok arg0 ->
+                                Belt.Result.Ok
+                                  (ImportNodes (arg0, arg1, arg2, arg3) : 
+                                  _Change__change)
+                            | Error error ->
+                                Error ("constructor argument 0" :: error))
+                       | Error error ->
+                           Error ("constructor argument 1" :: error))
+                  | Error error -> Error ("constructor argument 2" :: error))
+             | Error error -> Error ("constructor argument 3" :: error))
         | JSONArray [|tag;arg0;arg1;arg2|] when
             ((Js.Json.JSONString ("MoveNode"))[@explicit_arity ]) =
               (Js.Json.classify tag)
@@ -2881,6 +2914,13 @@ module Version1 =
                                                 Js.Json.number
                                                   (float_of_int int))) arg0);(
                 serialize_NodeType____t arg1)|]
+        | ImportNodes (arg0, arg1, arg2, arg3) ->
+            Js.Json.array
+              [|(Js.Json.string "ImportNodes");(serialize_Data__Node__id arg0);(
+                ((fun int -> Js.Json.number (float_of_int int))) arg1);(
+                serialize_Data__Node__id arg2);((serialize_Belt_MapString____t
+                                                   serialize_NodeType____t)
+                                                  arg3)|]
         | MoveNode (arg0, arg1, arg2) ->
             Js.Json.array
               [|(Js.Json.string "MoveNode");(serialize_Data__Node__id arg0);(

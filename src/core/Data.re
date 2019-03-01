@@ -86,3 +86,38 @@ let makeNodeMap = (nodes: list(Node.t('contents, 'prefix))) =>
   List.reduce(nodes, Map.String.empty, (map, node) =>
     Map.String.set(map, node.id, node)
   );
+
+let exportTree = (nodes, topId) => {
+  let rec loop = (collected, toCollect) => {
+    switch (toCollect) {
+      | [] => collected
+      | [id, ...rest] when collected->Map.String.has(id) => loop(collected, rest)
+      | [id, ...rest] =>
+        switch (nodes->Map.String.get(id)) {
+          | None => loop(collected, rest)
+          | Some(node) =>
+            let node = id == topId ? {...node, Node.parent: id} : node;
+            loop(
+              collected->Map.String.set(id, node),
+              node.Node.children @ toCollect
+            )
+        }
+    }
+  };
+  loop(Map.String.empty, [topId]);
+};
+
+let rekeyNodes = nodes => {
+  let newKeys = nodes->Map.String.reduce(Map.String.empty, (map, k, _) => map->Map.String.set(k, Utils.newId()));
+  newKeys->Map.String.reduce(Map.String.empty, (map, oldKey, newKey) => {
+    let%Lets.OptForce oldNode: option(Node.t('a, 'b)) = nodes->Map.String.get(oldKey);
+    let%Lets.OptForce newParent = newKeys->Map.String.get(oldNode.parent);
+    let newNode = {
+      ...oldNode,
+      id: newKey,
+      parent: newParent,
+      children: oldNode.children->List.map(id => Lets.Opt.force(newKeys->Map.String.get(id)))
+    };
+    map->Map.String.set(newKey, newNode)
+  })
+};

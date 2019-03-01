@@ -94,12 +94,31 @@ let getCommands = (store: ClientStore.t('a, 'b, 'c), showDialog, text) => {
       description: "Copy current node as symlink",
       sort: 0.,
       action: () => {
-        let delta = {"ops": [|
-          {"insert": {"symlink": store.view().active}}
-        |]};
+        let delta = {"ops": [| {"insert": {"symlink": store.view().active}} |]};
         triggerCopy({
           "application/x-delta": Js.Json.stringifyAny(delta),
           "text/plain": "Cannot paste a symlink outside of notablemind."
+        })
+      }
+    },
+    {
+      SuperMenu.title: "Export deep",
+      description: "Export selected node and children",
+      sort: 0.,
+      action: () => {
+        let root = store.view().active;
+        let nodes = Data.exportTree(store.data().nodes, root);
+        let serialized = Js.Json.object_(
+          nodes->Map.String.reduce(Js.Dict.empty(), (dict, id, node) => {
+            dict->Js.Dict.set(id, WorkerProtocolSerde.serializeNode(node));
+            dict
+          })
+        );
+        triggerCopy({
+          "text/plain": Js.Json.stringifyAny({
+            "nodes": serialized,
+            "root": root
+          })
         })
       }
     },

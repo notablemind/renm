@@ -593,6 +593,8 @@ let state = {
   ports: HashMap.String.make(~hintSize=5),
 };
 
+[%bs.raw "global.state = state"];
+
 addEventListener("connect", e => {
   let%Lets.OptForce port = e##ports[0];
   port

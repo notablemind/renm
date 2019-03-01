@@ -259,6 +259,69 @@
                     null
                   ],
                   [
+                    "ImportNodes",
+                    [
+                      [
+                        "Reference",
+                        [
+                          "Public",
+                          [
+                            "Data",
+                            ["Node"],
+                            "id"
+                          ]
+                        ],
+                        []
+                      ],
+                      [
+                        "Reference",
+                        [
+                          "Builtin",
+                          "int"
+                        ],
+                        []
+                      ],
+                      [
+                        "Reference",
+                        [
+                          "Public",
+                          [
+                            "Data",
+                            ["Node"],
+                            "id"
+                          ]
+                        ],
+                        []
+                      ],
+                      [
+                        "Reference",
+                        [
+                          "Public",
+                          [
+                            "Belt_MapString",
+                            [],
+                            "t"
+                          ]
+                        ],
+                        [
+                          [
+                            "Reference",
+                            [
+                              "Public",
+                              [
+                                "NodeType",
+                                [],
+                                "t"
+                              ]
+                            ],
+                            []
+                          ]
+                        ]
+                      ]
+                    ],
+                    null
+                  ],
+                  [
                     "MoveNode",
                     [
                       [
