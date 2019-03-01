@@ -2,7 +2,8 @@
 type dialog =
   | SuperMenu
   | FileMenu
-  | FileLink;
+  | FileLink
+  | Import;
 
 type action = ShowDialog(dialog) | HideDialog(dialog);
 
@@ -116,10 +117,19 @@ let getCommands = (store: ClientStore.t('a, 'b, 'c), showDialog, text) => {
         );
         triggerCopy({
           "text/plain": Js.Json.stringifyAny({
+            // TODO(jared): Also export tags probably
             "nodes": serialized,
             "root": root
           })
         })
+      }
+    },
+    {
+      SuperMenu.title: "Import dump",
+      description: "",
+      sort: 0.,
+      action: () => {
+        showDialog(Import)
       }
     },
     {
@@ -273,8 +283,55 @@ let superHeader = (current, showDialog) => {
   </div>
 };
 
+module Importer = {
+  let component = ReasonReact.reducerComponent("Importer");
+  let make = (~onClose, ~store, _) => {
+    ...component,
+    initialState: () => "",
+    reducer: (action, state) => ReasonReact.Update(action),
+    render: ({state, send}) => {
+      <Dialog onClose>
+        <textarea
+          value=state
+          onChange={evt => {
+            send(evt->ReactEvent.Form.nativeEvent##target##value)
+          }}
+        />
+        <button
+          onClick={(_) => {
+            let data = Js.Json.parseExn(state);
+            module C = Lets.OptConsume;
+            let%C data = data->Js.Json.decodeObject;
+            let%C root = data->Js.Dict.get("root");
+            let%C root = root->Js.Json.decodeString;
+            let%C nodes = data->Js.Dict.get("nodes");
+            let%C nodes = nodes->Js.Json.decodeObject;
+            let%Lets.TryLog nodes = nodes->Js.Dict.entries->Array.reduce(Result.Ok(Map.String.empty), (map, (key, value)) => {
+              let%Lets.Try map = map;
+              let%Lets.Try node = WorkerProtocolSerde.deserializeNode(value);
+              Ok(map->Map.String.set(key, node))
+            });
+            let (root, nodes) = Data.rekeyNodes(root, nodes);
+            let%C insertNode = store.ClientStore.data()->Data.get(store.view().active);
+            let (pid, index) =
+              TreeTraversal.nextChildPosition(
+                store.ClientStore.data(),
+                store.session().sharedViewData.expanded,
+                insertNode,
+              );
+            store.ClientStore.act([ImportNodes(pid, index, root, nodes)])
+          }}
+        >
+          {ReasonReact.string("Import")}
+        </button>
+      </Dialog>
+    }
+  }
+};
+
 let show = (store, dialog, showDialog, hideDialog, sendMessage) =>
   switch (dialog) {
+  | Import => <Importer onClose={() => hideDialog(Import)} store />
   | SuperMenu =>
     <SuperMenu
       key="commands"

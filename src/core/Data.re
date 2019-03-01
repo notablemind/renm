@@ -107,9 +107,9 @@ let exportTree = (nodes, topId) => {
   loop(Map.String.empty, [topId]);
 };
 
-let rekeyNodes = nodes => {
+let rekeyNodes = (root, nodes) => {
   let newKeys = nodes->Map.String.reduce(Map.String.empty, (map, k, _) => map->Map.String.set(k, Utils.newId()));
-  newKeys->Map.String.reduce(Map.String.empty, (map, oldKey, newKey) => {
+  let newNodes = newKeys->Map.String.reduce(Map.String.empty, (map, oldKey, newKey) => {
     let%Lets.OptForce oldNode: option(Node.t('a, 'b)) = nodes->Map.String.get(oldKey);
     let%Lets.OptForce newParent = newKeys->Map.String.get(oldNode.parent);
     let newNode = {
@@ -119,5 +119,6 @@ let rekeyNodes = nodes => {
       children: oldNode.children->List.map(id => Lets.Opt.force(newKeys->Map.String.get(id)))
     };
     map->Map.String.set(newKey, newNode)
-  })
+  });
+  (newKeys->Map.String.getExn(root), newNodes)
 };
