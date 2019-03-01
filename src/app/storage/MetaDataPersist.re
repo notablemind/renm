@@ -37,7 +37,7 @@ let makeHome = () => {
   let%Lets.Async meta = makeFileWithNodes(
     ~title="Home",
     ~id,
-    ~nodes=Fixture.large
+    ~nodes=Fixture.home
   )
   let%Lets.Async _ = Dbs.homeDb->Persistance.put("home", id);
   Js.Promise.resolve(id)
