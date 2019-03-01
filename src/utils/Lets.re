@@ -92,7 +92,7 @@ module TryForce = {
 module TryLog = {
   let let_ = (a, b) =>
     switch (a) {
-    | Result.Error(e) => Js.log(e)
+    | Result.Error(e) => Js.log2(e, [%bs.raw "new Error('for the stack')"])
     | Ok(v) => b(v)
     };
 };

@@ -1,6 +1,5 @@
-let newId: unit => string = [%bs.raw
-  "function(_) { return Math.random().toString(32).slice(2) }"
-];
+let newId = () => Js.Math.random()->Js.Float.toStringWithRadix(~radix=36)->Js.String.sliceToEnd(~from=2);
+let newId = () => newId() ++ newId() ++ newId();
 
 let rec insertIntoList = (list, index, item) =>
   switch (list) {

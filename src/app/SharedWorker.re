@@ -222,7 +222,7 @@ let commit = (world: world): Result.t(unit, string) => {
 };
 
 let applyRebase = (world: world, changes, rebases): unit => {
-  let%Lets.TryForce (snapshot, changes) = changes->World.reduceChanges(world.snapshot);
+  let%Lets.TryLog (snapshot, changes) = changes->World.reduceChanges(world.snapshot);
 
   let (unsynced, syncing) = History.partition(world.history.history);
   let (current, unsynced) =
@@ -380,8 +380,9 @@ let syncFile = (state, google: Session.google, remote, fileid, etag, file) => {
   module A = Lets.Async.Consume;
   let%A contents = GoogleDrive.getFile(google.accessToken, fileid, etag);
   switch (contents) {
-    | None => Js.log("File hasn't changed")
+    | None => Js.log("Remote file hasn't changed")
       if (file.world.history.PersistedHistory.history->History.hasUnsynced) {
+        Js.log("Committing new local changes");
         let serverFile = currentToServerFile(file);
         let serialized = WorkerProtocolSerde.serializeServerFile(serverFile);
         let%A _ = GoogleDrive.updateFileContents(google.accessToken, fileid, Js.Json.stringify(serialized))
@@ -390,7 +391,7 @@ let syncFile = (state, google: Session.google, remote, fileid, etag, file) => {
         let%Lets.OptForce etag = etag;
 
         file.world.history->PersistedHistory.prepareSync;
-        let%Lets.TryForce () = commit(file.world);
+        let%Lets.TryLog () = commit(file.world);
 
         file.meta = {
           ...file.meta,
@@ -402,7 +403,7 @@ let syncFile = (state, google: Session.google, remote, fileid, etag, file) => {
         Js.log("Up to date!")
       }
     | Some((data, newEtag)) =>
-      Js.log3("File has changed", etag, newEtag);
+      Js.log3("Remote file has changed", etag, newEtag);
       switch (WorkerProtocolSerde.deserializeServerFile(Obj.magic(data))) {
         | Result.Error(error) => Js.log2("Failed to deserialize server file", error)
         | Ok(server) =>
@@ -413,13 +414,13 @@ let syncFile = (state, google: Session.google, remote, fileid, etag, file) => {
           /* TODO TODO here's my chance to do change compression. */
           let (server, result) = StoreInOne.Server.processSyncRequest(server, latestId, syncing);
 
-          let needsPush = switch result {
+          let%Lets.TryLog needsPush = switch result {
             | `Commit =>
-              let%Lets.TryForce () = commit(file.world);
+              let%Lets.TryWrap () = commit(file.world);
               true
             | `Rebase(changes, rebases) =>
               let () = applyRebase(file.world, changes, rebases);
-              syncing != []
+              Ok(syncing != [])
           };
 
           let%Lets.Async.Consume etag = if (needsPush) {
@@ -445,7 +446,7 @@ let syncFile = (state, google: Session.google, remote, fileid, etag, file) => {
 };
 
 let timedSync = (state, file) => {
-  Js.log("Timed synced");
+  Js.log2("Timed synced", file.meta.title);
   module O = Lets.OptConsume;
   let%O google = state.auth.Session.google;
   let%O () = google.connected ? Some(()) : None;
@@ -470,7 +471,10 @@ let getCachedFile = (state, sessionId, docId) => {
   if (!state.fileTimers->Hashtbl.mem(file.meta.id)) {
     state.fileTimers->Hashtbl.replace(file.meta.id, Js.Global.setInterval(() => {
       timedSync(state, file);
-    }, 5 * 60 * 1000))
+    },
+    // 5 * 60 * 1000
+    30 * 1000
+    ))
     timedSync(state, file);
   };
 

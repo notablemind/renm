@@ -311,7 +311,6 @@ module Importer = {
               let%Lets.Try node = WorkerProtocolSerde.deserializeNode(value);
               Ok(map->Map.String.set(key, node))
             });
-            let (root, nodes) = Data.rekeyNodes(root, nodes);
             let%C insertNode = store.ClientStore.data()->Data.get(store.view().active);
             let (pid, index) =
               TreeTraversal.nextChildPosition(
@@ -319,6 +318,7 @@ module Importer = {
                 store.session().sharedViewData.expanded,
                 insertNode,
               );
+            let (root, nodes) = Data.rekeyNodes(root, pid, nodes);
             store.ClientStore.act([ImportNodes(pid, index, root, nodes)])
           }}
         >
