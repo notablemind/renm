@@ -105,7 +105,7 @@ module Styles = {
     ]);
   let circle =
     style([
-      backgroundColor(hex("ccc")),
+      backgroundColor(hex("ddd")),
       borderRadius(px(2)),
       width(px(7)),
       marginTop(px(2)),
@@ -118,7 +118,7 @@ module Styles = {
       borderRadius(px(4)),
       borderLeft(px(5), `solid, `transparent),
       borderRight(px(5), `solid, `transparent),
-      borderTop(px(8), `solid, hex("ccc")),
+      borderTop(px(8), `solid, hex("aaa")),
       position(`absolute),
       left(px(4)),
       top(px(6)),
@@ -133,7 +133,7 @@ module Styles = {
       borderRadius(px(4)),
       borderTop(px(5), `solid, `transparent),
       borderBottom(px(5), `solid, `transparent),
-      borderLeft(px(8), `solid, hex("ccc")),
+      borderLeft(px(8), `solid, hex("aaa")),
     ]);
 };
 

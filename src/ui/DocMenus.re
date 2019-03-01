@@ -189,8 +189,10 @@ let fileOpenCommands = (store, sendMessage) => {
     ~onCreate=text => {
       let id = Utils.newId();
       sendMessage(WorkerProtocol.CreateFile(id, text));
-      /* TODO this wont work */
-      Webapi.Dom.Window.location(Webapi.Dom.window)->hash("#" ++ id)
+      /* TODO instead of this 500ms timeout, actually wait until the file is created */
+      Js.Global.setTimeout(() => {
+        Webapi.Dom.Window.location(Webapi.Dom.window)->hash("#" ++ id)
+      }, 500)->ignore
     }
   )
 };

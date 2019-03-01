@@ -446,7 +446,7 @@ let syncFile = (state, google: Session.google, remote, fileid, etag, file) => {
 };
 
 let timedSync = (state, file) => {
-  Js.log2("Timed synced", file.meta.title);
+  Js.log3("Timed synced", file.meta.title, file.meta.sync);
   module O = Lets.OptConsume;
   let%O google = state.auth.Session.google;
   let%O () = google.connected ? Some(()) : None;
@@ -503,7 +503,11 @@ let rec handleMessage = (state, port, file, sessionId, evt) =>
     | UndoRequest => onUndo(file, state.auth, state.ports, sessionId)
     | RedoRequest => onRedo(file, state.auth, state.ports, sessionId)
     | CreateFile(id, title) =>
+      Js.log("Creating file " ++ id);
       let%Lets.Async.Consume meta = MetaDataPersist.makeEmptyFile(~id, ~title, ~author=state.auth.userId);
+      Js.log("Created file");
+      let%Lets.Async.Consume file = getCachedFile(state, sessionId, Some(id));
+      // state.filePromises->Hashtbl.replace(id, meta);
       sendToPorts(state.ports, WorkerProtocol.MetaDataUpdate(meta))
     | Close =>
       file.cursors->Hashtbl.remove(sessionId);

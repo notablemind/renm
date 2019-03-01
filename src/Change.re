@@ -92,7 +92,10 @@ let events = (data: Map.String.t(NodeType.t), change) =>
     let%Try node = data->Map.String.get(id)->Opt.orError("No node " ++ id);
     Ok([Event.Node(id), Event.Node(node.parent)]);
   | AddNode(_, node) => Ok([Event.Node(node.id), Event.Node(node.parent)])
-  | ImportNodes(pid, idx, rid, nodes) => Ok([Event.Node(pid)])
+  | ImportNodes(pid, idx, rid, nodes) => Ok([
+    Event.Node(pid),
+    ...nodes->Map.String.toList->List.map(((k, _)) => Event.Node(k))
+  ])
   | MoveNode(nextPid, _, id) =>
     let%Try node = data->Map.String.get(id)->Opt.orError("No node " ++ id);
     Ok([Event.Node(id), Event.Node(node.parent), Event.Node(nextPid)]);
