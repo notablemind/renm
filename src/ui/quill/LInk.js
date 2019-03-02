@@ -31,6 +31,7 @@ module.exports = (getFileName) => {
           }
         } else {
           hover.href = value
+          hover.setAttribute('target', '_blank')
           hover.innerText = value
         }
         hover.onclick = evt => {

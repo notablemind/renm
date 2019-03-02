@@ -321,10 +321,11 @@ module Importer = {
           onChange={evt => {
             send(evt->ReactEvent.Form.nativeEvent##target##value)
           }}
-        />
-        <button
-          onClick={(_) => {
-            let data = Js.Json.parseExn(state);
+          onPaste={evt => {
+            evt->ReactEvent.Clipboard.preventDefault;
+            evt->ReactEvent.Clipboard.stopPropagation;
+            let text = evt->ReactEvent.Clipboard.clipboardData##getData("text/plain")
+            let data = Js.Json.parseExn(text);
             module C = Lets.OptConsume;
             let%C data = data->Js.Json.decodeObject;
             let%C root = data->Js.Dict.get("root");
@@ -335,7 +336,7 @@ module Importer = {
             let%Lets.TryLog nodes = nodes->Js.Dict.entries->Array.reduce(Result.Ok(Map.String.empty), (map, (key, value)) => {
               let%Lets.Try map = map;
               let%Lets.Try node = WorkerProtocolSerde.deserializeNode(value);
-              Ok(map->Map.String.set(key, node))
+              Ok(map->Map.String.set(key, {...node, contents: Delta.normalizeDelta(node.contents)}))
             });
             // Js.log2("Decoded", nodes);
             let%C insertNode = store.ClientStore.data()->Data.get(store.view().active);
@@ -349,9 +350,7 @@ module Importer = {
             // Js.log3("Rekeyed", root, nodes);
             store.ClientStore.act([ImportNodes(pid, index, root, nodes)])
           }}
-        >
-          {ReasonReact.string("Import")}
-        </button>
+        />
       </Dialog>
     }
   }

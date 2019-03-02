@@ -34,6 +34,19 @@ function(delta) {
 }
 |}];
 
+let normalizeDelta: delta => delta = [%bs.raw {|
+function normalizeDelta(delta) {
+  const Delta = require('quill-delta');
+  return delta.reduce((normalizedDelta, op) => {
+    if (typeof op.insert === 'string') {
+      const text = op.insert.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+      return normalizedDelta.insert(text, op.attributes);
+    }
+    return normalizedDelta.push(op);
+  }, new Delta());
+}
+|}];
+
 external toJson: delta => Js.Json.t = "%identity";
 let fromJson = json =>
   switch (Js.Json.classify(json)) {

@@ -11,7 +11,7 @@ module.exports = (getContents) => {
       if (typeof value === 'string') {
         const delta = getContents(value)
         if (delta) {
-          console.log('converting', delta)
+          // console.log('converting', delta)
           if (delta.ops.length == 1 && delta.ops[0].attributes == null && typeof delta.ops[0].insert === 'string') {
             contents = `<p>${delta.ops[0].insert}</p>`
           } else {
