@@ -289,6 +289,7 @@ let superHeader = (current, showDialog) => {
     {ReasonReact.array(
       tabs->Array.map(((title, v)) =>
       <button
+        key={title}
         disabled={v == current}
         onClick={(evt) => showDialog(v)}
         className={headerButton}

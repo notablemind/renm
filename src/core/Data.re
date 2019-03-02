@@ -107,13 +107,33 @@ let exportTree = (nodes, topId) => {
   loop(Map.String.empty, [topId]);
 };
 
+let mapSymlinks: (. Delta.delta, string => option(string)) => option(Delta.rawDelta)  = [%bs.raw {|
+  function (delta, getNewId) {
+    let hadSymlinks = false
+    let ops = delta.ops.map(op => {
+      if (op.insert && op.insert.symlink) {
+        hadSymlinks = true
+        return {...op, insert: {symlink: getNewId(op.insert.symlink) || 'unknown symlink'}}
+      } else {
+        return op
+      }
+    });
+    return hadSymlinks ? ops : null
+  }
+|}]
+
 let rekeyNodes = (root, newParent, nodes) => {
   let newKeys = nodes->Map.String.reduce(Map.String.empty, (map, k, _) => map->Map.String.set(k, Utils.newId()));
   let newNodes = newKeys->Map.String.reduce(Map.String.empty, (map, oldKey, newKey) => {
     let%Lets.OptForce oldNode: option(Node.t('a, 'b)) = nodes->Map.String.get(oldKey);
     let%Lets.OptForce newParent = oldNode.parent == oldNode.id ? Some(newParent) : newKeys->Map.String.get(oldNode.parent);
+    let contents = switch (mapSymlinks(. oldNode.contents, newKeys->Map.String.get)) {
+      | None => oldNode.contents
+      | Some(rawDelta) => Delta.make(rawDelta)
+    };
     let newNode = {
       ...oldNode,
+      contents,
       id: newKey,
       parent: newParent,
       children: oldNode.children->List.map(id => Lets.Opt.force(newKeys->Map.String.get(id)))
