@@ -151,11 +151,11 @@ let getCommands = (store: ClientStore.t('a, 'b, 'c), showDialog, text) => {
         sort: 0.,
         action: () => {
           let delta = {
-            "ops": [|{
+            "ops": ({
                        "insert": {
                          "symlink": store.view().active,
                        },
-                     }|],
+                     }, {"insert": "\n"}),
           };
           triggerCopy({
             "application/x-delta": Js.Json.stringifyAny(delta),
@@ -331,11 +331,13 @@ module Importer = {
             let%C root = root->Js.Json.decodeString;
             let%C nodes = data->Js.Dict.get("nodes");
             let%C nodes = nodes->Js.Json.decodeObject;
+            // Js.log("Decoding nodes");
             let%Lets.TryLog nodes = nodes->Js.Dict.entries->Array.reduce(Result.Ok(Map.String.empty), (map, (key, value)) => {
               let%Lets.Try map = map;
               let%Lets.Try node = WorkerProtocolSerde.deserializeNode(value);
               Ok(map->Map.String.set(key, node))
             });
+            // Js.log2("Decoded", nodes);
             let%C insertNode = store.ClientStore.data()->Data.get(store.view().active);
             let (pid, index) =
               TreeTraversal.nextChildPosition(
@@ -344,6 +346,7 @@ module Importer = {
                 insertNode,
               );
             let (root, nodes) = Data.rekeyNodes(root, pid, nodes);
+            // Js.log3("Rekeyed", root, nodes);
             store.ClientStore.act([ImportNodes(pid, index, root, nodes)])
           }}
         >

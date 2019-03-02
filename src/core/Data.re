@@ -118,7 +118,7 @@ let mapSymlinks: (. Delta.delta, string => option(string)) => option(Delta.rawDe
         return op
       }
     });
-    return hadSymlinks ? ops : null
+    return hadSymlinks ? ops : undefined
   }
 |}]
 
