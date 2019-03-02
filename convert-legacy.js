@@ -17,11 +17,23 @@ treeToMap(input.root.id, 0)(input.root)
 const convertContents = node => {
   switch (node.type) {
     case 'code-playground':
-      // return [].concat(...node.content.split('\n').map(line => [
-      //   {insert: line},
-      //   {insert: '\n', attributes: {'code-block': true}}
-      // ]))
-      return [{insert: "Code-playground omitted\n"}]
+      return [].concat(...node.content.split('\n').map(line => line ? [
+        {insert: line},
+        {insert: '\n', attributes: {'code-block': 'plain'}}
+      ] : [
+        {insert: '\n', attributes: {'code-block': 'plain'}}
+      ])).reduce((lines, line) => {
+        if (lines.length > 0 &&
+          line.insert === '\n' &&
+          [...lines[lines.length - 1].insert].every(c => c === '\n')
+        ) {
+          lines[lines.length - 1].insert += '\n'
+        } else {
+          lines.push(line)
+        }
+        return lines
+      }, [])
+      // return [{insert: "Code-playground omitted\n"}]
     case 'image':
       return [
         {
