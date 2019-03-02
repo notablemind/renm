@@ -241,6 +241,29 @@ let make =
             <div style=ReactDOMRe.Style.(make(~flex="1", ()))>
               {renderContents(store, node, registerFocus, editPos, collapsed)}
             </div>
+            {if (node.tags->Set.String.isEmpty) {
+              ReasonReact.null
+            } else {
+              <div className=Css.(style([
+                position(`absolute),
+                bottom(px(-8)),
+                right(px(8)),
+                zIndex(1),
+              ]))>
+                {node.tags->Set.String.toArray->Array.keepMap(id => {
+                  let%Lets.OptWrap tag = store.data().tags->Map.String.get(id);
+                  <div className=Css.(style([
+                    padding2(~v=px(2), ~h=px(4)),
+                    borderRadius(px(4)),
+                    fontSize(px(10)),
+                    fontFamily("sans-serif"),
+                    `declaration("backgroundColor", tag.color),
+                  ]))>
+                    {ReasonReact.string(tag.name)}
+                  </div>
+                })->ReasonReact.array}
+              </div>
+            }}
           </div>
         )
       }

@@ -382,7 +382,7 @@ module TagsMenu = {
           name: text,
           created: Js.Date.now(),
           modified: Js.Date.now(),
-          color: "#aaf"
+          color: "#ddf"
         }), AddTagToNodes(id, [node.id])])
       },
     }

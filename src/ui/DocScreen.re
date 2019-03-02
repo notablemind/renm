@@ -29,6 +29,7 @@ module Styles = {
   let scroll = style([
     flex(1),
     overflow(`scroll),
+    paddingBottom(px(800)),
     `declaration("WebkitOverflowScrolling", "touch"),
     `declaration("overscrollBehavior", "contain"),
   ]);
