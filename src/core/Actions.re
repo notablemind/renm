@@ -7,6 +7,10 @@ type action =
 
   | UpdateContributor(Data.user)
 
+  | CreateTag(Tag.t)
+  | AddTagToNodes(Tag.id, list(Node.id))
+  | RemoveTagFromNodes(Tag.id, list(Node.id))
+
   | ChangeContents(Node.id, Delta.delta)
   | Move(list(Node.id), Node.id, int)
   | Create(int, NodeType.t)
@@ -25,6 +29,10 @@ let processAction =
     ))
 
   | UpdateContributor(user) => Ok(([UpdateContributor(user)], []))
+
+  | CreateTag(tag) => Ok(([CreateTag(tag)], []))
+  | AddTagToNodes(id, nodes) => Ok(([AddTagToNodes(id, nodes)], []))
+  | RemoveTagFromNodes(id, nodes) => Ok(([RemoveTagFromNodes(id, nodes)], []))
 
   | SetContents(id, contents) =>
     Ok(([SetContents(id, contents)], []))

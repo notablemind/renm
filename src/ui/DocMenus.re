@@ -3,6 +3,7 @@ type dialog =
   | SuperMenu
   | FileMenu
   | FileLink
+  | Tags
   | Import;
 
 type action = ShowDialog(dialog) | HideDialog(dialog);
@@ -139,6 +140,12 @@ let getCommands = (store: ClientStore.t('a, 'b, 'c), showDialog, text) => {
         },
       },
       {
+        SuperMenu.title: "Add/remove tags",
+        description: "",
+        sort: 0.,
+        action: () => showDialog(Tags)
+      },
+      {
         SuperMenu.title: "Copy Symlink",
         description: "Copy current node as symlink",
         sort: 0.,
@@ -159,7 +166,7 @@ let getCommands = (store: ClientStore.t('a, 'b, 'c), showDialog, text) => {
     |]
     ->Array.concat(Commands.prefixes(store))
     ->Array.concat(Commands.getDebugCommands(store, showDialog));
-  items->SuperMenu.addScores(text);
+  items->SuperMenu.filterAndAddScores(text);
 };
 
 let fileCommands = (store: ClientStore.t('a, 'b, 'c), ~onSelect, ~onCreate, text) => {
@@ -347,9 +354,56 @@ module Importer = {
   }
 };
 
+module TagsMenu = {
+  let getTags = (store, text) => {
+    let view = store.ClientStore.session()->Session.activeView;
+    let node = store.data()->Data.get(view.active);
+    let%Lets.OptDefault node = (node, [||]);
+    let data = store.data();
+    data.tags->Map.String.valuesToArray
+    ->Array.map(tag => {
+      let remove = node.tags->Set.String.has(tag.id);
+      {
+        SuperMenu.title: (remove ? "Remove " : "Add ") ++ tag.name,
+        description: "",
+        sort: 0.,
+        action: () => store.act([remove ? RemoveTagFromNodes(tag.id, [node.id]) : AddTagToNodes(tag.id, [node.id])]),
+      }
+    })->SuperMenu.filterAndAddScores(text)
+    ->Array.concat([|
+    {
+      SuperMenu.title: text == "" ? "[type to create a new tag]" : "Create new tag: " ++ text,
+      description: "",
+      sort: 0.,
+      action: () => text == "" ? () : {
+        let id = Utils.newId();
+        store.act([CreateTag({
+          Data.Tag.id,
+          name: text,
+          created: Js.Date.now(),
+          modified: Js.Date.now(),
+          color: "#aaf"
+        }), AddTagToNodes(id, [node.id])])
+      },
+    }
+    |]);
+  };
+
+  let show = (store, showDialog, hideDialog) => {
+    <SuperMenu
+      key="tags"
+      placeholder="Add/remove a tag"
+      header={superHeader(Tags, showDialog)}
+      getResults={getTags(store)}
+      onClose={() => hideDialog(Tags)}
+    />
+  };
+};
+
 let show = (store, dialog, showDialog, hideDialog, sendMessage) =>
   switch (dialog) {
   | Import => <Importer onClose={() => hideDialog(Import)} store />
+  | Tags => TagsMenu.show(store, showDialog, hideDialog)
   | SuperMenu =>
     <SuperMenu
       key="commands"

@@ -64,7 +64,7 @@ let sort = items => {
   items |> Js.Array.sortInPlaceWith((a, b) => int_of_float(b.sort -. a.sort))
 };
 
-let addScores = (items, text) => {
+let filterAndAddScores = (items, text) => {
   items->Array.keepMap(item => {
     if (fuzzysearch(text, item.title->Js.String.toLowerCase)) {
       Some({...item, sort: fuzzyScore(~term=item.title, ~query=text) +. 5.})
