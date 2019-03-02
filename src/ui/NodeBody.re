@@ -252,7 +252,7 @@ let make =
               ]))>
                 {node.tags->Set.String.toArray->Array.keepMap(id => {
                   let%Lets.OptWrap tag = store.data().tags->Map.String.get(id);
-                  <div className=Css.(style([
+                  <div key={id} className=Css.(style([
                     padding2(~v=px(2), ~h=px(4)),
                     borderRadius(px(4)),
                     fontSize(px(10)),
