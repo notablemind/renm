@@ -7,8 +7,29 @@ type dialog =
 
 type action = ShowDialog(dialog) | HideDialog(dialog);
 
+let triggerCopy = [%bs.raw {|
+function(formats) {
+  const prev = document.activeElement
+  const input = document.createElement('input')
+  input.style.opacity='0'
+  document.body.appendChild(input)
+  console.log('formatting', formats)
+  input.oncopy = evt => {
+    console.log('copying', formats)
+    Object.keys(formats).forEach(key => {
+      evt.clipboardData.setData(key, formats[key])
+    })
+    return false
+  }
+  input.focus()
+  document.execCommand('copy')
+  // input.parentElement.removeChild(input)
+  prev.focus()
+}
+|}];
+
 module Commands = {
-  let prefixes = (store: NodeBody.clientStore, send) => {
+  let prefixes = (store: NodeBody.clientStore) => {
     let view = store.view();
     let%Lets.OptDefault node = (store.data()->Data.get(view.active), [||]);
     let clear = {
@@ -56,95 +77,89 @@ module Commands = {
       |]
     }
   };
+
+  let getDebugCommands = (store: ClientStore.t('a, 'b, 'c), showDialog) => {
+    [|
+      {
+        SuperMenu.title: "Export deep",
+        description: "Export selected node and children",
+        sort: 0.,
+        action: () => {
+          let root = store.view().active;
+          let nodes = Data.exportTree(store.data().nodes, root);
+          let serialized = Js.Json.object_(
+            nodes->Map.String.reduce(Js.Dict.empty(), (dict, id, node) => {
+              dict->Js.Dict.set(id, WorkerProtocolSerde.serializeNode(node));
+              dict
+            })
+          );
+          triggerCopy({
+            "text/plain": Js.Json.stringifyAny({
+              // TODO(jared): Also export tags probably
+              "nodes": serialized,
+              "root": root
+            })
+          })
+        }
+      },
+      {
+        SuperMenu.title: "Import dump",
+        description: "",
+        sort: 0.,
+        action: () => {
+          showDialog(Import)
+        }
+      },
+      {
+        SuperMenu.title: "Export contents as json delta",
+        description: "",
+        sort: 0.,
+        action: () => {
+          let%Lets.OptConsume node = store->ClientStore.activeNode;
+          triggerCopy({
+            "text/plain": Js.Json.stringifyAny(node.contents)
+          })
+        }
+      },
+    |]
+  };
 };
 
-let triggerCopy = [%bs.raw {|
-function(formats) {
-  const prev = document.activeElement
-  const input = document.createElement('input')
-  input.style.opacity='0'
-  document.body.appendChild(input)
-  console.log('formatting', formats)
-  input.oncopy = evt => {
-    console.log('copying', formats)
-    Object.keys(formats).forEach(key => {
-      evt.clipboardData.setData(key, formats[key])
-    })
-    return false
-  }
-  input.focus()
-  document.execCommand('copy')
-  // input.parentElement.removeChild(input)
-  prev.focus()
-}
-|}];
 
 let getCommands = (store: ClientStore.t('a, 'b, 'c), showDialog, text) => {
   let text = text->Js.String.toLowerCase;
-  let items = [|
-    {
-      SuperMenu.title: "Link to File",
-      description: "Hyperlink the current text to another (maybe new) file",
-      sort: 0.,
-      action: () => {
-        showDialog(FileLink)
-      }
-    },
-    {
-      SuperMenu.title: "Copy Symlink",
-      description: "Copy current node as symlink",
-      sort: 0.,
-      action: () => {
-        let delta = {"ops": [| {"insert": {"symlink": store.view().active}} |]};
-        triggerCopy({
-          "application/x-delta": Js.Json.stringifyAny(delta),
-          "text/plain": "Cannot paste a symlink outside of notablemind."
-        })
-      }
-    },
-    {
-      SuperMenu.title: "Export deep",
-      description: "Export selected node and children",
-      sort: 0.,
-      action: () => {
-        let root = store.view().active;
-        let nodes = Data.exportTree(store.data().nodes, root);
-        let serialized = Js.Json.object_(
-          nodes->Map.String.reduce(Js.Dict.empty(), (dict, id, node) => {
-            dict->Js.Dict.set(id, WorkerProtocolSerde.serializeNode(node));
-            dict
-          })
-        );
-        triggerCopy({
-          "text/plain": Js.Json.stringifyAny({
-            // TODO(jared): Also export tags probably
-            "nodes": serialized,
-            "root": root
-          })
-        })
-      }
-    },
-    {
-      SuperMenu.title: "Import dump",
-      description: "",
-      sort: 0.,
-      action: () => {
-        showDialog(Import)
-      }
-    },
-    {
-      SuperMenu.title: "Export contents as json delta",
-      description: "",
-      sort: 0.,
-      action: () => {
-        let%Lets.OptConsume node = store->ClientStore.activeNode;
-        triggerCopy({
-          "text/plain": Js.Json.stringifyAny(node.contents)
-        })
-      }
-    },
-  |]->Array.concat(Commands.prefixes(store, showDialog));
-  items->SuperMenu.addScores(text)
+  let items =
+    [|
+      {
+        SuperMenu.title: "Link to File",
+        description: "Hyperlink the current text to another (maybe new) file",
+        sort: 0.,
+        action: () => {
+          showDialog(FileLink);
+        },
+      },
+      {
+        SuperMenu.title: "Copy Symlink",
+        description: "Copy current node as symlink",
+        sort: 0.,
+        action: () => {
+          let delta = {
+            "ops": [|{
+                       "insert": {
+                         "symlink": store.view().active,
+                       },
+                     }|],
+          };
+          triggerCopy({
+            "application/x-delta": Js.Json.stringifyAny(delta),
+            "text/plain": "Cannot paste a symlink outside of notablemind.",
+          });
+        },
+      },
+    |]
+    ->Array.concat(Commands.prefixes(store))
+    ->Array.concat(Commands.getDebugCommands(store, showDialog));
+  items->SuperMenu.addScores(text);
 };
 
 let fileCommands = (store: ClientStore.t('a, 'b, 'c), ~onSelect, ~onCreate, text) => {
