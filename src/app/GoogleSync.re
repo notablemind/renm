@@ -150,8 +150,9 @@ let refresh = refreshToken => {
 };
 
 let getProfile = token => {
+    /* "https://www.googleapis.com/oauth2/v2/userinfo?key="
+    */
   let%Lets.Async response = fetch(
-    /* "https://www.googleapis.com/oauth2/v2/userinfo?key=" */
     "https://www.googleapis.com/plus/v1/people/me?key="
     ++ config##clientId,
     {
@@ -199,6 +200,9 @@ type location;
 let signIn = () => {
   location->setHref(authUrl)
 };
+
+let isExpired = ({Session.expiresAt, refreshToken}) => Js.Date.now() > expiresAt;
+let refreshProfile = ({Session.refreshToken}) => refresh(refreshToken) |> Js.Promise.then_(getProfile);
 
 let checkSavedAuth = ({Session.expiresAt, refreshToken, accessToken}) =>
   if (Js.Date.now() > expiresAt) {

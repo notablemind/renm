@@ -445,11 +445,25 @@ let syncFile = (state, google: Session.google, remote, fileid, etag, file) => {
   }
 };
 
+let authKey = "nm:auth";
+
+let saveAuth = auth => {
+  Dbs.settingsDb->Persistance.put("current", auth)->ignore;
+  auth
+};
+
 let timedSync = (state, file) => {
   Js.log3("Timed synced", file.meta.title, file.meta.sync);
   module O = Lets.OptConsume;
   let%O google = state.auth.Session.google;
   let%O () = google.connected ? Some(()) : None;
+  let%Lets.Async.Consume google = if (GoogleSync.isExpired(google)) {
+    Js.log("Refreshing google auth");
+    let%Lets.Async.Wrap google = GoogleSync.refreshProfile(google);
+    state.auth = {...state.auth, google: Some(google)};
+    saveAuth(state.auth)->ignore;
+    google
+  } else { Lets.Async.resolve(google) };
   switch (file.meta.sync) {
     | None => createFile(state, google, ~rootFolder=google.folderId, file)
     | Some({remote: Google(username, fileid) as remote, lastSyncTime, etag}) =>
@@ -472,8 +486,8 @@ let getCachedFile = (state, sessionId, docId) => {
     state.fileTimers->Hashtbl.replace(file.meta.id, Js.Global.setInterval(() => {
       timedSync(state, file);
     },
-    // 5 * 60 * 1000
-    30 * 1000
+    5 * 60 * 1000
+    // 30 * 1000
     ))
     timedSync(state, file);
   };
@@ -485,13 +499,6 @@ let getCachedFile = (state, sessionId, docId) => {
   sendMetaDataChange(~excludeSession=sessionId, state.ports, file.meta);
   let%Lets.Async () = MetaDataPersist.save(file.meta);
   Js.Promise.resolve(file)
-};
-
-let authKey = "nm:auth";
-
-let saveAuth = auth => {
-  Dbs.settingsDb->Persistance.put("current", auth)->ignore;
-  auth
 };
 
 let rec handleMessage = (state, port, file, sessionId, evt) =>
