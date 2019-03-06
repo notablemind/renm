@@ -140,7 +140,14 @@ module Styles = {
     borderBottom(px(3), `dotted, Colors.Semantic.emptyDot),
     important(left(px(5))),
     top(px(2)),
-  ])
+  ]);
+
+  Css.global(".ql-editor code", [
+    backgroundColor(rgba(255,255,255,0.2)),
+    backgroundColor(Colors.Semantic.selected),
+    padding2(~v=px(0), ~h=px(4)),
+    borderRadius(px(4))
+  ]);
 };
 
 let renderHandle = (~onMouseDown, ~hasChildren, ~collapsed, ~toggleCollapsed) =>

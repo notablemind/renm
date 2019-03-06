@@ -46,4 +46,5 @@ module Dark = {
   let emptyDot = gray50;
 };
 
-module Semantic = Dark;
+// module Semantic = Dark;
+module Semantic = Light;
