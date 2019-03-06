@@ -42,6 +42,67 @@ function disable(options) {
   }
 }
 
+
+function escapeRegExp(str) {
+  return str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&");
+}
+
+const emojis = {
+  ':?:': '❓',
+  ':!:': '❗️',
+  ':+1:': '👍',
+  ':-1:': '👎',
+  ':f:': '🔥',
+  ':100:': '💯',
+  ':t:': '💭',
+  ':":': '❝',
+  ':i:': '💡',
+  ':?!:': '🗣',
+  ':)': '🙂',
+  ':P': '😛',
+  ':D': '😀',
+  ':/': '😕',
+  ':(': '🙁',
+  ':|': '😐',
+  ':umok:': '🙃',
+  ';)': '😉',
+  '>.<': '😣',
+  ':p:': '🎉',
+}
+
+const emojiRx = new RegExp(Object.keys(emojis).map(k => emojis[k]).join('|'), 'g')
+
+// TODO use these
+const emoji_names = {
+  party: '🎉',
+  tada: '🎉',
+}
+
+const emojiRegexes = Object.keys(emojis)
+  .map(k => [new RegExp('(\\s|^)' + escapeRegExp(k) + '\\s', 'g'), emojis[k]]);
+
+const replaceReduce = (text, [rx, emo]) => text.replace(rx, t => (t[0] === ' ' ? t[0] : '') + emo + t.slice(-1))
+
+const replaceEmojis = text => {
+  return emojiRegexes.reduce(replaceReduce, text)
+}
+
+const enlargeEmojis = text => {
+  return text.replace(emojiRx, x => '<span class="inline-emoji">' + x + '</span>')
+}
+
+// enlargeEmojis(marked(
+//   replaceEmojis(this.props.content + '')
+// ))
+
+
+
+
+
+
+
+
+
 const withAttribute = (name, value) => delta => delta.insert === '\n' ? delta : ({...delta, attributes: {...delta.attributes, [name]: value}});
 const withBlockAttribute = (name, value) => delta => delta.insert !== '\n' ? delta : ({...delta, attributes: {...delta.attributes, [name]: value}});
 
@@ -117,7 +178,7 @@ const convertContents = node => {
     case 'ordered_list':
     case 'list':
     case 'todo':
-      return convertMarkdown(node.content)
+      return convertMarkdown(replaceEmojis(node.content + ''))
     case 'symlink':
       return [{insert: {symlink: node.content}}, {insert: '\n'}]
     case 'table':
