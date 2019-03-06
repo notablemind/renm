@@ -8,14 +8,25 @@ module.exports = (getContents, jumpTo) => {
       const node = super.create(value)
       node.setAttribute('contenteditable', false)
       let contents = 'Unable to render symlink';
+      let sourceText = ''
       if (typeof value === 'string') {
-        const delta = getContents(value)
-        if (delta) {
+        const data = getContents(value)
+        if (data) {
+          const {delta, source} = data;
           // console.log('converting', delta)
           if (delta.ops.length == 1 && delta.ops[0].attributes == null && typeof delta.ops[0].insert === 'string') {
             contents = `<p>${delta.ops[0].insert}</p>`
           } else {
             contents = new QuillDeltaToHtmlConverter(delta.ops, {}).convert()
+          }
+          if (source) {
+            sourceText = source.what
+            if (source.who) {
+              sourceText += ' by ' + source.who
+            }
+            if (source.when) {
+              sourceText += ' on ' + source.when
+            }
           }
         } else {
           console.log('no symlink for', value)
@@ -36,7 +47,10 @@ module.exports = (getContents, jumpTo) => {
       inner.style.padding = '4px 8px'
       inner.style.borderRadius = '4px'
       inner.style.display = 'inline-flex'
-      inner.innerHTML = contents
+      const contentNode = document.createElement('div')
+      contentNode.innerHTML = contents
+      contentNode.style.flexShrink = 1
+
 
       const clicker = document.createElement('button')
       clicker.innerHTML = '🔗'
@@ -47,7 +61,27 @@ module.exports = (getContents, jumpTo) => {
         cursor: 'pointer',
         flexShrink: 0,
       })
-      inner.insertBefore(clicker, inner.firstChild)
+
+      if (sourceText) {
+        const source = document.createElement('span')
+        source.textContent = sourceText
+        Object.assign(source.style, {
+          textAlign: 'right',
+          fontSize: '80%',
+        });
+        const top = document.createElement('div')
+        top.style.display = 'flex'
+        top.style.alignItems = 'flex-start'
+        top.appendChild(clicker)
+        top.appendChild(contentNode)
+        inner.style.flexDirection = 'column'
+        inner.appendChild(top)
+        inner.appendChild(source)
+      } else {
+        inner.style.alignItems = 'flex-start'
+        inner.appendChild(clicker)
+        inner.appendChild(contentNode)
+      }
       // inner.onmousedown = (evt) => {
       //   evt.preventDefault();
       //   evt.stopPropagation();

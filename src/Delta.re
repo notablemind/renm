@@ -28,6 +28,16 @@ let getText: delta => string = [%bs.raw
 }|}
 ];
 
+let getSource: delta => option(Js.t('a)) = [%bs.raw
+  {|function(delta) {
+    for (let op of delta.ops) {
+      if (op.insert && typeof op.insert.source === 'object') {
+        return op.insert.source
+      }
+    }
+  }|}
+];
+
 let isDocument: delta => bool = [%bs.raw {|
 function(delta) {
   return delta.ops.every(op => !!op.insert)

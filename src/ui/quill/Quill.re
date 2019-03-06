@@ -17,7 +17,7 @@ external makeQuill: ('element, 'config) => quill = "default";
 /* MY CUSTOM MODULES */
 
 [@bs.module]
-external symlinkModule: (string => option(Delta.delta), string => unit) => quillModule = "./Symlink.js";
+external symlinkModule: (string => option({. "delta": Delta.delta, "source": option('a)}), string => unit) => quillModule = "./Symlink.js";
 
 [@bs.module]
 external linkModule: (string => option(string)) => quillModule = "./Link.js";
@@ -361,9 +361,31 @@ let setupQuill =
 
   let registry = customRegistry([|
     linkModule(id => props^.store->ClientStore.getFileName(id)),
-    symlinkModule(id => switch (props^.store->ClientStore.getNode(id)) {
-      | None => None
-      | Some(node) => Some(node.contents)
+    symlinkModule(id => {
+      switch (props^.store->ClientStore.getNode(id)) {
+        | None => None
+        | Some(node) =>
+          let source = {
+            let data = props^.store.ClientStore.data();
+            let rec loop = id => {
+              if (id == data.root) {
+                None
+              } else {
+                switch (data.nodes->Map.String.get(id)) {
+                  | None => None
+                  | Some(node) => {
+                    switch (Delta.getSource(node.contents)) {
+                      | None => loop(node.parent)
+                      | Some(source) => Some(source)
+                    }
+                  }
+                }
+              }
+            }
+            loop(node.id)
+          };
+          Some({"delta": node.contents, "source": source})
+      }
     }, id => ActionCreators.jumpTo(props^.store, id)),
     sourceModule,
   |]);
