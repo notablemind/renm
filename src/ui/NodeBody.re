@@ -179,6 +179,7 @@ let make =
                 ~display="flex",
                 ~flexDirection="row",
                 ~alignItems="flex-start",
+                ~position="relative",
                 ~margin="1px",
                 ~outline=
                   editPos != None ?
@@ -263,6 +264,8 @@ let make =
                     padding2(~v=px(2), ~h=px(4)),
                     borderRadius(px(4)),
                     fontSize(px(10)),
+                    marginLeft(px(4)),
+                    color(black),
                     fontFamily("sans-serif"),
                     `declaration("backgroundColor", tag.color),
                   ]))>
