@@ -160,7 +160,7 @@ const oldNodeToNewNode = (node, getTag) => {
       {insert: node.source.what, attributes: {link: node.source.url}},
       {insert: node.source.when + '\n'}
     ] : [])},
-    "tags": node.tags.map(getTag),
+    "tags": node.tags ? node.tags.map(getTag) : [],
     "prefix": node.type === 'todo' ? [
       "Todo"
     ] : null,
@@ -172,7 +172,7 @@ const _newId = () => Math.random().toString(36).slice(2);
 const newId = () => _newId() + _newId() + _newId();
 const output = {
   root: input.root.id,
-  nodes: {}
+  nodes: {},
   tags: {},
 }
 const tagsByTitle = {}
@@ -181,7 +181,10 @@ const mapTag = name => {
     const id = newId();
     tagsByTitle[name] = id
     output.tags[id] = {
-      title: name,
+      name,
+      created: Date.now(),
+      modified: Date.now(),
+      color: '#afa',
       id,
     }
   }

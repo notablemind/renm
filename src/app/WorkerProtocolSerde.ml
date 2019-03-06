@@ -9,7 +9,7 @@ module Version1 =
       | RemoveNode of _Data__Node__id 
       | AddNode of int * _NodeType__t 
       | ImportNodes of _Data__Node__id * int * _Data__Node__id * _NodeType__t
-      _Belt_MapString__t 
+      _Belt_MapString__t * _Data__Tag__t _Belt_MapString__t 
       | MoveNode of _Data__Node__id * int * _Data__Node__id 
       | ChangeContents of _Data__Node__id * _Delta__delta 
       | SetPrefix of _Data__Node__id * _NodeType__prefix option 
@@ -94,7 +94,6 @@ module Version1 =
       | Attribution 
     and _NodeType__t =
       (_Delta__delta, _NodeType__prefix option) _Data__Node__t
-    and _Quill__range = _View__Range__range
     and _Session__auth = Session.auth =
       {
       userId: string ;
@@ -164,7 +163,7 @@ module Version1 =
       | CreateFile of string * string 
       | UndoRequest 
       | RedoRequest 
-      | SelectionChanged of _Data__Node__id * _Quill__range 
+      | SelectionChanged of _Data__Node__id * _View__Range__range 
     and _WorkerProtocol__serverMessage = WorkerProtocol.serverMessage =
       | UserChange of _Session__auth 
       | LoadFile of _MetaData__t * _WorkerProtocol__data * _View__cursor list
@@ -244,37 +243,46 @@ module Version1 =
                       Belt.Result.Ok (AddNode (arg0, arg1) : _Change__change)
                   | Error error -> Error ("constructor argument 0" :: error))
              | Error error -> Error ("constructor argument 1" :: error))
-        | JSONArray [|tag;arg0;arg1;arg2;arg3|] when
+        | JSONArray [|tag;arg0;arg1;arg2;arg3;arg4|] when
             ((Js.Json.JSONString ("ImportNodes"))[@explicit_arity ]) =
               (Js.Json.classify tag)
             ->
-            (match (deserialize_Belt_MapString____t deserialize_NodeType____t)
-                     arg3
+            (match (deserialize_Belt_MapString____t deserialize_Data__Tag__t)
+                     arg4
              with
-             | Belt.Result.Ok arg3 ->
-                 (match deserialize_Data__Node__id arg2 with
-                  | Belt.Result.Ok arg2 ->
-                      (match (fun number ->
-                                match Js.Json.classify number with
-                                | ((JSONNumber (number))[@explicit_arity ])
-                                    ->
-                                    ((Belt.Result.Ok ((int_of_float number)))
-                                    [@explicit_arity ])
-                                | _ -> ((Error (["Expected a float"]))
-                                    [@explicit_arity ])) arg1
-                       with
-                       | Belt.Result.Ok arg1 ->
-                           (match deserialize_Data__Node__id arg0 with
-                            | Belt.Result.Ok arg0 ->
-                                Belt.Result.Ok
-                                  (ImportNodes (arg0, arg1, arg2, arg3) : 
-                                  _Change__change)
+             | Belt.Result.Ok arg4 ->
+                 (match (deserialize_Belt_MapString____t
+                           deserialize_NodeType____t) arg3
+                  with
+                  | Belt.Result.Ok arg3 ->
+                      (match deserialize_Data__Node__id arg2 with
+                       | Belt.Result.Ok arg2 ->
+                           (match (fun number ->
+                                     match Js.Json.classify number with
+                                     | ((JSONNumber
+                                         (number))[@explicit_arity ]) ->
+                                         ((Belt.Result.Ok
+                                             ((int_of_float number)))
+                                         [@explicit_arity ])
+                                     | _ -> ((Error (["Expected a float"]))
+                                         [@explicit_arity ])) arg1
+                            with
+                            | Belt.Result.Ok arg1 ->
+                                (match deserialize_Data__Node__id arg0 with
+                                 | Belt.Result.Ok arg0 ->
+                                     Belt.Result.Ok
+                                       (ImportNodes
+                                          (arg0, arg1, arg2, arg3, arg4) : 
+                                       _Change__change)
+                                 | Error error ->
+                                     Error ("constructor argument 0" ::
+                                       error))
                             | Error error ->
-                                Error ("constructor argument 0" :: error))
+                                Error ("constructor argument 1" :: error))
                        | Error error ->
-                           Error ("constructor argument 1" :: error))
-                  | Error error -> Error ("constructor argument 2" :: error))
-             | Error error -> Error ("constructor argument 3" :: error))
+                           Error ("constructor argument 2" :: error))
+                  | Error error -> Error ("constructor argument 3" :: error))
+             | Error error -> Error ("constructor argument 4" :: error))
         | JSONArray [|tag;arg0;arg1;arg2|] when
             ((Js.Json.JSONString ("MoveNode"))[@explicit_arity ]) =
               (Js.Json.classify tag)
@@ -1568,9 +1576,6 @@ module Version1 =
                           ((Ok (((Some (value))[@explicit_arity ])))
                           [@explicit_arity ])))
               deserialize_NodeType____prefix)) value
-    and (deserialize_Quill____range :
-      Js.Json.t -> (_Quill__range, string list) Belt.Result.t) =
-      fun value -> deserialize_View__Range__range value
     and (deserialize_Session____auth :
       Js.Json.t -> (_Session__auth, string list) Belt.Result.t) =
       fun record ->
@@ -2528,7 +2533,7 @@ module Version1 =
             ((Js.Json.JSONString ("SelectionChanged"))[@explicit_arity ]) =
               (Js.Json.classify tag)
             ->
-            (match deserialize_Quill____range arg1 with
+            (match deserialize_View__Range__range arg1 with
              | Belt.Result.Ok arg1 ->
                  (match deserialize_Data__Node__id arg0 with
                   | Belt.Result.Ok arg0 ->
@@ -2914,13 +2919,15 @@ module Version1 =
                                                 Js.Json.number
                                                   (float_of_int int))) arg0);(
                 serialize_NodeType____t arg1)|]
-        | ImportNodes (arg0, arg1, arg2, arg3) ->
+        | ImportNodes (arg0, arg1, arg2, arg3, arg4) ->
             Js.Json.array
               [|(Js.Json.string "ImportNodes");(serialize_Data__Node__id arg0);(
                 ((fun int -> Js.Json.number (float_of_int int))) arg1);(
                 serialize_Data__Node__id arg2);((serialize_Belt_MapString____t
                                                    serialize_NodeType____t)
-                                                  arg3)|]
+                                                  arg3);((serialize_Belt_MapString____t
+                                                            serialize_Data__Tag__t)
+                                                           arg4)|]
         | MoveNode (arg0, arg1, arg2) ->
             Js.Json.array
               [|(Js.Json.string "MoveNode");(serialize_Data__Node__id arg0);(
@@ -3172,8 +3179,6 @@ module Version1 =
                function
                | ((Some (inner))[@explicit_arity ]) -> transformer inner
                | None -> Js.Json.null) serialize_NodeType____prefix)) value
-    and (serialize_Quill____range : _Quill__range -> Js.Json.t) =
-      fun value -> serialize_View__Range__range value
     and (serialize_Session____auth : _Session__auth -> Js.Json.t) =
       fun record ->
         Js.Json.object_
@@ -3387,7 +3392,7 @@ module Version1 =
         | SelectionChanged (arg0, arg1) ->
             Js.Json.array
               [|(Js.Json.string "SelectionChanged");(serialize_Data__Node__id
-                                                       arg0);(serialize_Quill____range
+                                                       arg0);(serialize_View__Range__range
                                                                 arg1)|]
     and (serialize_WorkerProtocol____serverMessage :
       _WorkerProtocol__serverMessage -> Js.Json.t) =

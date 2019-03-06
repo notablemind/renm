@@ -57,7 +57,7 @@ type change =
   | UnTrash(Node.id)
   | RemoveNode(Node.id)
   | AddNode(int, NodeType.t)
-  | ImportNodes(Node.id, int, Node.id, Map.String.t(NodeType.t))
+  | ImportNodes(Node.id, int, Node.id, Map.String.t(NodeType.t), Map.String.t(Tag.t))
   /* nextPid, idx, id */
   | MoveNode(Node.id, int, Node.id)
   | ChangeContents(Node.id, Delta.delta)
@@ -92,10 +92,10 @@ let events = (data: Map.String.t(NodeType.t), change) =>
     let%Try node = data->Map.String.get(id)->Opt.orError("No node " ++ id);
     Ok([Event.Node(id), Event.Node(node.parent)]);
   | AddNode(_, node) => Ok([Event.Node(node.id), Event.Node(node.parent)])
-  | ImportNodes(pid, idx, rid, nodes) => Ok([
+  | ImportNodes(pid, idx, rid, nodes, tags) => Ok(tags->Map.String.toList->List.map(((k, _)) => Event.Tag(k))->List.concat([
     Event.Node(pid),
     ...nodes->Map.String.toList->List.map(((k, _)) => Event.Node(k))
-  ])
+  ]))
   | MoveNode(nextPid, _, id) =>
     let%Try node = data->Map.String.get(id)->Opt.orError("No node " ++ id);
     Ok([Event.Node(id), Event.Node(node.parent), Event.Node(nextPid)]);
@@ -312,7 +312,7 @@ let apply = (data: data, change) =>
       ChangeContents(id, undoDelta), /* TODO undo */
       Contents(id, delta),
     );
-  | ImportNodes(pid, idx, rid, nodes) =>
+  | ImportNodes(pid, idx, rid, nodes, tags) =>
     let%Lets.TryWrap parent =
       data.nodes
       ->Map.String.get(pid)
@@ -325,8 +325,9 @@ let apply = (data: data, change) =>
                 children: Utils.insertIntoList(parent.children, idx, rid),
               },
             );
+    let tags = data.tags->Map.String.mergeMany(tags->Map.String.toArray);
     (
-      {...data, nodes},
+      {...data, nodes, tags},
       RemoveNode(rid),
       AddChild(pid, idx)
     )

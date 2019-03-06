@@ -14,7 +14,7 @@ type action =
   | ChangeContents(Node.id, Delta.delta)
   | Move(list(Node.id), Node.id, int)
   | Create(int, NodeType.t)
-  | ImportNodes(Node.id, int, Node.id, Map.String.t(NodeType.t))
+  | ImportNodes(Node.id, int, Node.id, Map.String.t(NodeType.t), Map.String.t(Tag.t))
   | SplitAt(int)
   | JoinUp(Node.id, Delta.delta, Node.id);
 
@@ -87,8 +87,8 @@ let processAction =
       [View.SetActive(node.id, Default)],
     ))
 
-  | ImportNodes(pid, idx, root, nodes) => Ok((
-    [ImportNodes(pid, idx, root, nodes)],
+  | ImportNodes(pid, idx, root, nodes, tags) => Ok((
+    [ImportNodes(pid, idx, root, nodes, tags)],
     []
   ))
 

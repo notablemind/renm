@@ -11,12 +11,21 @@ let jsonImport = (store, data: Js.Json.t) => {
   let%C root = root->Js.Json.decodeString;
   let%C nodes = data->Js.Dict.get("nodes");
   let%C nodes = nodes->Js.Json.decodeObject;
+  let%C tags = data->Js.Dict.get("tags");
+  let%C tags = tags->Js.Json.decodeObject;
   // Js.log("Decoding nodes");
   let%Lets.TryLog nodes = nodes->Js.Dict.entries->Array.reduce(Result.Ok(Map.String.empty), (map, (key, value)) => {
     let%Lets.Try map = map;
     let%Lets.Try node = WorkerProtocolSerde.deserializeNode(value);
     Ok(map->Map.String.set(key, {...node, contents: Delta.normalizeDelta(node.contents)}))
   });
+
+  let%Lets.TryLog tags= tags->Js.Dict.entries->Array.reduce(Result.Ok(Map.String.empty), (map, (key, value)) => {
+    let%Lets.Try map = map;
+    let%Lets.Try tag = WorkerProtocolSerde.deserializeTag(value);
+    Ok(map->Map.String.set(key, tag))
+  });
+
   // Js.log2("Decoded", nodes);
   let%C insertNode = store.ClientStore.data()->Data.get(store.view().active);
   let (pid, index) =
@@ -27,7 +36,7 @@ let jsonImport = (store, data: Js.Json.t) => {
     );
   let (root, nodes) = Data.rekeyNodes(root, pid, nodes);
   // Js.log3("Rekeyed", root, nodes);
-  store.ClientStore.act([ImportNodes(pid, index, root, nodes)])
+  store.ClientStore.act([ImportNodes(pid, index, root, nodes, tags)])
 };
 
 let shiftSelect = (store, node: Data.Node.t('a, 'b)) => {

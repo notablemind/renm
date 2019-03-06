@@ -317,6 +317,31 @@
                             []
                           ]
                         ]
+                      ],
+                      [
+                        "Reference",
+                        [
+                          "Public",
+                          [
+                            "Belt_MapString",
+                            [],
+                            "t"
+                          ]
+                        ],
+                        [
+                          [
+                            "Reference",
+                            [
+                              "Public",
+                              [
+                                "Data",
+                                ["Tag"],
+                                "t"
+                              ]
+                            ],
+                            []
+                          ]
+                        ]
                       ]
                     ],
                     null
@@ -1846,35 +1871,6 @@
         ],
         [
           [
-            "Quill",
-            [],
-            "range"
-          ],
-          [
-            [],
-            {
-              "name": "range",
-              "variables": [],
-              "body": [
-                "Expr",
-                [
-                  "Reference",
-                  [
-                    "Public",
-                    [
-                      "View",
-                      ["Range"],
-                      "range"
-                    ]
-                  ],
-                  []
-                ]
-              ]
-            }
-          ]
-        ],
-        [
-          [
             "Session",
             [],
             "auth"
@@ -2850,8 +2846,8 @@
                         [
                           "Public",
                           [
-                            "Quill",
-                            [],
+                            "View",
+                            ["Range"],
                             "range"
                           ]
                         ],
