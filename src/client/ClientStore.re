@@ -10,7 +10,7 @@ type t('contents, 'prefix, 'selection) = {
       list(Actions.action)
     ) =>
     unit,
-  actView: View.action => unit,
+  actView: (~viewId: Map.Int.key=?, View.action) => unit,
   undo: unit => unit,
   redo: unit => unit,
 };

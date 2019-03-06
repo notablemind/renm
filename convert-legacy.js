@@ -168,10 +168,9 @@ const oldNodeToNewNode = (node, getTag) => {
     "childrenModified": node.modified,
     "children": node.children.map(node => node.id),
     "numberChildren": node.type === 'ordered_list',
-    "contents": {"ops": convertContents(node).concat(node.source ? [
-      {insert: node.source.what, attributes: {link: node.source.url}},
-      {insert: ' ' + node.source.when + '\n'}
-    ] : [])},
+    "contents": {"ops": (node.source ? [
+      {insert: {source: node.source}},
+    ] : []).concat(convertContents(node))},
     "tags": node.tags ? node.tags.map(getTag) : [],
     "prefix": node.type === 'todo' ? [
       "Todo"

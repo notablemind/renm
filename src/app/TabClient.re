@@ -192,7 +192,7 @@ let makeSession = (~metaData, ~sessionId, ~data, ~cursors, ~user) => {
   session
 };
 
-let actView = (state, viewId, action) => {
+let actView = (state, defaultViewId, ~viewId=defaultViewId, action) => {
   let (session, events) =
     Session.actView_(state.session, viewId, action);
   if (session.sharedViewData != state.session.sharedViewData) {

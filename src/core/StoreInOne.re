@@ -314,8 +314,8 @@ module MonoClient = {
     cursorChange: (_, _) => (),
     act: (~preSelection=?, ~postSelection=?, actions) =>
       actions->List.forEach(act(~preSelection?, ~postSelection?, store)),
-    actView: action => {
-      let (session, events) = Session.actView_(store.session, 0, action);
+    actView: (~viewId=0, action) => {
+      let (session, events) = Session.actView_(store.session, viewId, action);
       store.session = session;
 
       Subscription.trigger(session.subs, events);

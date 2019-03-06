@@ -195,10 +195,20 @@ let createChild = (store, node: Data.Node.t('a, 'b)) => {
   expanded->List.map(id => View.SetCollapsed(id, false))->List.forEach(store.actView);
 }
 
+let getAlternateView = store => {
+  let session = store.ClientStore.session();
+  let current = store.ClientStore.view().id;
+  let views = session.views;
+  let keys = views->Map.Int.keysToArray;
+  let alternateKey = keys->Array.reduce(current, (picked, key) => key != current ? key : picked);
+  views->Map.Int.getExn(alternateKey)
+};
+
 let jumpTo = (store, id) => {
-  store.ClientStore.actView(SetActive(id, Default));
-  let (expanded, _sharedViewData) = View.ensureVisible(store.data(), store.view(), store.session().sharedViewData);
-  expanded->List.map(id => View.SetCollapsed(id, false))->List.forEach(store.actView);
+  let targetView = getAlternateView(store);
+  store.ClientStore.actView(~viewId=targetView.id, SetActive(id, Default));
+  let (expanded, _sharedViewData) = View.ensureVisible(store.data(), targetView, store.session().sharedViewData);
+  expanded->List.map(id => View.SetCollapsed(id, false))->List.forEach(store.actView(~viewId=targetView.id));
 };
 
 let backspace = (store, node, currentValue) => {
