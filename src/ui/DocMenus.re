@@ -277,11 +277,11 @@ let headerButton = Css.(style([
   ]),
   disabled([
     fontWeight(600),
-    backgroundColor(white),
+    backgroundColor(Colors.Semantic.background),
     color(black),
     opacity(1.),
     hover([
-      backgroundColor(white),
+      backgroundColor(Colors.Semantic.background),
     ])
   ])
 ]))

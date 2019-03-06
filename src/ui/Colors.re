@@ -22,7 +22,9 @@ let gray10 = hex("E4E4E6")
 module Light = {
   let background = white;
   let text = black;
+  let offText = gray80;
   let links = darkBlue;
+  let selected = gray10;
 
   let childLine = hex("eee")
   let childDot = hex("ddd")
@@ -34,7 +36,9 @@ module Dark = {
   let background = offBlack;
   let text = offWhite;
   let text = gray10;
+  let offText = gray20;
   let links = gray30;
+  let selected = gray80;
 
   let childLine = gray80;
   let childDot = gray50;

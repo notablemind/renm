@@ -170,7 +170,7 @@ const oldNodeToNewNode = (node, getTag) => {
     "numberChildren": node.type === 'ordered_list',
     "contents": {"ops": convertContents(node).concat(node.source ? [
       {insert: node.source.what, attributes: {link: node.source.url}},
-      {insert: node.source.when + '\n'}
+      {insert: ' ' + node.source.when + '\n'}
     ] : [])},
     "tags": node.tags ? node.tags.map(getTag) : [],
     "prefix": node.type === 'todo' ? [
@@ -198,6 +198,7 @@ const mapTag = name => {
       modified: Date.now(),
       color: '#afa',
       id,
+    "$schemaVersion": 1
     }
   }
   return tagsByTitle[name]

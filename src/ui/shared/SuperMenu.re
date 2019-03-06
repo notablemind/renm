@@ -33,22 +33,24 @@ module Styles = {
   let input = style([
     borderStyle(`none),
     outlineStyle(`none),
+    backgroundColor(`transparent),
+    color(Colors.Semantic.text),
     fontSize(em(1.5)),
     padding(px(10)),
   ]);
   let item = style([
     borderStyle(`none),
-    backgroundColor(white),
+    backgroundColor(Colors.Semantic.background),
     padding2(~v=px(10), ~h=px(10)),
     cursor(`pointer),
     textAlign(`left),
     fontFamily("sans-serif"),
     hover([
-      backgroundColor(Colors.offWhite)
+      backgroundColor(Colors.Semantic.selected)
     ])
   ]);
   let selectedItem = style([
-    backgroundColor(Colors.gray10)
+    backgroundColor(Colors.Semantic.selected)
   ]);
   let itemName = style([
     fontSize(em(1.2)),
@@ -56,7 +58,7 @@ module Styles = {
   ]);
   let description = style([
     fontSize(em(1.)),
-    color(hex("aaa"))
+    color(Colors.Semantic.offText)
   ])
 };
 

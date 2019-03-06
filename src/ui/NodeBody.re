@@ -253,6 +253,7 @@ let make =
               <div className=Css.(style([
                 position(`absolute),
                 bottom(px(-8)),
+                display(`flex),
                 right(px(8)),
                 zIndex(1),
               ]))>
