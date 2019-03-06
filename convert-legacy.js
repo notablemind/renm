@@ -139,18 +139,30 @@ const knownKeys = [
   "children",
   "source",
   "imageSrc",
+  "collapsed",
+  "type",
   "minimized",
   "content",
   "tags",
+  // TODO use
+  "disabled",
+  "display_collapsed",
+  "table",
+  "editor_collapsed",
 ]
 
 const oldNodeToNewNode = (node, getTag) => {
+  Object.keys(node).forEach(k => {
+    if (!knownKeys.includes(k)) {
+      console.log('unknown key', k)
+    }
+  })
   return {
     "id": node.id,
     "parent": node.parent,
     "author": "114634699742006379805",
     "created": node.created || Date.now(),
-    "completed": !!node.done,
+    "completed": !!(node.done || node.disabled),
     "trashed": null,
     "modified": node.modified || Date.now(),
     "childrenModified": node.modified,
