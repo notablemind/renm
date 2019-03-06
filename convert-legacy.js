@@ -103,7 +103,6 @@ const convertContents = node => {
         }
         return lines
       }, [])
-      // return [{insert: "Code-playground omitted\n"}]
     case 'image':
       return [
         {
@@ -131,7 +130,21 @@ const convertContents = node => {
   }
 };
 
-const oldNodeToNewNode = (node) => {
+const knownKeys = [
+  "id",
+  "parent",
+  "created",
+  "done",
+  "modified",
+  "children",
+  "source",
+  "imageSrc",
+  "minimized",
+  "content",
+  "tags",
+]
+
+const oldNodeToNewNode = (node, getTag) => {
   return {
     "id": node.id,
     "parent": node.parent,
@@ -142,9 +155,12 @@ const oldNodeToNewNode = (node) => {
     "modified": node.modified || Date.now(),
     "childrenModified": node.modified,
     "children": node.children.map(node => node.id),
-    "numberChildren": false,
-    "contents": {"ops": convertContents(node)},
-    "tags": [],
+    "numberChildren": node.type === 'ordered_list',
+    "contents": {"ops": convertContents(node).concat(node.source ? [
+      {insert: node.source.what, attributes: {link: node.source.url}},
+      {insert: node.source.when + '\n'}
+    ] : [])},
+    "tags": node.tags.map(getTag),
     "prefix": node.type === 'todo' ? [
       "Todo"
     ] : null,
@@ -152,10 +168,26 @@ const oldNodeToNewNode = (node) => {
   }
 }
 
+const _newId = () => Math.random().toString(36).slice(2);
+const newId = () => _newId() + _newId() + _newId();
 const output = {
   root: input.root.id,
   nodes: {}
+  tags: {},
 }
-Object.values(map).forEach(node => output.nodes[node.id] = oldNodeToNewNode(node))
+const tagsByTitle = {}
+const mapTag = name => {
+  if (!tagsByTitle[name]) {
+    const id = newId();
+    tagsByTitle[name] = id
+    output.tags[id] = {
+      title: name,
+      id,
+    }
+  }
+  return tagsByTitle[name]
+}
+
+Object.values(map).forEach(node => output.nodes[node.id] = oldNodeToNewNode(node, mapTag))
 const fs = require('fs')
 fs.writeFileSync('./structured.dump', JSON.stringify(output, null, 2))

@@ -326,29 +326,7 @@ module Importer = {
             evt->ReactEvent.Clipboard.stopPropagation;
             let text = evt->ReactEvent.Clipboard.clipboardData##getData("text/plain")
             let data = Js.Json.parseExn(text);
-            module C = Lets.OptConsume;
-            let%C data = data->Js.Json.decodeObject;
-            let%C root = data->Js.Dict.get("root");
-            let%C root = root->Js.Json.decodeString;
-            let%C nodes = data->Js.Dict.get("nodes");
-            let%C nodes = nodes->Js.Json.decodeObject;
-            // Js.log("Decoding nodes");
-            let%Lets.TryLog nodes = nodes->Js.Dict.entries->Array.reduce(Result.Ok(Map.String.empty), (map, (key, value)) => {
-              let%Lets.Try map = map;
-              let%Lets.Try node = WorkerProtocolSerde.deserializeNode(value);
-              Ok(map->Map.String.set(key, {...node, contents: Delta.normalizeDelta(node.contents)}))
-            });
-            // Js.log2("Decoded", nodes);
-            let%C insertNode = store.ClientStore.data()->Data.get(store.view().active);
-            let (pid, index) =
-              TreeTraversal.nextChildPosition(
-                store.ClientStore.data(),
-                store.session().sharedViewData.expanded,
-                insertNode,
-              );
-            let (root, nodes) = Data.rekeyNodes(root, pid, nodes);
-            // Js.log3("Rekeyed", root, nodes);
-            store.ClientStore.act([ImportNodes(pid, index, root, nodes)])
+            ActionCreators.jsonImport(store, data);
           }}
         />
       </Dialog>

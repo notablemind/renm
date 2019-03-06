@@ -1,7 +1,7 @@
 const Quill = require('quill/quill').default
 const QuillDeltaToHtmlConverter = require('quill-delta-to-html').QuillDeltaToHtmlConverter
 
-module.exports = (getContents) => {
+module.exports = (getContents, jumpTo) => {
   const Embed = Quill.import('blots/embed');
   class SymlinkBlot extends Embed {
     static create(value) {
@@ -25,17 +25,33 @@ module.exports = (getContents) => {
       } else {
         console.log("What no value or something", value)
       }
-      node.addEventListener('mousedown', evt => {
-        evt.preventDefault()
-        evt.stopPropagation()
-      }, true)
+      // node.addEventListener('mousedown', evt => {
+      //   evt.preventDefault()
+      //   evt.stopPropagation()
+      // }, true)
       const inner = document.createElement('div');
-      inner.style.backgroundColor = '#eee'
-      inner.style.boxShadow = '0 0 5px inset #aaa'
-      inner.style.padding = '8px'
+      // inner.style.backgroundColor = '#eee'
+      inner.style.cursor = 'pointer'
+      inner.style.boxShadow = '0 0 2px inset #aaa'
+      inner.style.padding = '4px 8px'
       inner.style.borderRadius = '4px'
       inner.style.display = 'inline-flex'
       inner.innerHTML = contents
+
+      const clicker = document.createElement('button')
+      clicker.innerHTML = '🔗'
+      clicker.onclick = () => jumpTo(value)
+      Object.assign(clicker.style, {
+        border: 'none',
+        backgroundColor: 'none',
+        cursor: 'pointer',
+        flexShrink: 0,
+      })
+      inner.insertBefore(clicker, inner.firstChild)
+      // inner.onmousedown = (evt) => {
+      //   evt.preventDefault();
+      //   evt.stopPropagation();
+      // }
       node.appendChild(inner)
       return node
     }

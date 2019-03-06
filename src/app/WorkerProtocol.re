@@ -15,7 +15,7 @@ type message =
   | CreateFile(string, string)
   | UndoRequest
   | RedoRequest
-  | SelectionChanged(Data.Node.id, Quill.range);
+  | SelectionChanged(Data.Node.id, View.Range.range);
 
 type serverMessage =
   | UserChange(Session.auth)

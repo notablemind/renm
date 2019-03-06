@@ -101,12 +101,34 @@ let rebase = (view, sharedViewData, root) => {
 };
 
 
+let ensureVisible = (data, view, sharedViewData) => {
+  let rec loop = (id, changed, expanded) =>
+    if (id == view.root || id == data.Data.root) {
+      (changed, expanded);
+    } else {
+      {
+        let%Lets.OptWrap node = data.nodes->Map.String.get(id);
+        let changed = expanded->Set.String.has(node.parent) ? changed : [node.parent, ...changed];
+        let expanded = expanded->Set.String.add(node.parent);
+        if (node.id == node.parent) {
+          (changed, expanded);
+        } else {
+          loop(node.parent, changed, expanded);
+        };
+      }
+      ->Lets.OptDefault.or_((changed, expanded));
+    };
+  let (changed, expanded) = loop(view.active, [], sharedViewData.expanded);
+  (changed, {expanded: expanded});
+};
+
 
 let processViewAction = (view, sharedViewData, action) =>
   switch (action) {
   /*** TODO clear selection if id is same */
   | SetActive(id, editPos) =>
     if (id != view.active || (view.editPos != editPos && editPos != Default)) {
+      Js.log2("setting active", 2);
       /* Find path to root. If it's outside of the current root, then rebase to it.
          otherwise, ensure all parents are uncollapsed. */
       (
@@ -181,27 +203,6 @@ let processViewAction = (view, sharedViewData, action) =>
 
   | HideCompleted(_) => (view, sharedViewData, [])
   };
-
-let ensureVisible = (data, view, sharedViewData) => {
-  let rec loop = (id, changed, expanded) =>
-    if (id == view.root || id == data.Data.root) {
-      (changed, expanded);
-    } else {
-      {
-        let%Lets.OptWrap node = data.nodes->Map.String.get(id);
-        let changed = expanded->Set.String.has(node.parent) ? changed : [node.parent, ...changed];
-        let expanded = expanded->Set.String.add(node.parent);
-        if (node.id == node.parent) {
-          (changed, expanded);
-        } else {
-          loop(node.parent, changed, expanded);
-        };
-      }
-      ->Lets.OptDefault.or_((changed, expanded));
-    };
-  let (changed, expanded) = loop(view.active, [], sharedViewData.expanded);
-  (changed, {expanded: expanded});
-};
 
 let selectionEvents = ((id, set, (pos, length))) => [
   SetActive(id, Exactly(pos, length)),

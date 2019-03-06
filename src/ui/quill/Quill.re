@@ -14,7 +14,7 @@ external makeQuill: ('element, 'config) => quill = "default";
 [@bs.send] external registerQuill: (quill, 'a) => unit = "register";
 
 [@bs.module]
-external symlinkModule: (string => option(Delta.delta)) => quillModule = "./Symlink.js";
+external symlinkModule: (string => option(Delta.delta), string => unit) => quillModule = "./Symlink.js";
 
 [@bs.module]
 external linkModule: (string => option(string)) => quillModule = "./Link.js";
@@ -353,7 +353,7 @@ let setupQuill =
     symlinkModule(id => switch (props^.store->ClientStore.getNode(id)) {
       | None => None
       | Some(node) => Some(node.contents)
-    })
+    }, id => ActionCreators.jumpTo(props^.store, id))
   |]);
   let quill =
     makeQuill(
