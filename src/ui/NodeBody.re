@@ -105,7 +105,7 @@ module Styles = {
     ]);
   let circle =
     style([
-      backgroundColor(hex("ddd")),
+      backgroundColor(Colors.Semantic.childDot),
       borderRadius(px(2)),
       width(px(7)),
       marginTop(px(2)),
@@ -118,7 +118,7 @@ module Styles = {
       borderRadius(px(4)),
       borderLeft(px(5), `solid, `transparent),
       borderRight(px(5), `solid, `transparent),
-      borderTop(px(8), `solid, hex("aaa")),
+      borderTop(px(8), `solid, Colors.Semantic.childTriangle),
       position(`absolute),
       left(px(4)),
       top(px(6)),
@@ -133,8 +133,14 @@ module Styles = {
       borderRadius(px(4)),
       borderTop(px(5), `solid, `transparent),
       borderBottom(px(5), `solid, `transparent),
-      borderLeft(px(8), `solid, hex("aaa")),
+      borderLeft(px(8), `solid, Colors.Semantic.childTriangle),
     ]);
+
+  Css.global(".ql-editor.ql-blank::before", [
+    borderBottom(px(3), `dotted, Colors.Semantic.emptyDot),
+    important(left(px(5))),
+    top(px(2)),
+  ])
 };
 
 let renderHandle = (~onMouseDown, ~hasChildren, ~collapsed, ~toggleCollapsed) =>
@@ -270,14 +276,11 @@ let make =
       {
         !collapsed ?
           <div
-            style={
-              ReactDOMRe.Style.make(
-                ~paddingLeft="10px",
-                ~borderLeft="3px solid #eee",
-                ~marginLeft="10px",
-                (),
-              )
-            }>
+            className=Css.(style([
+                paddingLeft(px(10)),
+                borderLeft(px(3), `solid, Colors.Semantic.childLine),
+                marginLeft(px(10)),
+            ]))>
             {node.children->List.map(renderChild)->List.toArray->ReasonReact.array}
           </div> :
           ReasonReact.null

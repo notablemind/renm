@@ -43,7 +43,7 @@ module.exports = (getContents, jumpTo) => {
       clicker.onclick = () => jumpTo(value)
       Object.assign(clicker.style, {
         border: 'none',
-        backgroundColor: 'none',
+        backgroundColor: 'transparent',
         cursor: 'pointer',
         flexShrink: 0,
       })

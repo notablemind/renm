@@ -3,7 +3,13 @@ module Styles = {
   open Css;
 
   let wrapper = (style([
-    color(Colors.black),
+    color(Colors.Semantic.text),
+    backgroundColor(Colors.Semantic.background),
+
+    selector(" a", [
+      color(Colors.Semantic.links),
+    ]),
+
     position(absolute),
     top(px(0)),
     left(px(0)),
@@ -120,7 +126,7 @@ let make = (~setupWorker, _) => {
 
   render: ({state, send}) =>
     switch (state.store) {
-    | None => <div> {ReasonReact.string("Connecting...")} </div>
+    | None => <div className=Styles.wrapper> {ReasonReact.string("Connecting...")} </div>
     | Some((getStore, sendMessage)) =>
       let singleStore = state.stores->List.length == 1;
       let store0 = state.stores->List.getExn(0);
