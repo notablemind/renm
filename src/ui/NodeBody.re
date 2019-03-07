@@ -148,6 +148,12 @@ module Styles = {
     padding2(~v=px(0), ~h=px(4)),
     borderRadius(px(4))
   ]);
+
+  Css.global(".ql-editor .ql-source", [
+    padding2(~v=px(2), ~h=px(4)),
+    borderRadius(px(4)),
+    backgroundColor(hex("cef")),
+  ])
 };
 
 let renderHandle = (~onMouseDown, ~hasChildren, ~collapsed, ~toggleCollapsed) =>

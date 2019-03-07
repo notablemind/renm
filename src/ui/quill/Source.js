@@ -8,7 +8,10 @@ class SourceBlot extends Embed {
     if (value && typeof value === 'object' && value.what) {
       const inner = document.createElement('span')
       Object.assign(inner.style, {
-        outline: '1px solid #aaa',
+        // outline: '1px solid #aaa',
+        // padding: '2px 4px',
+        // borderRadius: '4px',
+        // backgroundColor: '#cef',
       })
       const link = document.createElement('a')
       link.href = value.url
