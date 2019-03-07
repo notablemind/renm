@@ -66,6 +66,7 @@ register({
 [@bs.send] external getContents: quill => Delta.delta = "";
 [@bs.send] external updateContents: (quill, Delta.delta, string) => unit = "";
 [@bs.send] external getContentsAt: (quill, Js.nullable(View.Range.range)) => Delta.delta = "getContents";
+[@bs.send] external getTextAt: (quill, Js.nullable(View.Range.range)) => string = "getText";
 [@bs.send] external setContents: (quill, Delta.delta, string) => unit = "";
 [@bs.send] external hasFocus: quill => bool = "";
 [@bs.send] external focus: quill => unit = "";
@@ -175,7 +176,7 @@ module EditBar = {
     marginTop(px(3)),
     backgroundColor(Colors.Semantic.background),
     zIndex(1),
-    opacity(0.3),
+    opacity(0.1),
     transition(~duration=100, ~timingFunction=`ease, "opacity"),
     hover([
       opacity(1.0),
@@ -233,7 +234,7 @@ module EditBar = {
           | Some(s) => s
         };
         switch (quill->getContentsAt(quill->getSelection)->Delta.getSource) {
-          | None => {url: "", what: "", who: "", when_: ""}
+          | None => {url: "", what: quill->getTextAt(quill->getSelection), who: "", when_: ""}
           | Some(source) => {url: source##url->orEmpty, what: source##what->orEmpty, who: source##who->orEmpty, when_: source##_when->orEmpty}
         }
       },
@@ -741,9 +742,9 @@ let make = (~props: propsType, _children) => {
     };
   },
   render: self =>
-    <div className=Css.(style([
+    <div className=("quill-outer " ++ Css.(style([
 
-    ]))>
+    ])))>
       <div
         ref={
           node =>

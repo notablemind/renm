@@ -27,6 +27,19 @@ class SourceBlot extends Embed {
       }
       node.appendChild(inner)
       node.setAttribute('data-source', JSON.stringify(value))
+      node.addEventListener('click', evt => {
+        if (window.getSelection().containsNode(node)) {
+          return
+        } else {
+          evt.stopPropagation()
+          evt.preventDefault()
+          const range = document.createRange();
+          range.selectNode(node)
+          const selection = window.getSelection()
+          selection.empty();
+          selection.addRange(range);
+        }
+      }, true)
     }
     return node
   }
