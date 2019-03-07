@@ -22,6 +22,7 @@ module Styles = {
   let docs = style([
     flex(1),
     flexDirection(`row),
+    zIndex(0),
     display(`flex),
   ]);
 

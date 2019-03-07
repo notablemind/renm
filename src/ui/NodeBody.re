@@ -260,7 +260,7 @@ let make =
             } else {
               <div className=Css.(style([
                 position(`absolute),
-                bottom(px(-8)),
+                bottom(px(-2)),
                 display(`flex),
                 right(px(8)),
                 zIndex(1),
@@ -268,7 +268,7 @@ let make =
                 {node.tags->Set.String.toArray->Array.keepMap(id => {
                   let%Lets.OptWrap tag = store.data().tags->Map.String.get(id);
                   <div key={id} className=Css.(style([
-                    padding2(~v=px(2), ~h=px(4)),
+                    padding2(~v=px(0), ~h=px(4)),
                     borderRadius(px(4)),
                     fontSize(px(10)),
                     marginLeft(px(4)),

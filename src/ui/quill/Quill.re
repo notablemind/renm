@@ -160,6 +160,89 @@ type propsType = NodeTypes.props(
   );
 
 
+module EditBar = {
+  let container = Css.(style([
+    position(`absolute),
+    top(`percent(100.)),
+    left(px(0)),
+    marginTop(px(3)),
+    backgroundColor(Colors.Semantic.background),
+    zIndex(1),
+  ]));
+  [@bs.send] external format: (quill, string, 'a, 'b) => unit = "";
+  [@bs.send] external getFormat: quill => Js.t('a) = "";
+
+  let getValue = evt => evt->ReactEvent.Form.target##value ;
+
+  module LinkEditor = {
+    let component = ReasonReact.reducerComponent("LinkEditor");
+    let make = (~quill: quill, ~onClose, _) => {
+      ...component,
+      initialState: () => "",
+      reducer: (action, state) => ReasonReact.Update(action),
+      render: ({state: href, send}) => {
+        <div className=container>
+          <input value=href onChange={evt => {
+            send(evt->getValue)
+          }} />
+          <button onClick={evt => {
+            quill->format("link", href, "user")
+          }}>
+            {ReasonReact.string("Set")}
+          </button>
+          <button onClick={evt => {
+            quill->format("link", Js.null, "user")
+          }}>
+            {ReasonReact.string("Remove")}
+          </button>
+          <button onClick={evt => {
+            onClose()
+          }}>
+            {ReasonReact.string("Back")}
+          </button>
+        </div>
+      }
+    }
+  };
+
+
+  type action = | Link | Source;
+  let buttons = [|
+    ("B", (quill, send) => {
+      quill->format("bold", !quill->getFormat##bold, "user");
+    }),
+    ("I", (quill, send) => {
+      quill->format("italic", !quill->getFormat##italic, "user");
+    }),
+    ("Link", (quill, send) => {
+      send(Some(Link))
+    }),
+  |];
+  let component = ReasonReact.reducerComponent("EditBar");
+  let make = (~quill, _children) => {
+    ...component,
+    initialState: () => None,
+    reducer: (action, state) => ReasonReact.Update(action),
+    render: self => {
+      Js.log(quill);
+      switch (self.state) {
+        | None =>
+      <div className=container>
+        {buttons->Array.map(((title, action)) => {
+          <button onClick={evt => action(quill, self.send)}>
+            {ReasonReact.string(title)}
+          </button>
+        })->ReasonReact.array}
+      </div>
+      | Some(Link) =>
+        <LinkEditor onClose={() => self.send(None)}
+        quill />
+      | Some(Source) => failwith("A")
+      }
+    }
+  }
+};
+
 
 let quillConfig = (props: ref(propsType), registry) => {
   "theme": false,
@@ -573,16 +656,24 @@ let make = (~props: propsType, _children) => {
     };
   },
   render: self =>
-    <div
-      ref={
-        node =>
-          switch (Js.toOption(node), self.state.quill^) {
-          | (None, _)
-          | (_, Some(_)) => ()
-          | (Some(el), None) =>
-            let quill = setupQuill(el, self.state.props, props.registerFocus);
-            self.state.quill := Some(quill)
-          }
-      }
-    />,
+    <div className=Css.(style([
+
+    ]))>
+      <div
+        ref={
+          node =>
+            switch (Js.toOption(node), self.state.quill^) {
+            | (None, _)
+            | (_, Some(_)) => ()
+            | (Some(el), None) =>
+              let quill = setupQuill(el, self.state.props, props.registerFocus);
+              self.state.quill := Some(quill)
+            }
+        }
+      />
+      {switch (self.state.props^.editPos, self.state.quill^) {
+        | (Some(editPos), Some(quill)) => <EditBar quill />
+        | _ => ReasonReact.null
+      }}
+    </div>,
 };

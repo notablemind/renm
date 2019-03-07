@@ -202,6 +202,10 @@ let actView = (state, defaultViewId, ~viewId=defaultViewId, action) => {
   Subscription.trigger(session.subs, events);
 };
 
+type document;
+[@bs.val] external document: document = "";
+[@bs.set] external setTitle: (document, string) => unit = "title";
+
 let initStore = (~onSetup, ~metaData, ~sessionId, ~port, ~user, data, cursors) => {
   let state = {
     session: makeSession(~metaData, ~sessionId, ~data, ~cursors, ~user),
@@ -252,6 +256,7 @@ let initStore = (~onSetup, ~metaData, ~sessionId, ~port, ~user, data, cursors) =
       switch (messageFromJson(evt##data)) {
       | Ok(LoadFile(metaData, data, cursors, user)) =>
         Js.log2("Load file", metaData);
+        document->setTitle(metaData.title);
         state.session = {
           ...makeSession(~metaData, ~sessionId, ~data, ~cursors, ~user),
           allFiles: state.session.allFiles,
@@ -295,6 +300,7 @@ let setupWorker = (docId, onSetup) => {
       /* Js.log2("Got message", evt); */
       switch (messageFromJson(evt##data)) {
       | Ok(LoadFile(metaData, data, cursors, user)) =>
+        document->setTitle(metaData.title);
         let clientStore = initStore(~onSetup, ~metaData, ~sessionId, ~port, ~user, data, cursors);
         onSetup(clientStore, message => port->postMessage(messageToJson(message)));
       | _ => Js.log2("ignoring message", evt##data)

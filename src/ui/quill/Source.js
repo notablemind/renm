@@ -5,7 +5,6 @@ class SourceBlot extends Embed {
   static create(value) {
     const node = super.create(value)
     node.setAttribute('contenteditable', false)
-    console.log('Source!', value)
     if (value && typeof value === 'object' && value.what) {
       const inner = document.createElement('span')
       Object.assign(inner.style, {
