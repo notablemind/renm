@@ -14,6 +14,7 @@ let fromString = str => make([|insert({"insert": withNewline(str)})|]);
 [@bs.send] external retain: (delta, int) => delta = "";
 [@bs.send] external retainWithAttributes: (delta, int, Js.t('a)) => delta = "retain";
 [@bs.send] external insert: (delta, string) => delta = "";
+[@bs.send] external insertEmbed: (delta, Js.t('a)) => delta = "insert";
 [@bs.send] external insertWithAttributes: (delta, string, Js.t('a)) => delta = "insert";
 [@bs.send] external delete: (delta, int) => delta = "";
 [@bs.send] external diff: (delta, delta) => delta = "";

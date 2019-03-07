@@ -26,8 +26,17 @@ class SourceBlot extends Embed {
         inner.appendChild(document.createTextNode(suffix))
       }
       node.appendChild(inner)
+      node.setAttribute('data-source', JSON.stringify(value))
     }
     return node
+  }
+
+  static value(domNode) {
+    try {
+      return JSON.parse(domNode.getAttribute('data-source'))
+    } catch (e) {
+      return null
+    }
   }
 }
 SourceBlot.blotName = 'source'

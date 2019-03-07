@@ -64,6 +64,8 @@ register({
 [@bs.send] external setText: (quill, string) => unit = "";
 [@bs.send] external getText: quill => string = "";
 [@bs.send] external getContents: quill => Delta.delta = "";
+[@bs.send] external updateContents: (quill, Delta.delta, string) => unit = "";
+[@bs.send] external getContentsAt: (quill, Js.nullable(View.Range.range)) => Delta.delta = "getContents";
 [@bs.send] external setContents: (quill, Delta.delta, string) => unit = "";
 [@bs.send] external hasFocus: quill => bool = "";
 [@bs.send] external focus: quill => unit = "";
@@ -71,6 +73,11 @@ register({
 [@bs.send] external getLength: quill => float = "";
 [@bs.send] external getSelection: quill => Js.nullable(View.Range.range) = "";
 [@bs.send] external setSelection: (quill, float, float, string) => unit = "";
+
+type selection;
+[@bs.get] external selection: quill => selection = "";
+[@bs.get] external savedRange: selection => Js.nullable(View.Range.range) = "";
+
 [@bs.send]
 external setSelectionRange: (quill, Js.nullable(View.Range.range)) => unit =
   "setSelection";
@@ -168,6 +175,11 @@ module EditBar = {
     marginTop(px(3)),
     backgroundColor(Colors.Semantic.background),
     zIndex(1),
+    opacity(0.3),
+    transition(~duration=100, ~timingFunction=`ease, "opacity"),
+    hover([
+      opacity(1.0),
+    ]),
   ]));
   [@bs.send] external format: (quill, string, 'a, 'b) => unit = "";
   [@bs.send] external getFormat: quill => Js.t('a) = "";
@@ -205,6 +217,74 @@ module EditBar = {
     }
   };
 
+  module SourceEditor = {
+    type state = {
+      url: string,
+      what: string,
+      who: string,
+      when_: string,
+    };
+    let component = ReasonReact.reducerComponent("SourceEditor");
+    let make = (~quill, ~onClose, _) => {
+      ...component,
+      initialState: () => {
+        let orEmpty = s => switch (s->Js.toOption) {
+          | None => ""
+          | Some(s) => s
+        };
+        switch (quill->getContentsAt(quill->getSelection)->Delta.getSource) {
+          | None => {url: "", what: "", who: "", when_: ""}
+          | Some(source) => {url: source##url->orEmpty, what: source##what->orEmpty, who: source##who->orEmpty, when_: source##_when->orEmpty}
+        }
+      },
+      reducer: (action, state) => ReasonReact.Update(switch action {
+        | `Url(url) => {...state, url}
+        | `What(what) => {...state, what}
+        | `Who(who) => {...state, who}
+        | `When(when_) => {...state, when_}
+      }),
+      render: ({send, state: {url, what, who, when_}}) => {
+        <div className=container>
+          <input
+            onChange={evt => send(`What(getValue(evt)))}
+            value=what
+          />
+          <input
+            onChange={evt => send(`Url(getValue(evt)))}
+            value=url
+          />
+          <input
+            onChange={evt => send(`Who(getValue(evt)))}
+            value=who
+          />
+          <input
+            onChange={evt => send(`When(getValue(evt)))}
+            value=when_
+          />
+          <button onClick={evt => {
+            Js.log(quill->getSelection);
+            let%Lets.OptConsume selection = quill->selection->savedRange->Js.toOption;
+            let embed = {"source": {"what": what, "url": url, "who": who, "when": when_}};
+            open Delta;
+            let change = make([||])->retain(selection->View.Range.indexGet->int_of_float);
+            let change = switch (selection->View.Range.lengthGet->int_of_float) {
+              | 0 => change
+              | _ => change->delete(selection->View.Range.indexGet->int_of_float)
+            };
+            let change = change->insertEmbed(embed);
+            quill->updateContents(change, "user");
+            onClose();
+          }}>
+            {ReasonReact.string("Insert")}
+          </button>
+          <button onClick={evt => onClose()}>
+            {ReasonReact.string("Back")}
+          </button>
+        </div>
+      }
+    }
+  }
+
 
   type action = | Link | Source;
   let buttons = [|
@@ -214,8 +294,14 @@ module EditBar = {
     ("I", (quill, send) => {
       quill->format("italic", !quill->getFormat##italic, "user");
     }),
+    ("code", (quill, send) => {
+      quill->format("code", !quill->getFormat##italic, "user");
+    }),
     ("Link", (quill, send) => {
       send(Some(Link))
+    }),
+    ("Source", (quill, send) => {
+      send(Some(Source))
     }),
   |];
   let component = ReasonReact.reducerComponent("EditBar");
@@ -224,20 +310,19 @@ module EditBar = {
     initialState: () => None,
     reducer: (action, state) => ReasonReact.Update(action),
     render: self => {
-      Js.log(quill);
       switch (self.state) {
-        | None =>
-      <div className=container>
-        {buttons->Array.map(((title, action)) => {
-          <button onClick={evt => action(quill, self.send)}>
-            {ReasonReact.string(title)}
-          </button>
-        })->ReasonReact.array}
-      </div>
+      | None =>
+        <div className=container>
+          {buttons->Array.map(((title, action)) => {
+            <button key=title onClick={evt => action(quill, self.send)}>
+              {ReasonReact.string(title)}
+            </button>
+          })->ReasonReact.array}
+        </div>
       | Some(Link) =>
-        <LinkEditor onClose={() => self.send(None)}
-        quill />
-      | Some(Source) => failwith("A")
+        <LinkEditor onClose={() => self.send(None)} quill />
+      | Some(Source) => 
+        <SourceEditor onClose={() => self.send(None)} quill />
       }
     }
   }
