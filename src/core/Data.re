@@ -87,24 +87,25 @@ let makeNodeMap = (nodes: list(Node.t('contents, 'prefix))) =>
     Map.String.set(map, node.id, node)
   );
 
-let exportTree = (nodes, topId) => {
-  let rec loop = (collected, toCollect) => {
+let exportTree = ({nodes, tags}, topId) => {
+  let rec loop = ((collected, usedTags), toCollect) => {
     switch (toCollect) {
-      | [] => collected
-      | [id, ...rest] when collected->Map.String.has(id) => loop(collected, rest)
+      | [] => (collected, usedTags)
+      | [id, ...rest] when collected->Map.String.has(id) => loop((collected, usedTags), rest)
       | [id, ...rest] =>
         switch (nodes->Map.String.get(id)) {
-          | None => loop(collected, rest)
+          | None => loop((collected, usedTags), rest)
           | Some(node) =>
             let node = id == topId ? {...node, Node.parent: id} : node;
             loop(
-              collected->Map.String.set(id, node),
+              (collected->Map.String.set(id, node), usedTags->Set.String.union(node.tags)),
               node.Node.children @ toCollect
             )
         }
     }
   };
-  loop(Map.String.empty, [topId]);
+  let (nodes, usedTags) = loop((Map.String.empty, Set.String.empty), [topId]);
+  (nodes, usedTags->Set.String.toArray->Array.map(id => (id, tags->Map.String.getExn(id)))->Map.String.fromArray)
 };
 
 let mapSymlinks: (. Delta.delta, string => option(string)) => option(Delta.rawDelta)  = [%bs.raw {|

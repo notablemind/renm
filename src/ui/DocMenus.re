@@ -87,17 +87,23 @@ module Commands = {
         sort: 0.,
         action: () => {
           let root = store.view().active;
-          let nodes = Data.exportTree(store.data().nodes, root);
+          let (nodes, tags) = Data.exportTree(store.data(), root);
           let serialized = Js.Json.object_(
             nodes->Map.String.reduce(Js.Dict.empty(), (dict, id, node) => {
               dict->Js.Dict.set(id, WorkerProtocolSerde.serializeNode(node));
               dict
             })
           );
+          let tags = Js.Json.object_(
+            tags->Map.String.reduce(Js.Dict.empty(), (dict, id, tag) => {
+              dict->Js.Dict.set(id, WorkerProtocolSerde.serializeTag(tag));
+              dict
+            })
+          );
           triggerCopy({
             "text/plain": Js.Json.stringifyAny({
-              // TODO(jared): Also export tags probably
               "nodes": serialized,
+              "tags": tags,
               "root": root
             })
           })

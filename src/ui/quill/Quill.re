@@ -304,6 +304,9 @@ module EditBar = {
     ("Source", (quill, send) => {
       send(Some(Source))
     }),
+    ("quote", (quill, send) => {
+      quill->format("blockquote", !quill->getFormat##blockquote, "user");
+    }),
   |];
   let component = ReasonReact.reducerComponent("EditBar");
   let make = (~quill, _children) => {
@@ -311,6 +314,7 @@ module EditBar = {
     initialState: () => None,
     reducer: (action, state) => ReasonReact.Update(action),
     render: self => {
+      // Js.log(quill);
       switch (self.state) {
       | None =>
         <div className=container>
