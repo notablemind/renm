@@ -176,11 +176,11 @@ module EditBar = {
     marginTop(px(3)),
     backgroundColor(Colors.Semantic.background),
     zIndex(1),
-    opacity(0.1),
-    transition(~duration=100, ~timingFunction=`ease, "opacity"),
-    hover([
-      opacity(1.0),
-    ]),
+    // opacity(0.4),
+    // transition(~duration=100, ~timingFunction=`ease, "opacity"),
+    // hover([
+    //   opacity(1.0),
+    // ]),
   ]));
   [@bs.send] external format: (quill, string, 'a, 'b) => unit = "";
   [@bs.send] external getFormat: quill => Js.t('a) = "";
@@ -296,7 +296,7 @@ module EditBar = {
       quill->format("italic", !quill->getFormat##italic, "user");
     }),
     ("code", (quill, send) => {
-      quill->format("code", !quill->getFormat##italic, "user");
+      quill->format("code", !quill->getFormat##code, "user");
     }),
     ("Link", (quill, send) => {
       send(Some(Link))
@@ -758,7 +758,7 @@ let make = (~props: propsType, _children) => {
         }
       />
       {switch (self.state.props^.editPos, self.state.quill^) {
-        | (Some(editPos), Some(quill)) => <EditBar quill />
+        | (Some(Exactly(_, length)), Some(quill)) when length > 0 => <EditBar quill />
         | _ => ReasonReact.null
       }}
     </div>,
