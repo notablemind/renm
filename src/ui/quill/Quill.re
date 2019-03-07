@@ -263,14 +263,14 @@ module EditBar = {
             value=when_
           />
           <button onClick={evt => {
-            Js.log(quill->getSelection);
             let%Lets.OptConsume selection = quill->selection->savedRange->Js.toOption;
+            Js.log2("Selection", selection);
             let embed = {"source": {"what": what, "url": url, "who": who, "when": when_}};
             open Delta;
             let change = make([||])->retain(selection->View.Range.indexGet->int_of_float);
             let change = switch (selection->View.Range.lengthGet->int_of_float) {
               | 0 => change
-              | _ => change->delete(selection->View.Range.indexGet->int_of_float)
+              | length => change->delete(length)
             };
             let change = change->insertEmbed(embed);
             quill->updateContents(change, "user");
