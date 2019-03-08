@@ -90,7 +90,7 @@ let events = (data: Map.String.t(NodeType.t), change) =>
   | UpdateContributor(user) => Ok([Contributor(user.id)]) /* TODO add an event for contributor update */
   | RemoveNode(id) =>
     let%Try node = data->Map.String.get(id)->Opt.orError("No node " ++ id);
-    Ok([Event.Node(id), Event.Node(node.parent)]);
+    Ok([Event.Node(id), Event.Node(node.parent)]->List.concat(node.children->List.map(id => Event.Node(id))));
   | AddNode(_, node) => Ok([Event.Node(node.id), Event.Node(node.parent)])
   | ImportNodes(pid, idx, rid, nodes, tags) => Ok(tags->Map.String.toList->List.map(((k, _)) => Event.Tag(k))->List.concat([
     Event.Node(pid),
@@ -328,19 +328,17 @@ let apply = (data: data, change) =>
     let tags = data.tags->Map.String.mergeMany(tags->Map.String.toArray);
     (
       {...data, nodes, tags},
+      // TODO this should be "removeDeep" or something
       RemoveNode(rid),
       AddChild(pid, idx)
     )
 
   | AddNode(idx, node) =>
-    let%Lets.TryWrap parent =
+    let%Lets.Try parent =
       data.nodes
       ->Map.String.get(node.parent)
       ->Lets.Opt.orError(MissingParent(node.parent, node.id));
-    (
-      {
-        ...data,
-        nodes:
+      let nodes =
           data.nodes
           ->Map.String.set(node.id, node)
           ->Map.String.set(
@@ -349,7 +347,25 @@ let apply = (data: data, change) =>
                 ...parent,
                 children: Utils.insertIntoList(parent.children, idx, node.id),
               },
-            ),
+            );
+      let%Lets.TryWrap nodes = node.children->List.reduce(Result.Ok(nodes), (nodes, childId) => {
+        let%Lets.Try nodes = nodes;
+        let%Lets.Try child = nodes->Map.String.get(childId)->Lets.Opt.orError(MissingNode(childId, "Child of node we're adding"));
+        if (child.parent == node.id) {
+          Ok(nodes)
+        } else {
+          let%Lets.Try parent = nodes->Map.String.get(child.parent)->Lets.Opt.orError(MissingParent(child.parent, child.id));
+          Ok(
+            nodes
+            ->Map.String.set(parent.id, {...parent, children: parent.children->List.keep((!=)(child.id))})
+            ->Map.String.set(child.id, {...child, parent: node.id})
+          )
+        }
+      });
+    (
+      {
+        ...data,
+        nodes,
       },
       RemoveNode(node.id),
       AddChild(node.parent, idx),
@@ -361,23 +377,31 @@ let apply = (data: data, change) =>
       data.nodes
       ->Map.String.get(node.parent)
       ->Lets.Opt.orError(MissingParent(node.parent, node.id));
-    let%Lets.TryWrap idx =
+    let%Lets.Try idx =
       parent.children
       ->TreeTraversal.childPos(id)
       ->Lets.Opt.orError(NotInChildren(node.parent, node.id));
-    (
-      {
-        ...data,
-        nodes:
+    let (left, right) = TreeTraversal.partitionChildren(parent.children, node.id);
+    let nodes = 
           data.nodes
           ->Map.String.remove(node.id)
           ->Map.String.set(
               node.parent,
               {
                 ...parent,
-                children: parent.children->List.keep((!=)(node.id)),
+                children: List.concatMany([|left, node.children, right|])
               },
-            ),
+            );
+    // Reparent the removed node's children
+    let%Lets.TryWrap nodes = node.children->List.reduce(Result.Ok(nodes), (nodes, id) => {
+      let%Lets.Try nodes = nodes;
+      let%Lets.TryWrap child = nodes->Map.String.get(id)->Lets.Opt.orError(MissingNode(id, "Child of node to remove"));
+      nodes->Map.String.set(id, {...child, parent: parent.id})
+    });
+    (
+      {
+        ...data,
+        nodes,
       },
       AddNode(idx, node),
       RemoveChild(node.parent, idx),

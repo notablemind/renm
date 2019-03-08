@@ -10,6 +10,7 @@ let childPos = (children, id) => {
   loop(0, children);
 };
 
+/** Split children into those to the left & those to the right of the id (not including the id) */
 let rec partitionChildren = (children, id) =>
   switch (children) {
   | [] => ([], [])
