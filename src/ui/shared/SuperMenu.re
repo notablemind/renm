@@ -126,7 +126,7 @@ let make = (~placeholder, ~getResults, ~rawHtml=false, ~header=ReasonReact.null,
         }}
       />
       <div className=Css.(style([flex(1), overflow(`auto)]))>
-        {state.results->Array.mapWithIndex((i, {title, action, description, sort}) => {
+        {state.results->Js.Array.slice(~start=0, ~end_=50)->Array.mapWithIndex((i, {title, action, description, sort}) => {
           <div
             role="button"
             key={string_of_int(i)}

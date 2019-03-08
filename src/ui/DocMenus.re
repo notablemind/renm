@@ -203,14 +203,15 @@ let simpleSearch = (store: ClientStore.t('a, 'b, 'c), text) => {
         results
       }
     });
-    found->atMost(50)->List.toArray
+    found->List.toArray
   }
 };
 
 let fileCommands = (store: ClientStore.t('a, 'b, 'c), ~onSelect, ~onCreate, text) => {
   let files = store.session().allFiles;
+  let text = text->Js.String.toLowerCase;
   Hashtbl.fold((id, meta: MetaData.t, results) => {
-    if (Fuzzy.fuzzysearch(text, meta.title)) {
+    if (Fuzzy.fuzzysearch(text, meta.title->Js.String.toLowerCase)) {
       [{
         SuperMenu.title: meta.title,
         description: meta.id,
