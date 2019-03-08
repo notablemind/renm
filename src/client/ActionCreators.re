@@ -191,7 +191,7 @@ let createChild = (store, node: Data.Node.t('a, 'b)) => {
       ~children=[],
     );
   store.act([Create(0, nnode)]);
-  let (expanded, _sharedViewData) = View.ensureVisible(store.data(), node.id, store.view(), store.session().sharedViewData);
+  let (expanded, _sharedViewData) = View.ensureVisible(store.data(), nid, store.view(), store.session().sharedViewData);
   expanded->List.map(id => View.SetCollapsed(id, false))->List.forEach(store.actView);
 }
 

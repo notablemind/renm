@@ -33,20 +33,17 @@ let deserialize_Belt_MapString____t = (transformer, json) =>
 let deserialize_Belt_SetString____t = json =>
   switch (Js.Json.classify(json)) {
   | JSONArray(items) =>
-    let rec loop = items =>
+    let rec loop = (current, items) =>
       switch (items) {
-      | [] => Result.Ok([])
+      | [] => Result.Ok(List.reverse(current))
       | [one, ...more] =>
         switch (Js.Json.classify(one)) {
         | JSONString(one) =>
-          switch (loop(more)) {
-          | Error(e) => Error(e)
-          | Ok(items) => Ok([one, ...items])
-          }
+          loop([one, ...current], more)
         | _ => Error(["expected a string"])
         }
       };
-    switch (loop(List.fromArray(items))) {
+    switch (loop([], List.fromArray(items))) {
     | Error(e) => Result.Error(e)
     | Ok(items) => Ok(Set.String.fromArray(List.toArray(items)))
     };

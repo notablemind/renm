@@ -15,6 +15,8 @@ module Tag = {
 module Node = {
   type id = string;
 
+  type reaction = {name: string, users: Set.String.t};
+
   type t('contents, 'prefix) = {
     id,
     parent: id,
@@ -28,6 +30,9 @@ module Node = {
     children: list(string),
     numberChildren: bool,
     /* contentsy-stuff */
+    // Ok so this needs to be added...
+    // So maybe this needs I need to actually get type migration working 🙃
+    // reactions: list(reaction),
     contents: 'contents,
     tags: Set.String.t,
     prefix: 'prefix,

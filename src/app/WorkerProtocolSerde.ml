@@ -2809,9 +2809,9 @@ module Version1 =
            match Js.Json.classify list with
            | ((JSONArray (items))[@explicit_arity ]) ->
                let transformer = deserialize_Change____rebaseItem in
-               let rec loop i items =
+               let rec loop current i items =
                  match items with
-                 | [] -> ((Belt.Result.Ok ([]))[@explicit_arity ])
+                 | [] -> ((Belt.Result.Ok (List.reverse current))[@explicit_arity ])
                  | one::rest ->
                      (match transformer one with
                       | ((Belt.Result.Error (error))[@explicit_arity ]) ->
@@ -2820,14 +2820,8 @@ module Version1 =
                                 error)))
                           [@explicit_arity ])
                       | ((Belt.Result.Ok (value))[@explicit_arity ]) ->
-                          (match loop (i + 1) rest with
-                           | ((Belt.Result.Error (error))[@explicit_arity ])
-                               -> ((Belt.Result.Error (error))
-                               [@explicit_arity ])
-                           | ((Belt.Result.Ok (rest))[@explicit_arity ]) ->
-                               ((Belt.Result.Ok ((value :: rest)))
-                               [@explicit_arity ]))) in
-               loop 0 (Belt.List.fromArray items)
+                          loop (value :: current) (i + 1) rest) in
+               loop [] 0 (Belt.List.fromArray items)
            | _ -> ((Belt.Result.Error (["expected an array"]))
                [@explicit_arity ])) value
     and (deserialize_World__MultiChange__selection :
