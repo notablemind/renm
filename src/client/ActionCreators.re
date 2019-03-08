@@ -191,7 +191,7 @@ let createChild = (store, node: Data.Node.t('a, 'b)) => {
       ~children=[],
     );
   store.act([Create(0, nnode)]);
-  let (expanded, _sharedViewData) = View.ensureVisible(store.data(), store.view(), store.session().sharedViewData);
+  let (expanded, _sharedViewData) = View.ensureVisible(store.data(), node.id, store.view(), store.session().sharedViewData);
   expanded->List.map(id => View.SetCollapsed(id, false))->List.forEach(store.actView);
 }
 
@@ -205,9 +205,11 @@ let getAlternateView = store => {
 };
 
 let jumpTo = (store, id) => {
+  // Js.log2("Jumping to", id);
   let targetView = getAlternateView(store);
   store.ClientStore.actView(~viewId=targetView.id, SetActive(id, Default));
-  let (expanded, _sharedViewData) = View.ensureVisible(store.data(), targetView, store.session().sharedViewData);
+  let (expanded, _sharedViewData) = View.ensureVisible(store.data(), id, targetView, store.session().sharedViewData);
+  // Js.log2("Needed to expand", expanded);
   expanded->List.map(id => View.SetCollapsed(id, false))->List.forEach(store.actView(~viewId=targetView.id));
 };
 

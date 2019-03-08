@@ -125,6 +125,7 @@ let handleMessage = (~state, ~port, ~message: WorkerProtocol.serverMessage) =>
     state.data = data;
     let (expanded, sharedViewData) = View.ensureVisible(
           data,
+          state.session->Session.activeView.active,
           state.session->Session.activeView,
           state.session.sharedViewData,
         )

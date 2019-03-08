@@ -220,6 +220,7 @@ let make =
                 }
             }>
             {
+              // Js.log3("Rendering a node", node.id, editPos);
               node.id != store.view().root ?
                 renderHandle(
                   ~onMouseDown=evt => {

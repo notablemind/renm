@@ -101,13 +101,14 @@ let rebase = (view, sharedViewData, root) => {
 };
 
 
-let ensureVisible = (data, view, sharedViewData) => {
+let ensureVisible = (data, id, view, sharedViewData) => {
   let rec loop = (id, changed, expanded) =>
     if (id == view.root || id == data.Data.root) {
       (changed, expanded);
     } else {
       {
         let%Lets.OptWrap node = data.nodes->Map.String.get(id);
+        Js.log4("parent", node.parent, node.contents->Delta.getText, expanded->Set.String.has(node.parent));
         let changed = expanded->Set.String.has(node.parent) ? changed : [node.parent, ...changed];
         let expanded = expanded->Set.String.add(node.parent);
         if (node.id == node.parent) {
@@ -118,7 +119,7 @@ let ensureVisible = (data, view, sharedViewData) => {
       }
       ->Lets.OptDefault.or_((changed, expanded));
     };
-  let (changed, expanded) = loop(view.active, [], sharedViewData.expanded);
+  let (changed, expanded) = loop(id, [], sharedViewData.expanded);
   (changed, {expanded: expanded});
 };
 
@@ -128,7 +129,7 @@ let processViewAction = (view, sharedViewData, action) =>
   /*** TODO clear selection if id is same */
   | SetActive(id, editPos) =>
     if (id != view.active || (view.editPos != editPos && editPos != Default)) {
-      Js.log2("setting active", 2);
+      Js.log3("setting active", id, view.active);
       /* Find path to root. If it's outside of the current root, then rebase to it.
          otherwise, ensure all parents are uncollapsed. */
       (
