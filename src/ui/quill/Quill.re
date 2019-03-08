@@ -173,15 +173,16 @@ module EditBar = {
     position(`absolute),
     top(`percent(100.)),
     left(px(0)),
+    display(`flex),
     marginTop(px(3)),
     backgroundColor(Colors.Semantic.background),
-    zIndex(1),
-    // opacity(0.4),
-    // transition(~duration=100, ~timingFunction=`ease, "opacity"),
-    // hover([
-    //   opacity(1.0),
-    // ]),
+    right(px(0)),
+    padding(px(4)),
+    boxShadow(~y=px(2), ~blur=px(12), hex("ccc")),
+    borderRadius(px(4)),
+    zIndex(2),
   ]));
+
   [@bs.send] external format: (quill, string, 'a, 'b) => unit = "";
   [@bs.send] external getFormat: quill => Js.t('a) = "";
 
@@ -247,6 +248,7 @@ module EditBar = {
       render: ({send, state: {url, what, who, when_}}) => {
         <div className=container>
           <input
+            className=Css.(style([flex(1)]))
             onChange={evt => send(`What(getValue(evt)))}
             value=what
           />
@@ -259,6 +261,7 @@ module EditBar = {
             value=who
           />
           <input
+            className=Css.(style([width(px(75))]))
             onChange={evt => send(`When(getValue(evt)))}
             value=when_
           />

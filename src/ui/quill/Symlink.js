@@ -82,6 +82,7 @@ module.exports = (getContents, jumpTo) => {
         inner.appendChild(clicker)
         inner.appendChild(contentNode)
       }
+
       node.addEventListener('click', evt => {
         if (window.getSelection().containsNode(node) || evt.target === clicker) {
           return
