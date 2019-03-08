@@ -78,7 +78,7 @@ let filterAndAddScores = (items, text) => {
   })
 };
 
-let make = (~placeholder, ~getResults, ~header=ReasonReact.null, ~onClose, _) => {
+let make = (~placeholder, ~getResults, ~rawHtml=false, ~header=ReasonReact.null, ~onClose, _) => {
   ...component,
   initialState: () => {search: "", selected: 0, results: getResults("")->sort},
   reducer: (action, state) => ReasonReact.Update(switch action {
@@ -126,25 +126,31 @@ let make = (~placeholder, ~getResults, ~header=ReasonReact.null, ~onClose, _) =>
           send(SetText(evt->ReactEvent.Form.nativeEvent##target##value))
         }}
       />
-      {state.results->Array.mapWithIndex((i, {title, action, description}) => {
-        <div
-          role="button"
-          key={string_of_int(i)}
-          className=(Styles.item ++ " " ++ (i == state.selected ? Styles.selectedItem : ""))
-          onClick={evt => {
-            evt->ReactEvent.Mouse.stopPropagation;
-            action();
-            onClose();
-          }}
-        >
-          <span className=Styles.itemName>
-            {ReasonReact.string(title)}
-          </span>
-          <span className=Styles.description>
-            {ReasonReact.string(description)}
-          </span>
-        </div>
-      })->ReasonReact.array}
+      <div className=Css.(style([flex(1), overflow(`auto)]))>
+        {state.results->Array.mapWithIndex((i, {title, action, description, sort}) => {
+          <div
+            role="button"
+            key={string_of_int(i)}
+            className=(Styles.item ++ " " ++ (i == state.selected ? Styles.selectedItem : ""))
+            onClick={evt => {
+              evt->ReactEvent.Mouse.stopPropagation;
+              action();
+              onClose();
+            }}
+          >
+            {rawHtml ?
+            <span className=Styles.itemName dangerouslySetInnerHTML={{"__html": title}} />
+            : <span className=Styles.itemName>
+              {ReasonReact.string(title)}
+            </span>
+            }
+            <span className=Styles.description>
+              {ReasonReact.string(description)}
+              {ReasonReact.string(" " ++ string_of_float(sort))}
+            </span>
+          </div>
+        })->ReasonReact.array}
+      </div>
     </Dialog>
   }
 };

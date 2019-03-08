@@ -25,7 +25,23 @@ let fromString = str => make([|insert({"insert": withNewline(str)})|]);
 
 let getText: delta => string = [%bs.raw
   {|function(delta) {
-  return delta.ops.map(op => op.insert).filter(Boolean).join('')
+  return delta.ops.map(op => {
+    if (typeof op.insert === 'string') {
+      return op.insert
+    } else if (!op.insert) {
+      return null
+    } else if (op.insert.source) {
+      const {who, what, when} = op.insert.source;
+      let suffix = ''
+      if (who) {
+        suffix += ' by ' + who
+      }
+      if (when) {
+        suffix += ' on ' + when
+      }
+      return what + suffix
+    }
+  }).filter(Boolean).join('')
 }|}
 ];
 

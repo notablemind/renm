@@ -23,7 +23,8 @@ module Styles = {
     display(`flex),
     backgroundColor(transparent),
     flexDirection(`column),
-    alignItems(`stretch)
+    alignItems(`stretch),
+    flexShrink(1),
   ]);
 };
 

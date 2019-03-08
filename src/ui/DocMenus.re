@@ -184,16 +184,19 @@ let atMost = (list, len) => if (List.length(list) > len) {
 
 let simpleSearch = (store: ClientStore.t('a, 'b, 'c), text) => {
   let nodes = store.data().nodes;
+  let text = text->Js.String.toLowerCase;
   if (text == "") {
     [||]
   } else {
     let found = nodes->Map.String.reduce([], (results, _id, node) => {
       let contents = node.contents->Delta.getText;
-      if (SuperMenu.fuzzysearch(text, contents)) {
+      // Js.log2("Search", contents);
+      if (SuperMenu.fuzzysearch(text, contents->Js.String.toLowerCase)) {
+        let result = SuperMenu.fuzzy(~term=contents, ~query=text);
         [{
-          SuperMenu.title: contents->Js.String.slice(~from=0, ~to_=50),
+          SuperMenu.title: result##highlightedTerm,
           description: "",
-          sort: SuperMenu.fuzzyScore(~term=contents, ~query=text),
+          sort: result##score->float_of_int,
           action: () => ActionCreators.jumpTo(store, node.id)
         }, ...results]
       } else {
@@ -432,6 +435,7 @@ let show = (store, dialog, showDialog, hideDialog, sendMessage) =>
     <SuperMenu
       placeholder="Select file to open"
       key="search"
+      rawHtml={true}
       header={superHeader(Search, showDialog)}
       getResults={simpleSearch(store)}
       onClose=(() => hideDialog(Search))
@@ -484,6 +488,12 @@ let make = (~store, ~state, ~send, ~sendMessage, _) => {
     let keys = KeyManager.makeHandlers([
       ("cmd+shift+p", evt => {
         send(ShowDialog(SuperMenu))
+      }),
+      ("cmd+f", evt => {
+        send(ShowDialog(Search))
+      }),
+      ("cmd+/", evt => {
+        send(ShowDialog(Search))
       }),
       ("cmd+k", evt => {
         send(ShowDialog(FileLink))
