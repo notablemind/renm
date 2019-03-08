@@ -1,18 +1,17 @@
 
-[@bs.module] external fuzzysearch: (string, string) => bool = "";
-type match = {. "score": int, "term": string, "query": string, "highlightedTerm": string};
-[@bs.module] external fuzzy: (~term: string, ~query: string) => match = "fuzzy.js";
+// [@bs.module] external fuzzysearch: (string, string) => bool = "";
+// type match = {. "score": int, "term": string, "query": string, "highlightedTerm": string};
+// [@bs.module] external fuzzy: (~term: string, ~query: string) => match = "fuzzy.js";
 // [@bs.module "fuzzy.js"] external fuzzySort: (match, match) => int = "";
+// let fuzzyScore = (~term, ~query) => fuzzy(~term, ~query)##score->float_of_int;
 
-let fuzzyScore = (~term, ~query) => fuzzy(~term, ~query)##score->float_of_int;
-
-[%bs.raw "window.fuzzyScore = fuzzyScore"];
+// [%bs.raw "window.fuzzyScore = fuzzyScore"];
 
 type option = {
   title: string,
   description: string,
   action: unit => unit,
-  sort: float,
+  sort: Fuzzy.T.fuzzyScore,
 };
 
 type state = {
@@ -63,15 +62,15 @@ module Styles = {
 };
 
 let sort = items => {
-  items |> Js.Array.sortInPlaceWith((a, b) => int_of_float(b.sort -. a.sort))
+  items |> Js.Array.sortInPlaceWith((a, b) => Fuzzy.compareScores(a.sort, b.sort))
 };
 
 let filterAndAddScores = (items, text) => {
   items->Array.keepMap(item => {
-    if (fuzzysearch(text, item.title->Js.String.toLowerCase)) {
-      Some({...item, sort: fuzzyScore(~term=item.title, ~query=text) +. 5.})
-    } else if (fuzzysearch(text, item.description->Js.String.toLowerCase)) {
-      Some({...item, sort: fuzzyScore(~term=item.description, ~query=text)})
+    if (Fuzzy.fuzzysearch(text, item.title->Js.String.toLowerCase)) {
+      Some({...item, sort: Fuzzy.fuzzyScore(text, item.title)})
+    } else if (Fuzzy.fuzzysearch(text, item.description->Js.String.toLowerCase)) {
+      Some({...item, sort: Fuzzy.fuzzyScore(text, item.description)})
      } else {
        None
      }
@@ -146,7 +145,7 @@ let make = (~placeholder, ~getResults, ~rawHtml=false, ~header=ReasonReact.null,
             }
             <span className=Styles.description>
               {ReasonReact.string(description)}
-              {ReasonReact.string(" " ++ string_of_float(sort))}
+              {ReasonReact.string(" " ++ Fuzzy.showScore(sort))}
             </span>
           </div>
         })->ReasonReact.array}
