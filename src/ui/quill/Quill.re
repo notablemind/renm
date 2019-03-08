@@ -196,7 +196,7 @@ module EditBar = {
       reducer: (action, state) => ReasonReact.Update(action),
       render: ({state: href, send}) => {
         <div className=container>
-          <input value=href onChange={evt => {
+          <input value=href placeholder="URL" onChange={evt => {
             send(evt->getValue)
           }} />
           <button onClick={evt => {
@@ -248,19 +248,23 @@ module EditBar = {
       render: ({send, state: {url, what, who, when_}}) => {
         <div className=container>
           <input
+            placeholder="Title"
             className=Css.(style([flex(1)]))
             onChange={evt => send(`What(getValue(evt)))}
             value=what
           />
           <input
+            placeholder="Url"
             onChange={evt => send(`Url(getValue(evt)))}
             value=url
           />
           <input
+            placeholder="Author"
             onChange={evt => send(`Who(getValue(evt)))}
             value=who
           />
           <input
+            placeholder="Date"
             className=Css.(style([width(px(75))]))
             onChange={evt => send(`When(getValue(evt)))}
             value=when_

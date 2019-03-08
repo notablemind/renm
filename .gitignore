@@ -5,3 +5,6 @@ node_modules
 bundle
 auth.json
 .merlin
+latest.dump*
+*.dump
+structure-editor-literature-review.nm.json

@@ -14,9 +14,8 @@ function(formats) {
   const input = document.createElement('input')
   input.style.opacity='0'
   document.body.appendChild(input)
-  console.log('formatting', formats)
   input.oncopy = evt => {
-    console.log('copying', formats)
+    // console.log('copying', formats)
     Object.keys(formats).forEach(key => {
       evt.clipboardData.setData(key, formats[key])
     })
@@ -24,7 +23,7 @@ function(formats) {
   }
   input.focus()
   document.execCommand('copy')
-  // input.parentElement.removeChild(input)
+  input.parentElement.removeChild(input)
   prev.focus()
 }
 |}];
