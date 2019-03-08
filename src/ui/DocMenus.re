@@ -3,6 +3,7 @@ type dialog =
   | SuperMenu
   | FileMenu
   | FileLink
+  | Search
   | Tags
   | Import;
 
@@ -27,6 +28,7 @@ function(formats) {
   prev.focus()
 }
 |}];
+let triggerCopy = contents => triggerCopy(contents);
 
 module Commands = {
   let prefixes = (store: NodeBody.clientStore) => {
@@ -174,6 +176,34 @@ let getCommands = (store: ClientStore.t('a, 'b, 'c), showDialog, text) => {
   items->SuperMenu.filterAndAddScores(text);
 };
 
+let atMost = (list, len) => if (List.length(list) > len) {
+  list->List.take(len)->Lets.Opt.force
+} else {
+  list
+};
+
+let simpleSearch = (store: ClientStore.t('a, 'b, 'c), text) => {
+  let nodes = store.data().nodes;
+  if (text == "") {
+    [||]
+  } else {
+    let found = nodes->Map.String.reduce([], (results, _id, node) => {
+      let contents = node.contents->Delta.getText;
+      if (SuperMenu.fuzzysearch(text, contents)) {
+        [{
+          SuperMenu.title: contents->Js.String.slice(~from=0, ~to_=50),
+          description: "",
+          sort: SuperMenu.fuzzyScore(~term=contents, ~query=text),
+          action: () => ActionCreators.jumpTo(store, node.id)
+        }, ...results]
+      } else {
+        results
+      }
+    });
+    found->atMost(50)->List.toArray
+  }
+};
+
 let fileCommands = (store: ClientStore.t('a, 'b, 'c), ~onSelect, ~onCreate, text) => {
   let files = store.session().allFiles;
   Hashtbl.fold((id, meta: MetaData.t, results) => {
@@ -296,6 +326,7 @@ let superHeader = (current, showDialog) => {
     ("Commands", SuperMenu),
     ("Go to file", FileMenu),
     ("Link to file", FileLink),
+    ("Search", Search),
   |];
   <div className={headerStyle}>
     {ReasonReact.array(
@@ -396,6 +427,14 @@ let show = (store, dialog, showDialog, hideDialog, sendMessage) =>
       header={superHeader(SuperMenu, showDialog)}
       getResults={getCommands(store, showDialog)}
       onClose=(() => hideDialog(SuperMenu))
+    />
+  | Search =>
+    <SuperMenu
+      placeholder="Select file to open"
+      key="search"
+      header={superHeader(Search, showDialog)}
+      getResults={simpleSearch(store)}
+      onClose=(() => hideDialog(Search))
     />
   | FileMenu =>
     <SuperMenu

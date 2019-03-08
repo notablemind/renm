@@ -1,5 +1,9 @@
 const Quill = require('quill/quill').default
 
+const asText = value => {
+
+};
+
 const Embed = Quill.import('blots/embed');
 class SourceBlot extends Embed {
   static create(value) {
@@ -53,6 +57,18 @@ class SourceBlot extends Embed {
     } catch (e) {
       return null
     }
+  }
+
+  text() {
+    const {source} = this.value();
+    let suffix = ''
+    if (value.who) {
+      suffix += ' by ' + value.who
+    }
+    if (value.when) {
+      suffix += ' on ' + value.when
+    }
+    return source.what + suffix
   }
 }
 SourceBlot.blotName = 'source'

@@ -114,6 +114,9 @@ module.exports = (getContents, jumpTo) => {
       const {symlink} = this.value();
       return `<span>${symlink}</span>`
     }
+    text() {
+      return ''
+    }
   }
 
   SymlinkBlot.blotName = 'symlink';

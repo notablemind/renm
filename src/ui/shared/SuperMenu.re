@@ -2,7 +2,7 @@
 [@bs.module] external fuzzysearch: (string, string) => bool = "";
 type match = {. "score": int, "term": string, "query": string, "highlightedTerm": string};
 [@bs.module] external fuzzy: (~term: string, ~query: string) => match = "fuzzy.js";
-[@bs.module] external fuzzySort: (match, match) => int = "fuzzy.js";
+// [@bs.module "fuzzy.js"] external fuzzySort: (match, match) => int = "";
 
 let fuzzyScore = (~term, ~query) => fuzzy(~term, ~query)##score->float_of_int;
 
