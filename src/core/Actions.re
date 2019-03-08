@@ -5,9 +5,16 @@ type action =
   | SetPrefix(Node.id, option(NodeType.prefix))
   | SetCompleted(Node.id, bool)
 
+  | UpdateContributor(Data.user)
+
+  | CreateTag(Tag.t)
+  | AddTagToNodes(Tag.id, list(Node.id))
+  | RemoveTagFromNodes(Tag.id, list(Node.id))
+
   | ChangeContents(Node.id, Delta.delta)
   | Move(list(Node.id), Node.id, int)
   | Create(int, NodeType.t)
+  | ImportNodes(Node.id, int, Node.id, Map.String.t(NodeType.t), Map.String.t(Tag.t))
   | SplitAt(int)
   | JoinUp(Node.id, Delta.delta, Node.id);
 
@@ -20,6 +27,12 @@ let processAction =
       [RemoveNode(id)],
       [View.SetActive(focusNext, Default)],
     ))
+
+  | UpdateContributor(user) => Ok(([UpdateContributor(user)], []))
+
+  | CreateTag(tag) => Ok(([CreateTag(tag)], []))
+  | AddTagToNodes(id, nodes) => Ok(([AddTagToNodes(id, nodes)], []))
+  | RemoveTagFromNodes(id, nodes) => Ok(([RemoveTagFromNodes(id, nodes)], []))
 
   | SetContents(id, contents) =>
     Ok(([SetContents(id, contents)], []))
@@ -73,6 +86,11 @@ let processAction =
       [AddNode(idx, node)],
       [View.SetActive(node.id, Default)],
     ))
+
+  | ImportNodes(pid, idx, root, nodes, tags) => Ok((
+    [ImportNodes(pid, idx, root, nodes, tags)],
+    []
+  ))
 
   | SplitAt(_) => Ok(([], []))
   | JoinUp(_, _, _) => Ok(([], []))

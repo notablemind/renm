@@ -17,6 +17,7 @@ module.exports = (getFileName) => {
         hover = null
       }
       const showHover = () => {
+        if (hover) return
         hover = document.createElement('a')
         hover.className = 'ql-link-hover'
         if (value.startsWith('nm://')) {
@@ -30,6 +31,7 @@ module.exports = (getFileName) => {
           }
         } else {
           hover.href = value
+          hover.setAttribute('target', '_blank')
           hover.innerText = value
         }
         hover.onclick = evt => {
@@ -43,11 +45,15 @@ module.exports = (getFileName) => {
         hover.addEventListener('mouseover', () => clearTimeout(timeout))
         hover.addEventListener('mouseout', closeHover)
       }
-      node.addEventListener('mouseover', () => {
-        showHover();
+      node.addEventListener('mouseenter', (evt) => {
+        if (evt.target === node) {
+          showHover();
+        }
       })
-      node.addEventListener('mouseout', () => {
-        timeout = setTimeout(closeHover, 100);
+      node.addEventListener('mouseleave', (evt) => {
+        if(evt.target === node) {
+          timeout = setTimeout(closeHover, 100);
+        }
       })
       return node;
     }

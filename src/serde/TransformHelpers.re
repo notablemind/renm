@@ -17,20 +17,16 @@ let deserialize_Belt_MapString____t = (transformer, json) =>
   switch (Js.Json.classify(json)) {
   | JSONObject(items) =>
     /* let items = items->Js.Dict.entries; */
-    let rec loop = items =>
+    let rec loop = (map, items) =>
       switch (items) {
-      | [] => Result.Ok(Map.String.empty)
+      | [] => Result.Ok(map)
       | [(name, one), ...more] =>
         switch (transformer(one)) {
-        | Result.Ok(one) =>
-          switch (loop(more)) {
-          | Error(e) => Error(e)
-          | Ok(items) => Ok(Belt.Map.String.set(items, name, one))
-          }
+        | Result.Ok(one) => loop(Belt.Map.String.set(map, name, one), more)
         | _ => Error(["expected a string"])
         }
       };
-    loop(List.fromArray(items->Js.Dict.entries));
+    loop(Belt.Map.String.empty, List.fromArray(items->Js.Dict.entries));
   | _ => Result.Error(["Expected an array"])
   };
 

@@ -16,7 +16,8 @@ type t = (int, int);
 
 let initial = (maxInt, maxInt);
 let next = ((a, b)) => b == 0 ? (a - 1, maxInt) : (a, b - 1);
-let toString = ((a, b)) => toString(a, 36)->padStart(6, "0") ++ toString(b, 36)->padStart(6, "0");
+let singleString = a => toString(a, 36)->padStart(6, "0");
+let toString = ((a, b)) => singleString(a) ++ singleString(b);
 
 let fromString = (string): Belt.Result.t(t, string) => {
   if (String.length(string) != 12) {

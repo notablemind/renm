@@ -35,24 +35,21 @@ let messageToJson = WorkerProtocolSerde.serializeServerMessage;
  - scripture story (don't think this needs any file-level configs)
  */
 
+type world = {
+  mutable snapshot: World.MultiChange.data,
+  history: PersistedHistory.t,
+  mutable current: World.MultiChange.data,
+};
+
 type file = {
   mutable meta: MetaData.t,
-  /* mutable current: Change.data,
-  mutable snapshot: Change.data, */
+  mutable syncTime: Js.Global.timeoutId,
   /* TODO maybe keep around a cache of recent changes to be able to get undo things sooner */
   /* mutable recentChanges */
 
-  /* mutable snapshot: World.MultiChange.data,
-  mutable history: StoreInOne.history,
-  mutable syncing: StoreInOne.Queue.t(World.thisChange),
-  mutable unsynced: StoreInOne.Queue.t(World.thisChange),
-  mutable current: World.MultiChange.data, */
-
-
-
-  mutable world: StoreInOne.world,
-  mutable cursors: Hashtbl.t(string, (string, View.Range.range)),
-  db: Persistance.levelup(unit),
+  world,
+  cursors: Hashtbl.t(string, (string, View.Range.range)),
+  db: Persistance.levelup(Dbs.file),
 };
 
 /* file should have a list of attachments as well. with indicators whether they have been synced yet. */
@@ -105,21 +102,53 @@ let unique = items => {
   })
 };
 
-let persistChangedNodes = (file, changeEvents) => {
+let persistChangedNodes = (current, db, changeEvents, change) => {
   let changedIds = changeEvents->List.keepMap(evt => switch evt {
     | SharedTypes.Event.Node(id) => Some(id)
     | _ => None
   }) -> unique->List.toArray;
-  let%Lets.Async.Consume () = file.db->Dbs.getNodesDb->Persistance.batch(
+  let nodesPromise = db->Dbs.getNodesDb->Persistance.batch(
     changedIds->Array.keepMap(id => {
-      let%Lets.Opt node = file.world.current->Data.get(id);
+      let%Lets.Opt node = current->Data.get(id);
       Some(Persistance.batchPut({
         "key": id,
         "type": "put",
         "value": node
       }))
     })
-  )
+  );
+
+  let changedTagIds = changeEvents->List.keepMap(evt => switch evt {
+    | SharedTypes.Event.Tag(id) => Some(id)
+    | _ => None
+  }) -> unique->List.toArray;
+  let tagsPromise = db->Dbs.getTagsDb->Persistance.batch(
+    changedTagIds->Array.keepMap(id => {
+      let%Lets.Opt tag = current.tags->Map.String.get(id);
+      Some(Persistance.batchPut({
+        "key": id,
+        "type": "put",
+        "value": tag
+      }))
+    })
+  );
+
+  let changedContributorIds = changeEvents->List.keepMap(evt => switch evt {
+    | SharedTypes.Event.Contributor(id) => Some(id)
+    | _ => None
+  })->unique->List.toArray;
+  let contributorsPromise = db->Dbs.getContributorsDb->Persistance.batch(
+    changedContributorIds->Array.keepMap(id => {
+      let%Lets.Opt user = current.contributors->Map.String.get(id);
+      Some(Persistance.batchPut({
+        "key": id,
+        "type": "put",
+        "value": user
+      }))
+    })
+  );
+
+  let%Lets.Async.Consume ((), (), ()) = Js.Promise.all3((nodesPromise, tagsPromise, contributorsPromise));
 };
 
 let applyChange = (file, change, ports, dontSendToSession) => {
@@ -130,16 +159,29 @@ let applyChange = (file, change, ports, dontSendToSession) => {
     try%Lets.Try (World.applyChange_(file.world.current, change)) {
     | _ => Error("Failed to apply change")
     };
-  let world = {
-    ...file.world,
-    current,
-    unsynced: StoreInOne.Queue.append(file.world.unsynced, appliedChange),
-  };
-  file.world = world;
+  file.world.history->PersistedHistory.append(appliedChange);
+  file.world.current = current;
 
   sendChange(~excludeSession=?dontSendToSession, file.meta.id, ports, change);
-  persistChangedNodes(file, changeEvents);
-  let title = switch (world.current.nodes->Map.String.get(world.current.root)) {
+  persistChangedNodes(file.world.current, file.db->Dbs.getCurrentDb, changeEvents, appliedChange);
+
+  switch (file.meta.sync) {
+    | None => 
+    /* Ok maybe I should read things */
+    ()
+    | Some(sync) =>
+      Js.Global.clearTimeout(file.syncTime);
+      file.syncTime = Js.Global.setTimeout(() => {
+        switch (sync.remote) {
+          | Google(username, fileId) =>
+          /**TODO sync the file here */
+            ()
+          | _ => ()
+        }
+      }, 30 * 1000);
+  }
+
+  let title = switch (file.world.current.nodes->Map.String.get(file.world.current.root)) {
     | Some({contents}) => Delta.getText(contents)->Js.String.trim
     | _ => file.meta.title
   };
@@ -148,40 +190,76 @@ let applyChange = (file, change, ports, dontSendToSession) => {
     title,
     lastModified: Js.Date.now(),
     /* TODO maybe only count non-deleted ones? */
-    nodeCount: world.current.nodes->Map.String.size,
+    nodeCount: file.world.current.nodes->Map.String.size,
   };
+  /* maybe debounce this. */
   sendMetaDataChange(ports, file.meta);
 
   /* FUTURE(optimize): Probably debounce metadata persistence */
   let%Lets.Async.Consume () = MetaDataPersist.save(file.meta);
 };
 
-let onUndo = (file, ports, sessionId) => {
+
+
+let commit = (world: world): Result.t(unit, string) => {
+  switch (world.history->PersistedHistory.sync) {
+    | None => Result.Ok(())
+    | Some(latest) =>
+      let (unsynced, syncing) =
+        History.partition(world.history.history);
+      let%Lets.Try (snapshot, _appliedChanges) =
+        try%Lets.Try (syncing->List.reverse->World.reduceChanges(world.snapshot)) {
+          | error =>
+          Js.log(error);
+          Result.Error("Unable to reduce changes")
+        };
+      /* let history = world.history->History.commit; */
+      world.history->PersistedHistory.commit;
+      /* um do I persist this? TODO TODO this needs persistence */
+      world.snapshot = snapshot;
+      Ok(())
+  };
+};
+
+let applyRebase = (world: world, changes, rebases): unit => {
+  let%Lets.TryLog (snapshot, changes) = changes->World.reduceChanges(world.snapshot);
+
+  let (unsynced, syncing) = History.partition(world.history.history);
+  let (current, unsynced) =
+    unsynced->List.reverse->World.processRebases(snapshot, rebases);
+
+  world.history->PersistedHistory.applyRebase(unsynced, changes);
+};
+
+
+
+
+let onUndo = (file, auth, ports, sessionId) => {
+  let history = file.world.history.history->History.allChanges;
   let%Lets.OptConsume change =
     World.getUndoChange(
       ~sessionId,
-      ~author="worker",
-      ~changeId=workerId ++ string_of_int(nextChangeNum()),
-      file.world.unsynced->StoreInOne.Queue.toRevList
-      @ file.world.history->StoreInOne.History.itemsSince(None)->List.reverse,
+      ~author=auth.Session.userId,
+      ~changeId=workerId ++ ":undo:" ++ string_of_int(nextChangeNum()),
+      history
     );
 
   applyChange(file, change, ports, None);
 };
 
-let onRedo = (file, ports, sessionId) => {
+let onRedo = (file, auth, ports, sessionId) => {
   let%Lets.OptConsume change = World.getRedoChange(
     ~sessionId,
-    ~changeId=workerId ++ string_of_int(nextChangeNum()),
-    ~author="worker",
-    file.world.unsynced->StoreInOne.Queue.toRevList,
+    ~changeId=workerId ++ ":redo:" ++ string_of_int(nextChangeNum()),
+    ~author=auth.Session.userId,
+    file.world.history.history->History.allChanges
   );
 
   applyChange(file, change, ports, None);
 };
 
-  /* TODO go through events to see what needs to be persisted */
-  /* TODO debounced sync w/ server */
+/* TODO go through events to see what needs to be persisted */
+/* TODO debounced sync w/ server */
 
 let cursorsForSession = (cursors, sid) =>
   Hashtbl.fold(
@@ -224,13 +302,21 @@ let arrayFind = (items, fn) => Array.reduce(items, None, (current, item) => swit
 
 let loadFile = id => {
   let db = Dbs.getFileDb(id);
-  let%Lets.Async nodeMap = MetaDataPersist.loadNodes(db);
+  let%Lets.Async (
+    snapshot,
+    current,
+    history,
+   ) = Js.Promise.all3((
+     MetaDataPersist.loadData(db->Persistance.sublevel("snapshot")),
+     MetaDataPersist.loadData(db->Persistance.sublevel("current")),
+     PersistedHistory.load(db),
+   ));
 
-  let world =
-    StoreInOne.make(
-      {...Data.emptyData(~root="root"), nodes: nodeMap},
-      StoreInOne.History.empty,
-    );
+  let world = {
+    snapshot,
+    current,
+    history,
+  }
 
   Js.Promise.resolve((db, world));
 };
@@ -245,55 +331,221 @@ let getFile = (docId) => {
     meta,
     db,
     world,
+    syncTime: Obj.magic(0),
     cursors: Hashtbl.create(10)
   })
 };
 
-let filePromises = Hashtbl.create(10);
 
-let getCachedFile = (sessionId, ports, docId) => {
-  let%Lets.Async file = switch (Hashtbl.find(filePromises, docId)) {
+type sharedState = {
+  filePromises: Hashtbl.t(option(string), Js.Promise.t(file)),
+  fileTimers: Hashtbl.t(string, Js.Global.intervalId),
+  ports: HashMap.String.t((string, port)),
+  mutable auth: Session.auth,
+};
+
+let currentToServerFile = file => {
+  StoreInOne.Server.data: file.world.current,
+  history: file.world.history.PersistedHistory.history->History.allChanges,
+};
+
+let createFile = (state, google: Session.google, ~rootFolder, file) => {
+  Js.log("Creating file");
+  let serverFile = currentToServerFile(file);
+  let serialized = WorkerProtocolSerde.serializeServerFile(serverFile);
+  let%Lets.Async.Consume (nmId, fileId, fileTitle) = GoogleDrive.createFile(
+    google.accessToken,
+    ~fileId=file.meta.id,
+    ~rootFolder,
+    ~title=file.meta.title,
+    ~contents=Js.Json.stringify(serialized)
+  );
+  Js.log2("Created file, getting etag", fileId);
+  let%Lets.Async.Consume etag = GoogleDrive.getEtag(google.accessToken, fileId);
+  Js.log2("etag", etag);
+  let%Lets.OptForce etag = etag;
+  file.meta = {
+    ...file.meta,
+    sync: Some({
+      remote: Google(google.googleId, fileId),
+      lastSyncTime: Js.Date.now(),
+      etag,
+    })
+  }
+  sendMetaDataChange(state.ports, file.meta);
+  let%Lets.Async.Consume () = MetaDataPersist.save(file.meta);
+};
+
+let syncFile = (state, google: Session.google, remote, fileid, etag, file) => {
+  module A = Lets.Async.Consume;
+  let%A contents = GoogleDrive.getFile(google.accessToken, fileid, etag);
+  switch (contents) {
+    | None => Js.log("Remote file hasn't changed")
+      if (file.world.history.PersistedHistory.history->History.hasUnsynced) {
+        Js.log("Committing new local changes");
+        let serverFile = currentToServerFile(file);
+        let serialized = WorkerProtocolSerde.serializeServerFile(serverFile);
+        let%A _ = GoogleDrive.updateFileContents(google.accessToken, fileid, Js.Json.stringify(serialized))
+        let%A etag = GoogleDrive.getEtag(google.accessToken, fileid);
+        Js.log2("etag", etag);
+        let%Lets.OptForce etag = etag;
+
+        file.world.history->PersistedHistory.prepareSync;
+        let%Lets.TryLog () = commit(file.world);
+
+        file.meta = {
+          ...file.meta,
+          sync: Some({remote, etag, lastSyncTime: Js.Date.now()})
+        };
+        sendMetaDataChange(state.ports, file.meta);
+        let%Lets.Async.Consume () = MetaDataPersist.save(file.meta);
+      } else {
+        Js.log("Up to date!")
+      }
+    | Some((data, newEtag)) =>
+      Js.log3("Remote file has changed", etag, newEtag);
+      switch (WorkerProtocolSerde.deserializeServerFile(Obj.magic(data))) {
+        | Result.Error(error) => Js.log2("Failed to deserialize server file", error)
+        | Ok(server) =>
+          Js.log("Got the server file!");
+          file.world.history->PersistedHistory.prepareSync;
+          let latestId = file.world.history.PersistedHistory.history->History.latestSyncedId;
+          let (unsynced, syncing) = file.world.history.PersistedHistory.history->History.partition;
+          /* TODO TODO here's my chance to do change compression. */
+          let (server, result) = StoreInOne.Server.processSyncRequest(server, latestId, syncing);
+
+          let%Lets.TryLog needsPush = switch result {
+            | `Commit =>
+              let%Lets.TryWrap () = commit(file.world);
+              true
+            | `Rebase(changes, rebases) =>
+              let () = applyRebase(file.world, changes, rebases);
+              Ok(syncing != [])
+          };
+
+          let%Lets.Async.Consume etag = if (needsPush) {
+            Js.log("Pushing");
+            let serialized = WorkerProtocolSerde.serializeServerFile(server);
+            let%Lets.Async _ = GoogleDrive.updateFileContents(google.accessToken, fileid, Js.Json.stringify(serialized))
+            let%Lets.Async etag = GoogleDrive.getEtag(google.accessToken, fileid);
+            Js.log2("etag", etag);
+            let%Lets.OptForce etag = etag;
+            Js.Promise.resolve(etag)
+          } else {
+            Js.Promise.resolve(newEtag)
+          };
+
+          file.meta = {
+            ...file.meta,
+            sync: Some({remote, etag: newEtag, lastSyncTime: Js.Date.now()})
+          };
+          sendMetaDataChange(state.ports, file.meta);
+          let%Lets.Async.Consume () = MetaDataPersist.save(file.meta);
+      }
+  }
+};
+
+let authKey = "nm:auth";
+
+let saveAuth = auth => {
+  Dbs.settingsDb->Persistance.put("current", auth)->ignore;
+  auth
+};
+
+let timedSync = (state, file) => {
+  Js.log3("Timed synced", file.meta.title, file.meta.sync);
+  module O = Lets.OptConsume;
+  let%O google = state.auth.Session.google;
+  let%O () = google.connected ? Some(()) : None;
+  let%Lets.Async.Consume google = if (GoogleSync.isExpired(google)) {
+    Js.log("Refreshing google auth");
+    let%Lets.Async.Wrap google = GoogleSync.refreshProfile(google);
+    state.auth = {...state.auth, google: Some(google)};
+    saveAuth(state.auth)->ignore;
+    google
+  } else { Lets.Async.resolve(google) };
+  switch (file.meta.sync) {
+    | None => createFile(state, google, ~rootFolder=google.folderId, file)
+    | Some({remote: Google(username, fileid) as remote, lastSyncTime, etag}) =>
+      syncFile(state, google, remote, fileid, etag, file);
+    | Some(_) =>
+      /* TODO */
+      ()
+  }
+};
+
+let getCachedFile = (state, sessionId, docId) => {
+  let%Lets.Async file = switch (Hashtbl.find(state.filePromises, docId)) {
     | exception Not_found =>
       let promise = getFile(docId);
-      filePromises->Hashtbl.replace(docId, promise);
+      state.filePromises->Hashtbl.replace(docId, promise);
       promise
     | promise => promise
   };
+  if (!state.fileTimers->Hashtbl.mem(file.meta.id)) {
+    state.fileTimers->Hashtbl.replace(file.meta.id, Js.Global.setInterval(() => {
+      timedSync(state, file);
+    },
+    5 * 60 * 1000
+    // 30 * 1000
+    ))
+    timedSync(state, file);
+  };
+
   file.meta = {
     ...file.meta,
     lastOpened: Js.Date.now()
   };
-  sendMetaDataChange(~excludeSession=sessionId, ports, file.meta);
+  sendMetaDataChange(~excludeSession=sessionId, state.ports, file.meta);
   let%Lets.Async () = MetaDataPersist.save(file.meta);
   Js.Promise.resolve(file)
 };
 
-let rec handleMessage = (port, file, ports, sessionId, evt) =>
+let rec handleMessage = (state, port, file, sessionId, evt) =>
   switch (parseMessage(evt##data)) {
   | Ok(message) =>
     switch (message) {
     | WorkerProtocol.Change(change) =>
-      applyChange(file, change, ports, Some(sessionId));
-    | UndoRequest => onUndo(file, ports, sessionId)
-    | RedoRequest => onRedo(file, ports, sessionId)
+      applyChange(file, change, state.ports, Some(sessionId));
+    | UndoRequest => onUndo(file, state.auth, state.ports, sessionId)
+    | RedoRequest => onRedo(file, state.auth, state.ports, sessionId)
     | CreateFile(id, title) =>
-      let%Lets.Async.Consume meta = MetaDataPersist.makeEmptyFile(~id, ~title);
-      sendToPorts(ports, WorkerProtocol.MetaDataUpdate(meta))
+      Js.log("Creating file " ++ id);
+      let%Lets.Async.Consume meta = MetaDataPersist.makeEmptyFile(~id, ~title, ~author=state.auth.userId);
+      Js.log("Created file");
+      let%Lets.Async.Consume file = getCachedFile(state, sessionId, Some(id));
+      // state.filePromises->Hashtbl.replace(id, meta);
+      sendToPorts(state.ports, WorkerProtocol.MetaDataUpdate(meta))
     | Close =>
       file.cursors->Hashtbl.remove(sessionId);
-      ports->HashMap.String.remove(sessionId);
-      sendCursors(file.cursors, ports, sessionId, file.meta.id);
+      state.ports->HashMap.String.remove(sessionId);
+      sendCursors(file.cursors, state.ports, sessionId, file.meta.id);
     | SelectionChanged(nodeId, range) =>
-      /* Js.log2(nodeId, range); */
       Hashtbl.replace(file.cursors, sessionId, (nodeId, range));
-      sendCursors(file.cursors, ports, sessionId, file.meta.id);
+      sendCursors(file.cursors, state.ports, sessionId, file.meta.id);
+
+    | Logout =>
+      state.auth = {...state.auth, google: None};
+      saveAuth(state.auth)->ignore;
+      sendToPorts(~excludeSession=sessionId, state.ports, WorkerProtocol.UserChange(state.auth))
+
+    | Login(google) =>
+      Js.log2("Got a login!", google);
+      state.auth = {
+        google: Some(google),
+        loginDate: Js.Date.now(),
+        userId: google.googleId,
+      };
+      saveAuth(state.auth)->ignore
+      sendToPorts(~excludeSession=sessionId, state.ports, WorkerProtocol.UserChange(state.auth))
+
     | Open(id) =>
       file.cursors->Hashtbl.remove(sessionId);
-      sendCursors(file.cursors, ports, sessionId, file.meta.id);
+      sendCursors(file.cursors, state.ports, sessionId, file.meta.id);
 
-      let%Lets.Async.Consume file = getCachedFile(sessionId, ports, id);
-      ports->HashMap.String.set(sessionId, (file.meta.id, port));
-      port->onmessage(handleMessage(port, file, ports, sessionId));
+      let%Lets.Async.Consume file = getCachedFile(state, sessionId, id);
+      state.ports->HashMap.String.set(sessionId, (file.meta.id, port));
+      port->onmessage(handleMessage(state, port, file, sessionId));
       port
       ->postMessage(
           messageToJson(
@@ -301,6 +553,7 @@ let rec handleMessage = (port, file, ports, sessionId, evt) =>
               file.meta,
               file->data,
               cursorsForSession(file.cursors, sessionId),
+              state.auth,
             ),
           ),
         );
@@ -312,22 +565,93 @@ let rec handleMessage = (port, file, ports, sessionId, evt) =>
   };
 
 
+let loadAuth = () => {
+  Dbs.settingsDb->Persistance.get("current")
+};
 
-let ports = HashMap.String.make(~hintSize=5);
+let getAndCheckAuth = (current) => {
+  let%Lets.Async auth =
+    try%Lets.Async (loadAuth()) {
+    | _ =>
+      Js.Promise.resolve(current)
+    };
+  switch (auth.google) {
+  | None => Js.Promise.resolve(auth)
+  | Some(google) =>
+    GoogleSync.checkSavedAuth(google)
+    |> Js.Promise.then_(google => {
+        Js.log2("Google auth", google);
+         Js.Promise.resolve({
+           ...auth,
+           google: Some({...google, connected: true}),
+         })
+      })
+    |> Js.Promise.catch(err =>
+         Js.Promise.resolve({
+           ...auth,
+           google: Some({...google, connected: false}),
+         })
+       )
+  };
+};
+
+let hasCheckedAuth = ref(false);
+
+let state = {
+  filePromises: Hashtbl.create(10),
+  fileTimers: Hashtbl.create(10),
+  auth: {
+    userId: Utils.newId(),
+    google: None,
+    loginDate: Js.Date.now(),
+  },
+  ports: HashMap.String.make(~hintSize=5),
+};
+
+[%bs.raw "global.state = state"];
 
 addEventListener("connect", e => {
   let%Lets.OptForce port = e##ports[0];
   port
   ->onmessage(evt => {
       Js.log2("Got message", evt);
+
       switch (parseMessage(evt##data)) {
       | Ok(Close) => ()
-      | Ok(Init(sessionId, fileId)) =>
+      | Ok(Init(sessionId, fileId, googleAuth)) =>
         /* TODO fileid */
-        let%Lets.Async.Consume file = getCachedFile(sessionId, ports, fileId);
+        let%Lets.Async.Consume () = switch (googleAuth) {
+          | None => {
+            if (hasCheckedAuth^) {
+              Js.Promise.resolve()
+            } else {
+              hasCheckedAuth := true;
+              let%Lets.Async.Wrap auth = getAndCheckAuth(state.auth);
+              if (auth != state.auth) {
+                state.auth = auth;
+                saveAuth(state.auth)->ignore
+                sendToPorts(~excludeSession=sessionId, state.ports, WorkerProtocol.UserChange(state.auth))
+              } else {
+                saveAuth(state.auth)->ignore
+              }
+            }
+          }
+          | Some(google) =>
+            state.auth = {
+              google: Some(google),
+              loginDate: Js.Date.now(),
+              userId: google.googleId,
+            };
+            saveAuth(state.auth)->ignore
+            sendToPorts(~excludeSession=sessionId, state.ports, WorkerProtocol.UserChange(state.auth));
+            Js.Promise.resolve();
+        };
+
+        let%Lets.Async.Consume file = getCachedFile(state, sessionId, fileId);
         let%Lets.Async.Consume allFiles = Dbs.metasDb->Persistance.getAll;
-        ports->HashMap.String.set(sessionId, (file.meta.id, port));
-        port->onmessage(handleMessage(port, file, ports, sessionId));
+        state.ports->HashMap.String.set(sessionId, (file.meta.id, port));
+        port->onmessage(handleMessage(state, port, file, sessionId));
+        /* port->postMessage(messageToJson(UserChange(state.auth))) */
         port
         ->postMessage(
             messageToJson(
@@ -335,6 +659,7 @@ addEventListener("connect", e => {
                 file.meta,
                 file->data,
                 cursorsForSession(file.cursors, sessionId),
+                state.auth
               ),
             ),
           );
@@ -342,7 +667,7 @@ addEventListener("connect", e => {
         port->postMessage(messageToJson(
           AllFiles(allFiles->Belt.Array.map(m => m##value)->List.fromArray)
         ));
-      | _ => ()
+      | _ => Js.log2("Ignoring message", evt##data)
       };
     });
 });

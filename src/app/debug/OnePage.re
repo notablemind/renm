@@ -3,13 +3,13 @@ let component = ReasonReact.reducerComponent("OnePage");
 let make = _ => {
   ...component,
   initialState: () => {
-    let world: StoreInOne.world =
+    let world: StoreInOne.Client.world =
       switch (LocalStorage.getJson("renm:store")) {
       /* Disabling "restore" for a minute */
       | Some(_)
       /* | Some(data) => data */
       | None =>
-        StoreInOne.make(
+        StoreInOne.Client.make(
           {
             ...Data.emptyData(~root="root"),
             nodes: Data.makeNodeMap(Fixture.large),
@@ -29,13 +29,14 @@ let make = _ => {
     Js.log(sharedViewData);
     Js.log(world);
 
-    let store: StoreInOne.t = {
-      StoreInOne.session: {
+    let store: StoreInOne.MonoClient.t = {
+      StoreInOne.MonoClient.session: {
         ...
           Session.createSession(
             ~metaData=MetaData.blankMetaData(),
             ~sessionId=Utils.newId(),
             ~root=world.current.root,
+            ~user={userId: "fake", loginDate: Js.Date.now(), google: None},
           ),
         sharedViewData,
       },
@@ -47,5 +48,5 @@ let make = _ => {
     store;
   },
   reducer: ((), _) => ReasonReact.NoUpdate,
-  render: ({state}) => <Tree store=state->StoreInOne.clientStore />,
+  render: ({state}) => <Tree store=state->StoreInOne.MonoClient.clientStore(0) />,
 };

@@ -11,6 +11,7 @@ let rec make = (~depth, ~id, ~store, ~renderDraggable, ~registerFocus, _children
     self.onUnmount(
       Session.subscribe(
         store.ClientStore.session(),
+        store.ClientStore.view().id,
         id,
         (depth, () => self.send(NodeBody.getData(store, id))),
       ),

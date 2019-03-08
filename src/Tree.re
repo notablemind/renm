@@ -16,7 +16,7 @@ let rec visibleChildren = (store: ClientStore.t('a, 'b, 'c), id) => {
   let%Lets.OptDefault node = (store.data()->Data.get(id), one);
   if (node.children != []
       && (
-        id == store.session().view.root
+        id == store.view().root
         || store.session().sharedViewData.expanded->Set.String.has(id)
       )) {
     node.children
@@ -34,7 +34,7 @@ let make = (~store: ClientStore.t('a, 'b, 'c), ~registerFocus=(f) => (), _childr
   reducer: ((), ()) => ReasonReact.Update(()),
   didMount: self => {
     self.onUnmount(
-      store.ClientStore.session().subs->Subscription.subscribe([SharedTypes.Event.View(Root)], (0, () => {
+      store.ClientStore.session().subs->Subscription.subscribe([SharedTypes.Event.View(Root(store.view().id))], (0, () => {
         Js.log("triggered");
         self.send()
       }))
@@ -81,11 +81,11 @@ let make = (~store: ClientStore.t('a, 'b, 'c), ~registerFocus=(f) => (), _childr
           let asChild = abs_float(dist) <= rect##height /. 4.;
           let canChild =
             !
-              store.session().view.selection
-              ->Set.String.add(store.session().view.active)
+              store.view().selection
+              ->Set.String.add(store.view().active)
               ->Set.String.has(id);
 
-          let%Lets.OptIf () = id != store.session().view.root || dist > 0.;
+          let%Lets.OptIf () = id != store.view().root || dist > 0.;
 
           let (destId, idx) =
             if (dist < 0.) {
@@ -108,14 +108,14 @@ let make = (~store: ClientStore.t('a, 'b, 'c), ~registerFocus=(f) => (), _childr
       }
       onStart={
         id =>
-          if (store.session().view.selection->Set.String.has(id)) {
+          if (store.view().selection->Set.String.has(id)) {
             /* A set of all the selected IDs and their (visible) children */
-            store.session().view.selection
+            store.view().selection
             ->Set.String.reduce(Set.String.empty, (set, id) =>
                 set->Set.String.union(visibleChildren(store, id))
               );
           } else {
-            store.actView(SetActive(id, store.session().view.editPos));
+            store.actView(SetActive(id, store.view().editPos));
             visibleChildren(store, id);
           }
       }
@@ -126,8 +126,8 @@ let make = (~store: ClientStore.t('a, 'b, 'c), ~registerFocus=(f) => (), _childr
             Actions.Move(
               TreeTraversal.orderIds(
                 store.data().nodes,
-                store.session().view.root,
-                store.session().view.selection->Set.String.add(sourceId),
+                store.view().root,
+                store.view().selection->Set.String.add(sourceId),
               ),
               parentId,
               idx,
@@ -143,8 +143,8 @@ let make = (~store: ClientStore.t('a, 'b, 'c), ~registerFocus=(f) => (), _childr
                depth=0
                renderDraggable
                registerFocus
-               key={store.session().view.root}
-               id={store.session().view.root}
+               key={store.view().root}
+               id={store.view().root}
              />
          }
     </Draggable>,

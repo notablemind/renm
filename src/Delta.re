@@ -14,11 +14,13 @@ let fromString = str => make([|insert({"insert": withNewline(str)})|]);
 [@bs.send] external retain: (delta, int) => delta = "";
 [@bs.send] external retainWithAttributes: (delta, int, Js.t('a)) => delta = "retain";
 [@bs.send] external insert: (delta, string) => delta = "";
+[@bs.send] external insertEmbed: (delta, Js.t('a)) => delta = "insert";
 [@bs.send] external insertWithAttributes: (delta, string, Js.t('a)) => delta = "insert";
 [@bs.send] external delete: (delta, int) => delta = "";
 [@bs.send] external diff: (delta, delta) => delta = "";
 
 [@bs.send] external transform: (delta, delta) => delta = "";
+[@bs.send] external transformPriority: (delta, delta, bool) => delta = "transform";
 [@bs.send] external compose: (delta, delta) => delta = "";
 
 let getText: delta => string = [%bs.raw
@@ -26,6 +28,35 @@ let getText: delta => string = [%bs.raw
   return delta.ops.map(op => op.insert).filter(Boolean).join('')
 }|}
 ];
+
+let getSource: delta => option(Js.t('a)) = [%bs.raw
+  {|function(delta) {
+    for (let op of delta.ops) {
+      if (op.insert && typeof op.insert.source === 'object') {
+        return op.insert.source
+      }
+    }
+  }|}
+];
+
+let isDocument: delta => bool = [%bs.raw {|
+function(delta) {
+  return delta.ops.every(op => !!op.insert)
+}
+|}];
+
+let normalizeDelta: delta => delta = [%bs.raw {|
+function normalizeDelta(delta) {
+  const Delta = require('quill-delta');
+  return delta.reduce((normalizedDelta, op) => {
+    if (typeof op.insert === 'string') {
+      const text = op.insert.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+      return normalizedDelta.insert(text, op.attributes);
+    }
+    return normalizedDelta.push(op);
+  }, new Delta());
+}
+|}];
 
 external toJson: delta => Js.Json.t = "%identity";
 let fromJson = json =>

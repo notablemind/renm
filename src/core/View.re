@@ -53,7 +53,6 @@ type view = {
   selection: Set.String.t,
   editPos,
   active: Data.Node.id,
-  remoteCursors: list(cursor),
   prevActive: option(Data.Node.id),
   lastEdited: option(Data.Node.id),
 };
@@ -81,18 +80,57 @@ let emptyView = (~id, ~root) => {
   hideCompleted: false,
   editPos: Default,
   active: root,
-  remoteCursors: [],
   prevActive: None,
   lastEdited: None,
 };
 
 open SharedTypes;
 
+
+let rebase = (view, sharedViewData, root) => {
+({
+      ...view,
+      root,
+      selection: Set.String.empty->Set.String.add(root),
+      active: root,
+      editPos: End,
+    }, sharedViewData, [Event.View(Root(view.id)), Event.View(NodeStatus(view.id, root))]
+        @ Set.String.toList(view.selection)
+          ->List.map(id => Event.View(NodeStatus(view.id, id)))
+    )
+};
+
+
+let ensureVisible = (data, id, view, sharedViewData) => {
+  let rec loop = (id, changed, expanded) =>
+    if (id == view.root || id == data.Data.root) {
+      (changed, expanded);
+    } else {
+      {
+        let%Lets.OptWrap node = data.nodes->Map.String.get(id);
+        Js.log4("parent", node.parent, node.contents->Delta.getText, expanded->Set.String.has(node.parent));
+        let changed = expanded->Set.String.has(node.parent) ? changed : [node.parent, ...changed];
+        let expanded = expanded->Set.String.add(node.parent);
+        if (node.id == node.parent) {
+          (changed, expanded);
+        } else {
+          loop(node.parent, changed, expanded);
+        };
+      }
+      ->Lets.OptDefault.or_((changed, expanded));
+    };
+  let (changed, expanded) = loop(id, [], sharedViewData.expanded);
+  (changed, {expanded: expanded});
+};
+
+
 let processViewAction = (view, sharedViewData, action) =>
   switch (action) {
   /*** TODO clear selection if id is same */
   | SetActive(id, editPos) =>
     if (id != view.active || (view.editPos != editPos && editPos != Default)) {
+      /* Find path to root. If it's outside of the current root, then rebase to it.
+         otherwise, ensure all parents are uncollapsed. */
       (
         {
           ...view,
@@ -103,17 +141,17 @@ let processViewAction = (view, sharedViewData, action) =>
         sharedViewData,
         (
           id != view.active ?
-            [Event.View(Node(view.active)), Event.View(Node(id))] :
-            [Event.View(Node(id))]
+            [Event.View(NodeStatus(view.id, view.active)), Event.View(NodeStatus(view.id, id))] :
+            [Event.View(NodeStatus(view.id, id))]
         )
         @ Set.String.toList(view.selection)
-          ->List.map(id => Event.View(Node(id))),
+          ->List.map(id => Event.View(NodeStatus(view.id, id))),
       );
     } else {
       (view, sharedViewData, []);
     }
 
-  | SetMode(mode) => ({...view, mode}, sharedViewData, [Event.View(Mode)])
+  | SetMode(mode) => ({...view, mode}, sharedViewData, [Event.View(Mode(view.id))])
 
   | SetCollapsed(id, collapsed) =>
     if (sharedViewData.expanded->Set.String.has(id) != !collapsed) {
@@ -135,14 +173,14 @@ let processViewAction = (view, sharedViewData, action) =>
   | AddToSelection(id) => (
       {...view, selection: view.selection->Set.String.add(id)},
       sharedViewData,
-      [Event.View(Node(id))],
+      [Event.View(NodeStatus(view.id, id))],
     )
   | SetSelection(selection) => (
       {...view, selection: selection->Set.String.add(view.active)},
       sharedViewData,
       selection
       ->Set.String.reduce([], (evts, id) =>
-          [Event.View(Node(id)), ...evts]
+          [Event.View(NodeStatus(view.id, id)), ...evts]
         ),
     )
 
@@ -151,48 +189,20 @@ let processViewAction = (view, sharedViewData, action) =>
       sharedViewData,
       view.selection
       ->Set.String.reduce([], (evts, id) =>
-          [Event.View(Node(id)), ...evts]
+          [Event.View(NodeStatus(view.id, id)), ...evts]
         ),
     )
 
   | Edit(editPos) => (
       {...view, editPos},
       sharedViewData,
-      [Event.View(Node(view.active))],
+      [Event.View(NodeStatus(view.id, view.active))],
     )
 
-  | Rebase(root) => ({
-      ...view,
-      root,
-      selection: Set.String.empty->Set.String.add(root),
-      active: root,
-      editPos: End,
-    }, sharedViewData, [Event.View(Root), Event.View(Node(root))]
-        @ Set.String.toList(view.selection)
-          ->List.map(id => Event.View(Node(id)))
-    )
+  | Rebase(root) => rebase(view, sharedViewData, root)
 
   | HideCompleted(_) => (view, sharedViewData, [])
   };
-
-let ensureVisible = (data, view, sharedViewData) => {
-  let rec loop = (id, expanded) =>
-    if (id == view.root || id == data.Data.root) {
-      expanded;
-    } else {
-      {
-        let%Lets.OptWrap node = data.nodes->Map.String.get(id);
-        let expanded = expanded->Set.String.add(node.parent);
-        if (node.id == node.parent) {
-          expanded;
-        } else {
-          loop(node.parent, expanded);
-        };
-      }
-      ->Lets.OptDefault.or_(expanded);
-    };
-  {expanded: loop(view.active, sharedViewData.expanded)};
-};
 
 let selectionEvents = ((id, set, (pos, length))) => [
   SetActive(id, Exactly(pos, length)),

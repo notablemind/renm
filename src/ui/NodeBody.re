@@ -1,4 +1,4 @@
-open Opens;
+/* open Opens; */
 
 type data('contents, 'prefix) = {
   node: Data.Node.t('contents, 'prefix),
@@ -14,11 +14,11 @@ let getData = (store: ClientStore.t('a, 'b, 'c), id) =>
     Some({
       node,
       editPos:
-        id == store.session().view.active ?
-          Some(store.session().view.editPos) : None,
-      selected: Set.String.has(store.session().view.selection, id),
+        id == store.view().active ?
+          Some(store.view().editPos) : None,
+      selected: Set.String.has(store.view().selection, id),
       collapsed:
-        id == store.session().view.root ?
+        id == store.view().root ?
           false : !Set.String.has(store.session().sharedViewData.expanded, id),
     })
   };
@@ -47,10 +47,10 @@ let renderContents =
         NodeTypes.value: text,
         id: node.id,
         store,
-        editPos,
+        editPos: store.view().id == store.session().activeView ? editPos : None,
         registerFocus,
         remoteCursors:
-          store.session().view.remoteCursors
+          store.session().remoteCursors
           ->Belt.List.keep(cursor => cursor.node == node.id),
         onRedo: () => store.redo(),
         onUndo: () => store.undo(),
@@ -67,6 +67,8 @@ let renderContents =
           false;
         },
         onEnter: () => ActionCreators.createAfter(store, node),
+        onCreateChild: () => ActionCreators.createChild(store, node),
+        onCreateAunt: () => ActionCreators.createAunt(store, node),
         onIndent: () => {
           ActionCreators.indent(store, node);
           true;
@@ -75,6 +77,7 @@ let renderContents =
           ActionCreators.dedent(store, node);
           true;
         },
+        onShortEnter: () => store.act([SetCompleted(node.id, !node.completed)]),
         onDown: () => ActionCreators.down(store, node),
         onRight: () => ActionCreators.right(store, node),
         onLeft: () => ActionCreators.left(store, node),
@@ -102,7 +105,7 @@ module Styles = {
     ]);
   let circle =
     style([
-      backgroundColor(hex("ccc")),
+      backgroundColor(Colors.Semantic.childDot),
       borderRadius(px(2)),
       width(px(7)),
       marginTop(px(2)),
@@ -115,7 +118,7 @@ module Styles = {
       borderRadius(px(4)),
       borderLeft(px(5), `solid, `transparent),
       borderRight(px(5), `solid, `transparent),
-      borderTop(px(8), `solid, hex("ccc")),
+      borderTop(px(8), `solid, Colors.Semantic.childTriangle),
       position(`absolute),
       left(px(4)),
       top(px(6)),
@@ -130,8 +133,32 @@ module Styles = {
       borderRadius(px(4)),
       borderTop(px(5), `solid, `transparent),
       borderBottom(px(5), `solid, `transparent),
-      borderLeft(px(8), `solid, hex("ccc")),
+      borderLeft(px(8), `solid, Colors.Semantic.childTriangle),
     ]);
+
+  Css.global(".ql-editor.ql-blank::before", [
+    borderBottom(px(3), `dotted, Colors.Semantic.emptyDot),
+    important(left(px(5))),
+    top(px(2)),
+  ]);
+
+  Css.global(".ql-editor code", [
+    backgroundColor(rgba(255,255,255,0.2)),
+    backgroundColor(Colors.Semantic.selected),
+    padding2(~v=px(0), ~h=px(4)),
+    borderRadius(px(4))
+  ]);
+
+  Css.global(".ql-editor .ql-source", [
+    padding2(~v=px(2), ~h=px(4)),
+    borderRadius(px(4)),
+    backgroundColor(hex("cef")),
+  ]);
+
+  Css.global(".ql-editor blockquote", [
+    important(borderLeft(px(4), `solid, Colors.Semantic.selected)),
+    important(paddingLeft(px(4))),
+  ])
 };
 
 let renderHandle = (~onMouseDown, ~hasChildren, ~collapsed, ~toggleCollapsed) =>
@@ -169,7 +196,8 @@ let make =
               make(
                 ~display="flex",
                 ~flexDirection="row",
-                ~alignItems="center",
+                ~alignItems="flex-start",
+                ~position="relative",
                 ~margin="1px",
                 ~outline=
                   editPos != None ?
@@ -192,7 +220,8 @@ let make =
                 }
             }>
             {
-              node.id != store.session().view.root ?
+              // Js.log3("Rendering a node", node.id, editPos);
+              node.id != store.view().root ?
                 renderHandle(
                   ~onMouseDown=evt => {
                     if (ReactEvent.Mouse.metaKey(evt)) {
@@ -215,29 +244,66 @@ let make =
               | None => ReasonReact.null
               | Some(NodeType.Todo) => <input
                 type_="checkbox"
+                className=Css.(style([marginTop(px(7))]))
                 onChange={evt => {
                   store.act([SetCompleted(node.id, !node.completed)])
                 }}
                 checked={node.completed} />
-              | Some(Attribution) => ReasonReact.null
+              | Some(Attribution) =>
+                let author = store.data().contributors->Belt.Map.String.get(node.author);
+                switch author {
+                  | None => ReasonReact.string("Unknown author")
+                  | Some({profilePic: Some(url)}) =>
+                  <img 
+                  className=Css.(style([marginTop(px(7))]))
+                  src=url style={ReactDOMRe.Style.(make(
+                    ~borderRadius="10px",
+                    ~width="20px", ~height="20px", ()))} />
+                  | Some({name}) =>
+                  ReasonReact.string(name)
+                }
+                /* ReasonReact.null */
             }}
             <div style=ReactDOMRe.Style.(make(~flex="1", ()))>
               {renderContents(store, node, registerFocus, editPos, collapsed)}
             </div>
+            {if (node.tags->Set.String.isEmpty) {
+              ReasonReact.null
+            } else {
+              <div className=Css.(style([
+                position(`absolute),
+                bottom(px(-2)),
+                display(`flex),
+                right(px(8)),
+                zIndex(1),
+              ]))>
+                {node.tags->Set.String.toArray->Array.keepMap(id => {
+                  let%Lets.OptWrap tag = store.data().tags->Map.String.get(id);
+                  <div key={id} className=Css.(style([
+                    padding2(~v=px(0), ~h=px(4)),
+                    borderRadius(px(4)),
+                    fontSize(px(10)),
+                    marginLeft(px(4)),
+                    color(black),
+                    fontFamily("sans-serif"),
+                    `declaration("backgroundColor", tag.color),
+                  ]))>
+                    {ReasonReact.string(tag.name)}
+                  </div>
+                })->ReasonReact.array}
+              </div>
+            }}
           </div>
         )
       }
       {
         !collapsed ?
           <div
-            style={
-              ReactDOMRe.Style.make(
-                ~paddingLeft="10px",
-                ~borderLeft="3px solid #eee",
-                ~marginLeft="10px",
-                (),
-              )
-            }>
+            className=Css.(style([
+                paddingLeft(px(10)),
+                borderLeft(px(3), `solid, Colors.Semantic.childLine),
+                marginLeft(px(10)),
+            ]))>
             {node.children->List.map(renderChild)->List.toArray->ReasonReact.array}
           </div> :
           ReasonReact.null

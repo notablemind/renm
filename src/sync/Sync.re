@@ -24,12 +24,24 @@ type change('change, 'rebase, 'selection) = {
   rebase: 'rebase,
 };
 
+let rec tryReduceReverse = (list, initial, fn) =>
+  switch (list) {
+  | [] => Result.Ok(initial)
+  | [one, ...rest] =>
+    switch (tryReduceReverse(rest, initial, fn)) {
+      | Result.Error(e) => Error(e)
+      | Ok(result) => fn(result, one);
+    }
+  };
+
 let rec tryReduce = (list, initial, fn) =>
   switch (list) {
   | [] => Result.Ok(initial)
   | [one, ...rest] =>
-    let%Lets.Try result = fn(initial, one);
-    tryReduce(rest, result, fn);
+    switch (fn(initial, one)) {
+      | Result.Error(e) => Error(e)
+      | Ok(result) => tryReduce(rest, result, fn);
+    }
   };
 
 let rec skipReduce = (list, initial, fn) =>
@@ -38,7 +50,9 @@ let rec skipReduce = (list, initial, fn) =>
   | [one, ...rest] =>
     switch (fn(initial, one)) {
     | Result.Ok(result) => skipReduce(rest, result, fn)
-    | Error(_) => skipReduce(rest, initial, fn)
+    | Error(_) =>
+    Js.log2("Skipping change", one);
+    skipReduce(rest, initial, fn)
     }
   };
 
@@ -59,7 +73,7 @@ module F =
   /* TODO do I want to ignore & collect & report errors? or just abort... */
   let reduceChanges = (changes, initial) =>
     changes
-    ->skipReduce(
+    ->tryReduce(
         (initial, []),
         ((current, changes), change) => {
           let%Lets.Try (data, revert, rebase) =
@@ -117,17 +131,17 @@ module F =
   /* TODO does the server need to have a reified version of the state? Maybe, to give proper rebase things... */
   let processSyncRequest =
       (current, items, changes: list(thisChange)) => {
-    Js.log2("Items since", items);
+    /* Js.log2("Items since", items); */
     switch (items) {
     | [] =>
-      let (current, _appliedChanges) =
+      let%Lets.TryForce (current, _appliedChanges) =
         changes->reduceChanges(current);
       `Commit(current);
     | _ =>
       let rebases = items->List.map(change => change.rebase);
       let (current, rebasedChanges) =
         changes->processRebases(current, rebases);
-      Js.log2("rebased", rebasedChanges);
+      /* Js.log2("rebased", rebasedChanges); */
       (
         `Rebase((
           current,
@@ -138,13 +152,109 @@ module F =
     };
   };
 
-  /* let commit_ =  */
-
   let rebaseMany = (one, changes) =>
     changes
     ->List.reduce(one.revert, (change, other) =>
         Config.rebase(change, other.rebase)
       );
+
+  let selectionPair = one => (
+    one.inner.sessionInfo.preSelection,
+    one.inner.sessionInfo.postSelection,
+  );
+
+  /** TODO test this */
+  let getUndoChangeset = (history, sessionId) => {
+    let rec loop = (history, rebases, undoneChanges, changeSet) =>
+      switch (history) {
+      | [] => ([], false)
+      | [one, ...rest] when undoneChanges->Set.String.has(one.inner.changeId) =>
+        loop(rest, rebases, undoneChanges, changeSet)
+      | [one, ...rest] when one.inner.sessionInfo.sessionId != sessionId =>
+        loop(rest, [one, ...rebases], undoneChanges, changeSet)
+      | [{inner: {link: Some(Undo(ids))}}, ...rest] =>
+        let undones = Set.String.fromArray(List.toArray(ids));
+        let alls = undoneChanges->Set.String.union(undones);
+        loop(rest, rebases, alls, changeSet);
+
+      | [{inner: {changeId}} as one, ...rest] when Some(Some(changeId)) == changeSet =>
+        ([(
+          rebaseMany(one, rebases),
+          (one.inner.changeId, selectionPair(one)),
+        )], true)
+
+      | [one, ...rest] =>
+        switch (changeSet) {
+        | None =>
+        switch (one.inner.sessionInfo.changeset) {
+          | None => 
+            ([(
+              rebaseMany(one, rebases),
+              (one.inner.changeId, selectionPair(one)),
+            )], true)
+          | Some(_) =>
+            /* Umm do I need to do this if one.inner.sessionInfo.changeset is None? */
+            let (rest, completed) =
+              loop(rest, rebases, undoneChanges, Some(one.inner.sessionInfo.changeset));
+            let thisOne = (
+              rebaseMany(one, rebases),
+              (one.inner.changeId, selectionPair(one)),
+            );
+            ([thisOne, ...rest], completed)
+        }
+        | Some(changeset) =>
+          if (changeset != one.inner.sessionInfo.changeset || changeset == None) {
+            ([], true);
+          } else {
+            let (rest, completed) = loop(rest, rebases, undoneChanges, Some(changeset));
+            ([
+              (
+                rebaseMany(one, rebases),
+                (one.inner.changeId, selectionPair(one)),
+              ),
+              ...rest,
+            ], completed);
+          }
+        }
+      };
+    loop(history, [], Set.String.empty, None);
+  };
+
+
+  let getUndoChange = (~sessionId, ~changeId, ~author, changes) => {
+    let (changeResult, completed) = getUndoChangeset(
+        changes,
+        sessionId,
+      );
+    let%Lets.Opt () = completed ? Some(()) : None;
+
+    let (changes, idsAndSelections) =
+      changeResult->List.unzip;
+    let (changeIds, selections) = List.unzip(idsAndSelections);
+
+    let change = changes->Config.mergeChanges;
+
+    let%Lets.Opt () = changes != [] ? Some(()) : None;
+
+    let (_, postSelection) = selections->List.head->Lets.Opt.force;
+    let (preSelection, _) =
+      selections->List.get(List.length(selections) - 1)->Lets.Opt.force;
+
+    let change = {
+      apply: change,
+      changeId,
+      link: Some(Undo(changeIds)),
+      sessionInfo: {
+        sessionId,
+        changeset: None,
+        author,
+        preSelection,
+        postSelection,
+      },
+    };
+
+    Some(change)
+  };
 
   let getRedoChange = (history, sessionId) => {
     let rec loop = (history, rebases, redoneChanges) =>
@@ -171,95 +281,6 @@ module F =
         None
       };
     loop(history, [], Set.String.empty);
-  };
-
-  /** TODO test this */
-  let getUndoChangeset = (history, sessionId) => {
-    let rec loop = (history, rebases, undoneChanges, changeSet) =>
-      switch (history) {
-      | [] => []
-      | [one, ...rest] when undoneChanges->Set.String.has(one.inner.changeId) =>
-        loop(rest, rebases, undoneChanges, changeSet)
-      | [one, ...rest] when one.inner.sessionInfo.sessionId != sessionId =>
-        loop(rest, [one, ...rebases], undoneChanges, changeSet)
-      | [{inner: {link: Some(Undo(ids))}}, ...rest] =>
-        let undones = Set.String.fromArray(List.toArray(ids));
-        let alls = undoneChanges->Set.String.union(undones);
-        loop(rest, rebases, alls, changeSet);
-      | [one, ...rest] =>
-        switch (changeSet) {
-        | None => [
-            (
-              rebaseMany(one, rebases),
-              (
-                one.inner.changeId,
-                (
-                  one.inner.sessionInfo.preSelection,
-                  one.inner.sessionInfo.postSelection,
-                ),
-              ),
-            ),
-            ...loop(
-                 rest,
-                 rebases,
-                 undoneChanges,
-                 Some(one.inner.sessionInfo.changeset),
-               ),
-          ]
-        | Some(changeset) =>
-          if (changeset != one.inner.sessionInfo.changeset || changeset == None) {
-            [];
-          } else {
-            [
-              (
-                rebaseMany(one, rebases),
-                (
-                  one.inner.changeId,
-                  (
-                    one.inner.sessionInfo.preSelection,
-                    one.inner.sessionInfo.postSelection,
-                  ),
-                ),
-              ),
-              ...loop(rest, rebases, undoneChanges, Some(changeset)),
-            ];
-          }
-        }
-      };
-    loop(history, [], Set.String.empty, None);
-  };
-
-
-  let getUndoChange = (~sessionId, ~changeId, ~author, changes) => {
-    let (changes, idsAndSelections) =
-      getUndoChangeset(
-        changes,
-        sessionId,
-      )->List.unzip;
-    let (changeIds, selections) = List.unzip(idsAndSelections);
-
-    let change = changes->Config.mergeChanges;
-
-    let%Lets.Opt () = changes != [] ? Some(()) : None;
-
-    let (_, postSelection) = selections->List.head->Lets.Opt.force;
-    let (preSelection, _) =
-      selections->List.get(List.length(selections) - 1)->Lets.Opt.force;
-
-    let change = {
-      apply: change,
-      changeId,
-      link: Some(Undo(changeIds)),
-      sessionInfo: {
-        sessionId,
-        changeset: None,
-        author,
-        preSelection,
-        postSelection,
-      },
-    };
-
-    Some(change)
   };
 
   let getRedoChange = (~sessionId, ~changeId, ~author, changes) => {

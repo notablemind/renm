@@ -6,7 +6,12 @@ let showChange = (change: World.thisChange) =>
     style=ReactDOMRe.Style.(
       make(~fontFamily="monospace", ~whiteSpace="pre-wrap", ())
     )>
-    {str(change.inner.changeId ++ "\n")}
+    <div style=ReactDOMRe.Style.(make(~color="red", ()))>
+      {str(change.inner.changeId ++ "\n" ++ switch (change.inner.sessionInfo.changeset) {
+        | None => ""
+        | Some(cid) => "ChangeSet: " ++ cid
+      })}
+    </div>
     {
       str(
         Js.Json.stringify(
@@ -38,13 +43,37 @@ let showChange = (change: World.thisChange) =>
     }
   </div>;
 
+/* module Resolve = {
+  let component = ReasonReact.reducerComponentWithRetainedProps("Resolve");
+  let make = (~promise, ~render, _children) => {
+    ...component,
+    initialState: () => None,
+    retainedProps: promise,
+    didMount: self => {
+      let%Lets.Async.Consume v = promise;
+      self.send(v);
+    },
+    didUpdate: ({oldSelf, newSelf}) => {
+      if (oldSelf.retainedProps !== newSelf.retainedProps) {
+        let%Lets.Async.Consume v = newSelf.retainedProps;
+        newSelf.send(v);
+      }
+    },
+    reducer: (value, _) => ReasonReact.Update(Some(value)),
+    render: self => switch (self.state) {
+      | None => ReasonReact.string("Loading...")
+      | Some(v) => render(v)
+    }
+  };
+}; */
+
 let component = ReasonReact.reducerComponent("DebugStoreView");
 
-let make = (~store: StoreInOne.t, _children) => {
+let make = (~store: StoreInOne.MonoClient.t, _children) => {
   ...component,
   initialState: () => (
-    store.world.unsynced,
-    store.world.syncing,
+    /* store.world.unsynced,
+    store.world.syncing, */
     store.world.history,
   ),
   reducer: (store, _) => ReasonReact.Update(store),
@@ -57,8 +86,6 @@ let make = (~store: StoreInOne.t, _children) => {
           0,
           () =>
             self.send((
-              store.world.unsynced,
-              store.world.syncing,
               store.world.history,
             )),
         ),
@@ -68,24 +95,14 @@ let make = (~store: StoreInOne.t, _children) => {
     (
       {
         state: (
-          unsynced: StoreInOne.Queue.t(World.thisChange),
-          syncing: StoreInOne.Queue.t(World.thisChange),
-          history: StoreInOne.history,
+          history: StoreInOne.History.t,
         ),
       },
     ) =>
     <div>
       <div>
-        <h4> {ReasonReact.string("Unsynced")} </h4>
-        {unsynced->StoreInOne.Queue.toList->List.map(showChange)->List.toArray->ReasonReact.array}
-      </div>
-      <div>
-        <h4> {ReasonReact.string("Syncing")} </h4>
-        {syncing->StoreInOne.Queue.toList->List.map(showChange)->List.toArray->ReasonReact.array}
-      </div>
-      <div>
         <h4> {ReasonReact.string("History")} </h4>
-        {history->StoreInOne.History.itemsSince (None)->List.map (showChange)->List.toArray->ReasonReact.array}
+        {history->History.allChanges->List.map (showChange)->List.toArray->ReasonReact.array}
       </div>
     </div>,
 };

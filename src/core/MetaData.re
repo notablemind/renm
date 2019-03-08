@@ -8,7 +8,11 @@ type remote =
 type sync = {
   remote,
   lastSyncTime: float,
+  etag: string,
 };
+
+/* TODO create a `syncMode: Unsynced | DontSync | Synced(sync)` or something like that.
+but for now I can just assume that every file is synced. */
 
 type t = {
   id: string,

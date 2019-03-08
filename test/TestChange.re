@@ -1,3 +1,9 @@
+
+let red = text => "\027[31;1m" ++ text ++ "\027[0m";
+let green = text => "\027[32m" ++ text ++ "\027[0m";
+let blue= text => "\027[34;1;4m" ++ text ++ "\027[0m";
+let yellow = text => "\027[33m" ++ text ++ "\027[0m";
+
 let rec fromFixture = (pid, item) =>
   switch (item) {
   | `Leaf(id, text) => (
@@ -6,6 +12,7 @@ let rec fromFixture = (pid, item) =>
         Data.Node.create(
           ~id,
           ~parent=pid,
+          ~author="Test",
           ~contents=Delta.fromString(text),
           ~children=[],
           ~prefix=None,
@@ -20,6 +27,7 @@ let rec fromFixture = (pid, item) =>
         Data.Node.create(
           ~id,
           ~parent=pid,
+          ~author="Test",
           ~contents=Delta.fromString(text),
           ~children=List.map(childNodes, fst),
           ~prefix=None,
@@ -55,7 +63,7 @@ let (root, nodes) =
 
 let nodeMap =
   List.reduce(nodes, Map.String.empty, (map, node) =>
-    Map.String.set(map, node.id, node)
+    Map.String.set(map, node.Data.Node.id, node)
   );
 
 let data = {...Data.emptyData(~root), nodes: nodeMap};
@@ -67,6 +75,7 @@ let leaf = (id, parent, text) =>
   Data.Node.create(
     ~id,
     ~parent,
+    ~author="Test",
     ~contents=Delta.fromString(text),
     ~children=[],
     ~prefix=None,
@@ -177,12 +186,18 @@ changeTests
       if (backCheck(data)) {
         Js.log("Ok : " ++ hello);
       } else {
-        failwith("Back Check failed : " ++ hello);
+        Js.log(red("Back Check failed : " ++ hello));
       };
     } else {
-      failwith("Check failed : " ++ hello);
+      Js.log(red("Check failed : " ++ hello));
     };
   });
+
+let typeChanges = (pos, text) => {
+  Js.String.split("", text)->List.fromArray->List.mapWithIndex((i, char) => {
+    Delta.makeInsert(pos + i, char)
+  })
+};
 
 let rebaseTests = [
   (
@@ -228,6 +243,38 @@ let rebaseTests = [
       expectChildren("c", ["d", "e", "b", "f", "h"]),
     ]),
   ),
+  /* (
+    "Narrowing",
+    typeChanges(2, "12")
+    ->List.map(d => ChangeContents("a", d)),
+    typeChanges(2, "567")
+    ->List.map(d => ChangeContents("a", d)),
+    expectContents("a", "A 12567leaf")
+  ),
+  (
+    "Narrowing 2",
+    typeChanges(2, "123")
+    ->List.map(d => ChangeContents("a", d)),
+    typeChanges(2, "56")
+    ->List.map(d => ChangeContents("a", d)),
+    expectContents("a", "A 12356leaf")
+  ),
+  (
+    "More complex change",
+    typeChanges(1, "1234")
+    ->List.map(d => ChangeContents("a", d)),
+    typeChanges(2, "5678")
+    ->List.map(d => ChangeContents("a", d)),
+    expectContents("a", "A1234 5678leaf")
+  ),
+  (
+    "More complex change - reversed",
+    typeChanges(2, "5678")
+    ->List.map(d => ChangeContents("a", d)),
+    typeChanges(1, "1234")
+    ->List.map(d => ChangeContents("a", d)),
+    expectContents("a", "A1234 5678leaf")
+  ), */
 ];
 
 let processRebases = (origChanges, rebases) =>
@@ -246,7 +293,23 @@ rebaseTests
     if (check(data)) {
       Js.log("Ok : " ++ title);
     } else {
-      failwith("Check failed : " ++ title);
+      Js.log(red("Check failed : " ++ title));
+      Js.log("> base")
+      base->List.forEach(c => {
+        Js.log(Js.Json.stringify(WorkerProtocolSerde.serializeChange([c])))
+      })
+      Js.log("> changes")
+      changes->List.forEach(c => {
+        Js.log(Js.Json.stringify(WorkerProtocolSerde.serializeChange([c])))
+      });
+      Js.log("> base made into rebaseItems");
+      rebases->List.forEach(c => {
+        Js.log(Js.Json.stringify(WorkerProtocolSerde.serializeRebaseItem([c])))
+      })
+      Js.log("> changes rebased onto [rebases]");
+      rebasedChanges->List.forEach(c => {
+        Js.log(Js.Json.stringify(WorkerProtocolSerde.serializeChange([c])))
+      })
     };
   });
 
@@ -271,6 +334,6 @@ undoTests
     if (check(data)) {
       Js.log("Ok : " ++ title);
     } else {
-      failwith("Check failed : " ++ title);
+      Js.log("Check failed : " ++ title);
     };
   });

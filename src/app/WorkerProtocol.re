@@ -4,20 +4,23 @@ type changeInner =
 
 type message =
   /* sessionId, fileId to open */
-  | Init(string, option(string))
+  | Init(string, option(string), option(Session.google))
   | Open(option(string))
   | Close
+  | Login(Session.google)
+  | Logout
   | Change(changeInner)
   | ChangeTitle(string)
   /* id, title */
   | CreateFile(string, string)
   | UndoRequest
   | RedoRequest
-  | SelectionChanged(Data.Node.id, Quill.range);
+  | SelectionChanged(Data.Node.id, View.Range.range);
 
 type serverMessage =
+  | UserChange(Session.auth)
   /* metadata, current file data, cursors */
-  | LoadFile(MetaData.t, data, list(View.cursor))
+  | LoadFile(MetaData.t, data, list(View.cursor), Session.auth)
   | AllFiles(list(MetaData.t))
   | TabChange(changeInner)
   | MetaDataUpdate(MetaData.t)

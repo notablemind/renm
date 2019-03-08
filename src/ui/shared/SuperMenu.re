@@ -33,22 +33,24 @@ module Styles = {
   let input = style([
     borderStyle(`none),
     outlineStyle(`none),
+    backgroundColor(`transparent),
+    color(Colors.Semantic.text),
     fontSize(em(1.5)),
     padding(px(10)),
   ]);
   let item = style([
     borderStyle(`none),
-    backgroundColor(white),
+    backgroundColor(Colors.Semantic.background),
     padding2(~v=px(10), ~h=px(10)),
     cursor(`pointer),
     textAlign(`left),
     fontFamily("sans-serif"),
     hover([
-      backgroundColor(Colors.offWhite)
+      backgroundColor(Colors.Semantic.selected)
     ])
   ]);
   let selectedItem = style([
-    backgroundColor(Colors.gray10)
+    backgroundColor(Colors.Semantic.selected)
   ]);
   let itemName = style([
     fontSize(em(1.2)),
@@ -56,7 +58,7 @@ module Styles = {
   ]);
   let description = style([
     fontSize(em(1.)),
-    color(hex("aaa"))
+    color(Colors.Semantic.offText)
   ])
 };
 
@@ -64,7 +66,7 @@ let sort = items => {
   items |> Js.Array.sortInPlaceWith((a, b) => int_of_float(b.sort -. a.sort))
 };
 
-let addScores = (items, text) => {
+let filterAndAddScores = (items, text) => {
   items->Array.keepMap(item => {
     if (fuzzysearch(text, item.title->Js.String.toLowerCase)) {
       Some({...item, sort: fuzzyScore(~term=item.title, ~query=text) +. 5.})
@@ -76,7 +78,7 @@ let addScores = (items, text) => {
   })
 };
 
-let make = (~placeholder, ~getResults, ~onClose, _) => {
+let make = (~placeholder, ~getResults, ~header=ReasonReact.null, ~onClose, _) => {
   ...component,
   initialState: () => {search: "", selected: 0, results: getResults("")->sort},
   reducer: (action, state) => ReasonReact.Update(switch action {
@@ -92,6 +94,7 @@ let make = (~placeholder, ~getResults, ~onClose, _) => {
   render: ({state, send}) => {
     ();
     <Dialog onClose>
+      {header}
       <input
         className=Styles.input
         autoFocus=true

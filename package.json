@@ -10,7 +10,7 @@
     "_pack:worker": "fpack watch --development --preprocess='\\.svg$:raw-loader' -n SharedWorker.js src/app/SharedWorker.bs.js --no-cache --preprocess='\\.css$:style-loader!css-loader'",
     "types": "../../tools/reason-language-server/_esy/default/build/install/default/bin/type-digger types.json",
     "clean": "bsb -clean-world",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node ./test/TestChange.bs.js"
   },
   "keywords": [
     "BuckleScript"
@@ -31,9 +31,12 @@
     "level-js": "^3.0.0",
     "levelup": "^3.1.1",
     "loader-runner": "^2.3.0",
-    "quill": "jaredly/quill#jared-dist",
+    "quill": "jaredly/quill#cd51fd73f72dd04c5181131eec7108d867aaaada",
     "quill-cursors": "^1.0.3",
     "quill-delta": "^3.6.3",
+    "quill-delta-to-html": "^0.10.7",
+    "quill-image-drop-module": "^1.0.3",
+    "quill-image-resize-module": "jaredly/quill-image-resize-module#76ba3ef5b41c7aff02b2c615317197d356cc7cf4",
     "quill-mention": "^2.0.0",
     "raw-loader": "^0.5.1",
     "react": "^16.2.0",
@@ -45,7 +48,7 @@
     "webpack": "^4.20.2"
   },
   "devDependencies": {
-    "bs-platform": "^4.0.3",
+    "bs-platform": "^4.0.18",
     "webpack-cli": "^3.1.1"
   }
 }

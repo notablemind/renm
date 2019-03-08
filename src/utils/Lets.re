@@ -7,6 +7,11 @@ module Async = {
   let reject = Js.Promise.reject;
   let map = (promise, fn) => Js.Promise.then_(v => Js.Promise.resolve(fn(v)), promise);
 
+  module Wrap = {
+    let let_ = (promise, cont) =>
+      Js.Promise.then_(v => Js.Promise.resolve(cont(v)), promise);
+  };
+
   module Consume = {
     let let_ = (promise, cont) =>
       Js.Promise.then_(
@@ -87,7 +92,7 @@ module TryForce = {
 module TryLog = {
   let let_ = (a, b) =>
     switch (a) {
-    | Result.Error(e) => Js.log(e)
+    | Result.Error(e) => Js.log2(e, [%bs.raw "new Error('for the stack')"])
     | Ok(v) => b(v)
     };
 };

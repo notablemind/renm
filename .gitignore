@@ -3,4 +3,8 @@ lib
 node_modules
 .bsb.lock
 bundle
-
+auth.json
+.merlin
+latest.dump*
+*.dump
+structure-editor-literature-review.nm.json

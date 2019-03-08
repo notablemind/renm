@@ -13,8 +13,22 @@ external makeQuill: ('element, 'config) => quill = "default";
 
 [@bs.send] external registerQuill: (quill, 'a) => unit = "register";
 
+
+/* MY CUSTOM MODULES */
+
+[@bs.module]
+external symlinkModule: (string => option({. "delta": Delta.delta, "source": option('a)}), string => unit) => quillModule = "./Symlink.js";
+
 [@bs.module]
 external linkModule: (string => option(string)) => quillModule = "./Link.js";
+
+[@bs.module]
+external sourceModule: quillModule = "./Source.js";
+
+
+
+
+
 
 [%bs.raw "window.quill = Quill"];
 
@@ -30,9 +44,15 @@ let historyClass = [%bs.raw
 
 /* let getFileName: ref(string => option(string)) = ref((id: string) => None); */
 
+[@bs.module "quill-image-drop-module"] external imageDrop: quillModule = "ImageDrop";
+[@bs.module "quill-image-resize-module"] external imageResize: quillModule = "default";
+/* import { ImageDrop } from 'quill-image-drop-module'; */
+
 register({
   "modules/history": historyClass,
   "modules/cursors": quillCursors,
+  "modules/imageDrop": imageDrop,
+  "modules/imageResize": imageResize,
   /* "formats/link": myLink(id => getFileName^(id)), */
 });
 
@@ -44,6 +64,9 @@ register({
 [@bs.send] external setText: (quill, string) => unit = "";
 [@bs.send] external getText: quill => string = "";
 [@bs.send] external getContents: quill => Delta.delta = "";
+[@bs.send] external updateContents: (quill, Delta.delta, string) => unit = "";
+[@bs.send] external getContentsAt: (quill, Js.nullable(View.Range.range)) => Delta.delta = "getContents";
+[@bs.send] external getTextAt: (quill, Js.nullable(View.Range.range)) => string = "getText";
 [@bs.send] external setContents: (quill, Delta.delta, string) => unit = "";
 [@bs.send] external hasFocus: quill => bool = "";
 [@bs.send] external focus: quill => unit = "";
@@ -51,6 +74,11 @@ register({
 [@bs.send] external getLength: quill => float = "";
 [@bs.send] external getSelection: quill => Js.nullable(View.Range.range) = "";
 [@bs.send] external setSelection: (quill, float, float, string) => unit = "";
+
+type selection;
+[@bs.get] external selection: quill => selection = "";
+[@bs.get] external savedRange: selection => Js.nullable(View.Range.range) = "";
+
 [@bs.send]
 external setSelectionRange: (quill, Js.nullable(View.Range.range)) => unit =
   "setSelection";
@@ -140,12 +168,185 @@ type propsType = NodeTypes.props(
   );
 
 
+module EditBar = {
+  let container = Css.(style([
+    position(`absolute),
+    top(`percent(100.)),
+    left(px(0)),
+    display(`flex),
+    marginTop(px(3)),
+    backgroundColor(Colors.Semantic.background),
+    right(px(0)),
+    padding(px(4)),
+    boxShadow(~y=px(2), ~blur=px(12), hex("ccc")),
+    borderRadius(px(4)),
+    zIndex(2),
+  ]));
+
+  [@bs.send] external format: (quill, string, 'a, 'b) => unit = "";
+  [@bs.send] external getFormat: quill => Js.t('a) = "";
+
+  let getValue = evt => evt->ReactEvent.Form.target##value ;
+
+  module LinkEditor = {
+    let component = ReasonReact.reducerComponent("LinkEditor");
+    let make = (~quill: quill, ~onClose, _) => {
+      ...component,
+      initialState: () => "",
+      reducer: (action, state) => ReasonReact.Update(action),
+      render: ({state: href, send}) => {
+        <div className=container>
+          <input value=href placeholder="URL" onChange={evt => {
+            send(evt->getValue)
+          }} />
+          <button onClick={evt => {
+            quill->format("link", href, "user")
+          }}>
+            {ReasonReact.string("Set")}
+          </button>
+          <button onClick={evt => {
+            quill->format("link", Js.null, "user")
+          }}>
+            {ReasonReact.string("Remove")}
+          </button>
+          <button onClick={evt => {
+            onClose()
+          }}>
+            {ReasonReact.string("Back")}
+          </button>
+        </div>
+      }
+    }
+  };
+
+  module SourceEditor = {
+    type state = {
+      url: string,
+      what: string,
+      who: string,
+      when_: string,
+    };
+    let component = ReasonReact.reducerComponent("SourceEditor");
+    let make = (~quill, ~onClose, _) => {
+      ...component,
+      initialState: () => {
+        let orEmpty = s => switch (s->Js.toOption) {
+          | None => ""
+          | Some(s) => s
+        };
+        switch (quill->getContentsAt(quill->getSelection)->Delta.getSource) {
+          | None => {url: "", what: quill->getTextAt(quill->getSelection), who: "", when_: ""}
+          | Some(source) => {url: source##url->orEmpty, what: source##what->orEmpty, who: source##who->orEmpty, when_: source##_when->orEmpty}
+        }
+      },
+      reducer: (action, state) => ReasonReact.Update(switch action {
+        | `Url(url) => {...state, url}
+        | `What(what) => {...state, what}
+        | `Who(who) => {...state, who}
+        | `When(when_) => {...state, when_}
+      }),
+      render: ({send, state: {url, what, who, when_}}) => {
+        <div className=container>
+          <input
+            placeholder="Title"
+            className=Css.(style([flex(1)]))
+            onChange={evt => send(`What(getValue(evt)))}
+            value=what
+          />
+          <input
+            placeholder="Url"
+            onChange={evt => send(`Url(getValue(evt)))}
+            value=url
+          />
+          <input
+            placeholder="Author"
+            onChange={evt => send(`Who(getValue(evt)))}
+            value=who
+          />
+          <input
+            placeholder="Date"
+            className=Css.(style([width(px(75))]))
+            onChange={evt => send(`When(getValue(evt)))}
+            value=when_
+          />
+          <button onClick={evt => {
+            let%Lets.OptConsume selection = quill->selection->savedRange->Js.toOption;
+            Js.log2("Selection", selection);
+            let embed = {"source": {"what": what, "url": url, "who": who, "when": when_}};
+            open Delta;
+            let change = make([||])->retain(selection->View.Range.indexGet->int_of_float);
+            let change = switch (selection->View.Range.lengthGet->int_of_float) {
+              | 0 => change
+              | length => change->delete(length)
+            };
+            let change = change->insertEmbed(embed);
+            quill->updateContents(change, "user");
+            onClose();
+          }}>
+            {ReasonReact.string("Insert")}
+          </button>
+          <button onClick={evt => onClose()}>
+            {ReasonReact.string("Back")}
+          </button>
+        </div>
+      }
+    }
+  }
+
+
+  type action = | Link | Source;
+  let buttons = [|
+    ("B", (quill, send) => {
+      quill->format("bold", !quill->getFormat##bold, "user");
+    }),
+    ("I", (quill, send) => {
+      quill->format("italic", !quill->getFormat##italic, "user");
+    }),
+    ("code", (quill, send) => {
+      quill->format("code", !quill->getFormat##code, "user");
+    }),
+    ("Link", (quill, send) => {
+      send(Some(Link))
+    }),
+    ("Source", (quill, send) => {
+      send(Some(Source))
+    }),
+    ("quote", (quill, send) => {
+      quill->format("blockquote", !quill->getFormat##blockquote, "user");
+    }),
+  |];
+  let component = ReasonReact.reducerComponent("EditBar");
+  let make = (~quill, _children) => {
+    ...component,
+    initialState: () => None,
+    reducer: (action, state) => ReasonReact.Update(action),
+    render: self => {
+      // Js.log(quill);
+      switch (self.state) {
+      | None =>
+        <div className=container>
+          {buttons->Array.map(((title, action)) => {
+            <button key=title onClick={evt => action(quill, self.send)}>
+              {ReasonReact.string(title)}
+            </button>
+          })->ReasonReact.array}
+        </div>
+      | Some(Link) =>
+        <LinkEditor onClose={() => self.send(None)} quill />
+      | Some(Source) => 
+        <SourceEditor onClose={() => self.send(None)} quill />
+      }
+    }
+  }
+};
+
 
 let quillConfig = (props: ref(propsType), registry) => {
   "theme": false,
   "registry": registry,
   "placeholder": " ",
   "modules": {
+    "imageResize": Js.Obj.empty(),
     "cursors": true,
     /* "mention": {
       "mentionDenotationChars": [|"/"|],
@@ -292,6 +493,34 @@ let quillConfig = (props: ref(propsType), registry) => {
             [@bs.this]
             (this => !(atBottom(this##quill) && props^.onDown() != None)),
         },
+        "create-child": {
+          "key": "o",
+          "shortKey": true,
+          "collapsed": true,
+          "handler": () => {
+            props^.onCreateChild();
+            false;
+          },
+        },
+        "create-aunt": {
+          "key": "o",
+          "shiftKey": true,
+          "shortKey": true,
+          "collapsed": true,
+          "handler": () => {
+            props^.onCreateAunt();
+            false;
+          },
+        },
+        "shift-enter": {
+          "key": "Enter",
+          "shortKey": true,
+          "collapsed": true,
+          "handler": () => {
+            props^.onShortEnter();
+            false;
+          },
+        },
         "enter": {
           "key": "Enter",
           "collapsed": true,
@@ -311,7 +540,34 @@ let setupQuill =
     (element, props: ref(propsType), registerFocus) => {
 
   let registry = customRegistry([|
-    linkModule(id => props^.store->ClientStore.getFileName(id))
+    linkModule(id => props^.store->ClientStore.getFileName(id)),
+    symlinkModule(id => {
+      switch (props^.store->ClientStore.getNode(id)) {
+        | None => None
+        | Some(node) =>
+          let source = {
+            let data = props^.store.ClientStore.data();
+            let rec loop = id => {
+              if (id == data.root) {
+                None
+              } else {
+                switch (data.nodes->Map.String.get(id)) {
+                  | None => None
+                  | Some(node) => {
+                    switch (Delta.getSource(node.contents)) {
+                      | None => loop(node.parent)
+                      | Some(source) => Some(source)
+                    }
+                  }
+                }
+              }
+            }
+            loop(node.id)
+          };
+          Some({"delta": node.contents, "source": source})
+      }
+    }, id => ActionCreators.jumpTo(props^.store, id)),
+    sourceModule,
   |]);
   let quill =
     makeQuill(
@@ -431,9 +687,11 @@ let make = (~props: propsType, _children) => {
     let props = newSelf.state.props^;
     if (!Delta.deepEqual(props.value, getContents(quill))) {
       let sel = getSelection(quill);
-      Js.log3("Resetting contents on didUpdate, also resetting cursor", props.value, getContents(quill));
+      // Js.log3("Resetting contents on didUpdate, also resetting cursor", props.value, getContents(quill));
       quill->setContents(props.value, "silent");
-      quill->setSelectionRange(sel);
+      if (!Js.isNullable(sel)) {
+        quill->setSelectionRange(sel);
+      }
     };
     if (newSelf.state.prevCursors^ !== props.remoteCursors) {
       (newSelf.state.prevCursors^)
@@ -495,16 +753,24 @@ let make = (~props: propsType, _children) => {
     };
   },
   render: self =>
-    <div
-      ref={
-        node =>
-          switch (Js.toOption(node), self.state.quill^) {
-          | (None, _)
-          | (_, Some(_)) => ()
-          | (Some(el), None) =>
-            let quill = setupQuill(el, self.state.props, props.registerFocus);
-            self.state.quill := Some(quill)
-          }
-      }
-    />,
+    <div className=("quill-outer " ++ Css.(style([
+
+    ])))>
+      <div
+        ref={
+          node =>
+            switch (Js.toOption(node), self.state.quill^) {
+            | (None, _)
+            | (_, Some(_)) => ()
+            | (Some(el), None) =>
+              let quill = setupQuill(el, self.state.props, props.registerFocus);
+              self.state.quill := Some(quill)
+            }
+        }
+      />
+      {switch (self.state.props^.editPos, self.state.quill^) {
+        | (Some(Exactly(_, length)), Some(quill)) when length > 0 => <EditBar quill />
+        | _ => ReasonReact.null
+      }}
+    </div>,
 };
