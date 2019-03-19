@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "$schemaVersion": 1,
   "output": "src/app/WorkerProtocolSerde.re",
   "engine": "Js.Json",

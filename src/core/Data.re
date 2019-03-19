@@ -37,9 +37,9 @@ module Node = {
     width: int,
   };
 
-  // [@migrate.columns (_) => Map.String.empty]
-  // [@migrate.childColumns (_) => None]
-  // [@migrate.reactions (_) => []]
+  [@migrate.columns (_) => Map.String.empty]
+  [@migrate.childColumns (_) => None]
+  [@migrate.reactions (_) => []]
   type t('contents, 'prefix) = {
     id,
     parent: id,
@@ -55,9 +55,9 @@ module Node = {
     /* contentsy-stuff */
     // Ok so this needs to be added...
     // So maybe this needs I need to actually get type migration working 🙃
-    // reactions: list(reaction),
-    // columns: Map.String.t('contents),
-    // childColumns: option((list(column), bool /* true if the columns should apply recursively */)),
+    reactions: list(reaction),
+    columns: Map.String.t('contents),
+    childColumns: option((list(column), bool /* true if the columns should apply recursively */)),
 
     contents: 'contents,
     tags: Set.String.t,
@@ -76,9 +76,9 @@ module Node = {
     numberChildren: false,
     modified: Js.Date.now(),
 
-    // reactions: [],
-    // columns: Map.String.empty,
-    // childColumns: None,
+    reactions: [],
+    columns: Map.String.empty,
+    childColumns: None,
 
     childrenModified: Js.Date.now(),
     children,
