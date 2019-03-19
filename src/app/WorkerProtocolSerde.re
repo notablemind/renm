@@ -5996,33 +5996,33 @@ module Version2 = {
   and migrate_Change____data: Version1._Change__data => _Change__data =
     _input_data =>
       migrate_Data____data(
-        arg => migrate_Delta____delta(arg),
         arg =>
           switch (arg) {
           | None => None
           | Some(_item) => Some(migrate_NodeType____prefix(_item))
           },
+        arg => migrate_Delta____delta(arg),
         _input_data,
       )
   and migrate_Change____rebaseItem:
     Version1._Change__rebaseItem => _Change__rebaseItem =
     _input_data => _input_data
   and migrate_Data____data:
-    'contents 'contents_migrated 'prefix 'prefix_migrated.
+    type contents contents_migrated prefix prefix_migrated.
     (
-      'prefix => 'prefix_migrated,
-      'contents => 'contents_migrated,
-      Version1._Data__data('contents, 'prefix)
+      prefix => prefix_migrated,
+      contents => contents_migrated,
+      Version1._Data__data(contents, prefix)
     ) =>
-    _Data__data('contents_migrated, 'prefix_migrated)
+    _Data__data(contents_migrated, prefix_migrated)
    =
     (_migrator_prefix, _migrator_contents, _input_data) => {
       let _converted_nodes =
         migrate_Belt_MapString____t(
           arg =>
             migrate_Data__Node__t(
-              arg => _migrator_contents(arg),
               arg => _migrator_prefix(arg),
+              arg => _migrator_contents(arg),
               arg,
             ),
           _input_data.nodes,
@@ -6054,13 +6054,13 @@ module Version2 = {
   and migrate_Data__Node__id: Version1._Data__Node__id => _Data__Node__id =
     _input_data => _input_data
   and migrate_Data__Node__t:
-    'contents 'contents_migrated 'prefix 'prefix_migrated.
+    type contents contents_migrated prefix prefix_migrated.
     (
-      'prefix => 'prefix_migrated,
-      'contents => 'contents_migrated,
-      Version1._Data__Node__t('contents, 'prefix)
+      prefix => prefix_migrated,
+      contents => contents_migrated,
+      Version1._Data__Node__t(contents, prefix)
     ) =>
-    _Data__Node__t('contents_migrated, 'prefix_migrated)
+    _Data__Node__t(contents_migrated, prefix_migrated)
    =
     (_migrator_prefix, _migrator_contents, _input_data) => {
       let _converted_id = migrate_Data__Node__id(_input_data.id);
@@ -6082,7 +6082,7 @@ module Version2 = {
       let _converted_reactions =
         (
           _ => []:
-            Version1._Data__Node__t('contents, 'prefix) =>
+            Version1._Data__Node__t(contents, prefix) =>
             list(_Data__Node__reaction)
         )(
           _input_data,
@@ -6090,15 +6090,15 @@ module Version2 = {
       let _converted_columns =
         (
           _ => Map.String.empty:
-            Version1._Data__Node__t('contents, 'prefix) =>
-            _Belt_MapString__t('contents)
+            Version1._Data__Node__t(contents, prefix) =>
+            _Belt_MapString__t(contents_migrated)
         )(
           _input_data,
         );
       let _converted_childColumns =
         (
           _ => None:
-            Version1._Data__Node__t('contents, 'prefix) =>
+            Version1._Data__Node__t(contents, prefix) =>
             option((list(_Data__Node__column), bool))
         )(
           _input_data,
@@ -6146,12 +6146,12 @@ module Version2 = {
   and migrate_NodeType____t: Version1._NodeType__t => _NodeType__t =
     _input_data =>
       migrate_Data__Node__t(
-        arg => migrate_Delta____delta(arg),
         arg =>
           switch (arg) {
           | None => None
           | Some(_item) => Some(migrate_NodeType____prefix(_item))
           },
+        arg => migrate_Delta____delta(arg),
         _input_data,
       )
   and migrate_Session____auth: Version1._Session__auth => _Session__auth =
@@ -6182,8 +6182,8 @@ module Version2 = {
     (_migrator_selection, _migrator_rebase, _migrator_change, _input_data) => {
       let _converted_inner =
         migrate_Sync____changeInner(
-          arg => _migrator_change(arg),
           arg => _migrator_selection(arg),
+          arg => _migrator_change(arg),
           _input_data.inner,
         );
       let _converted_revert = _migrator_change(_input_data.revert);
@@ -6265,8 +6265,8 @@ module Version2 = {
     Version1._WorkerProtocol__changeInner => _WorkerProtocol__changeInner =
     _input_data =>
       migrate_Sync____changeInner(
-        arg => migrate_World__MultiChange__change(arg),
         arg => migrate_World__MultiChange__selection(arg),
+        arg => migrate_World__MultiChange__change(arg),
         _input_data,
       )
   and migrate_WorkerProtocol____data:
@@ -6354,9 +6354,9 @@ module Version2 = {
     Version1._World__thisChange => _World__thisChange =
     _input_data =>
       migrate_Sync____change(
-        arg => migrate_World__MultiChange__change(arg),
-        arg => migrate_World__MultiChange__rebaseItem(arg),
         arg => migrate_World__MultiChange__selection(arg),
+        arg => migrate_World__MultiChange__rebaseItem(arg),
+        arg => migrate_World__MultiChange__change(arg),
         _input_data,
       )
   and migrate_World__MultiChange__change:
@@ -6370,9 +6370,9 @@ module Version2 = {
     Version1._World__MultiChange__fullChange => _World__MultiChange__fullChange =
     _input_data =>
       migrate_Sync____change(
-        arg => migrate_World__MultiChange__change(arg),
-        arg => migrate_World__MultiChange__rebaseItem(arg),
         arg => migrate_World__MultiChange__selection(arg),
+        arg => migrate_World__MultiChange__rebaseItem(arg),
+        arg => migrate_World__MultiChange__change(arg),
         _input_data,
       )
   and migrate_World__MultiChange__rebaseItem:
