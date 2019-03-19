@@ -206,10 +206,9 @@ module Version1 = {
   let rec deserialize_Belt_MapString____t:
     type arg0.
       (Js.Json.t => Belt.Result.t(arg0, list(string)), Js.Json.t) =>
-      Belt.Result.t(Belt_MapString.t(arg0), list(string)) =
+      Belt.Result.t(_Belt_MapString__t(arg0), list(string)) =
     valueTransformer =>
       TransformHelpers.deserialize_Belt_MapString____t(valueTransformer)
-
   and deserialize_Belt_SetString____t:
     Js.Json.t => Belt.Result.t(_Belt_SetString__t, list(string)) = TransformHelpers.deserialize_Belt_SetString____t
   and deserialize_Change____change:
@@ -3286,9 +3285,12 @@ module Version2 = {
     _Belt_SetString__t,
     (int, int),
   );
-  let rec
-  deserialize_Belt_MapString____t: 'arg . (Js.Json.t => Belt.Result.t('arg, list(string)), Js.Json.t) => Belt.Result.t(Belt.Map.String.t('arg), list(string)) = Version1.deserialize_Belt_MapString____t and
-  deserialize_Belt_SetString____t = Version1.deserialize_Belt_SetString____t
+  let rec deserialize_Belt_MapString____t:
+    type arg0.
+      (Js.Json.t => Belt.Result.t(arg0, list(string)), Js.Json.t) =>
+      Belt.Result.t(_Belt_MapString__t(arg0), list(string)) = Version1.deserialize_Belt_MapString____t
+  and deserialize_Belt_SetString____t:
+    Js.Json.t => Belt.Result.t(_Belt_SetString__t, list(string)) = Version1.deserialize_Belt_SetString____t
   and deserialize_Change____change:
     Js.Json.t => Belt.Result.t(_Change__change, list(string)) =
     constructor =>
@@ -3345,13 +3347,12 @@ module Version2 = {
         }
       | JSONArray([|tag, arg0, arg1, arg2, arg3, arg4|])
           when Js.Json.JSONString("ImportNodes") == Js.Json.classify(tag) =>
-        let deserialize_Belt_MapString____t: 'arg . (Js.Json.t => Belt.Result.t('arg, list(string)), Js.Json.t) => Belt.Result.t(Belt.Map.String.t('arg), list(string)) = deserialize_Belt_MapString____t;
         switch (
-          deserialize_Belt_MapString____t(deserialize_Data__Tag__t, arg4)
+          (deserialize_Belt_MapString____t(deserialize_Data__Tag__t))(arg4)
         ) {
-        | Belt.Result.Ok(arg4: Belt.Map.String.t(Data.Tag.t)) =>
+        | Belt.Result.Ok(arg4) =>
           switch (
-            deserialize_Belt_MapString____t(deserialize_NodeType____t, 
+            (deserialize_Belt_MapString____t(deserialize_NodeType____t))(
               arg3,
             )
           ) {
@@ -3632,7 +3633,8 @@ module Version2 = {
       )(
         value,
       )
-  and deserialize_Change____rebaseItem = Version1.deserialize_Change____rebaseItem
+  and deserialize_Change____rebaseItem:
+    Js.Json.t => Belt.Result.t(_Change__rebaseItem, list(string)) = Version1.deserialize_Change____rebaseItem
   and deserialize_Data____data:
     'arg0 'arg1.
     (
@@ -3660,12 +3662,14 @@ module Version2 = {
                 | None => Belt.Result.Error(["No attribute nodes"])
                 | Some(json) =>
                   switch (
-                    
+                    (
                       deserialize_Belt_MapString____t(
                         deserialize_Data__Node__t(
                           contentsTransformer,
                           prefixTransformer,
                         ),
+                      )
+                    )(
                       json,
                     )
                   ) {
@@ -3679,7 +3683,7 @@ module Version2 = {
               | None => Belt.Result.Error(["No attribute tags"])
               | Some(json) =>
                 switch (
-                  deserialize_Belt_MapString____t(deserialize_Data__Tag__t,
+                  (deserialize_Belt_MapString____t(deserialize_Data__Tag__t))(
                     json,
                   )
                 ) {
@@ -3721,9 +3725,12 @@ module Version2 = {
         ) =>
         Belt.Result.t(_Data__data(arg0, arg1), list(string))
     )
-  and deserialize_Data____date = Version1.deserialize_Data____date
-  and deserialize_Data____source = Version1.deserialize_Data____source
-  and deserialize_Data____user = Version1.deserialize_Data____user
+  and deserialize_Data____date:
+    Js.Json.t => Belt.Result.t(_Data__date, list(string)) = Version1.deserialize_Data____date
+  and deserialize_Data____source:
+    Js.Json.t => Belt.Result.t(_Data__source, list(string)) = Version1.deserialize_Data____source
+  and deserialize_Data____user:
+    Js.Json.t => Belt.Result.t(_Data__user, list(string)) = Version1.deserialize_Data____user
   and deserialize_Data__Node__column:
     Js.Json.t => Belt.Result.t(_Data__Node__column, list(string)) =
     record =>
@@ -3842,7 +3849,8 @@ module Version2 = {
         }
       | _ => Belt.Result.Error(["Expected an array"])
       }
-  and deserialize_Data__Node__id = Version1.deserialize_Data__Node__id
+  and deserialize_Data__Node__id:
+    Js.Json.t => Belt.Result.t(_Data__Node__id, list(string)) = Version1.deserialize_Data__Node__id
   and deserialize_Data__Node__reaction:
     Js.Json.t => Belt.Result.t(_Data__Node__reaction, list(string)) =
     record =>
@@ -3883,15 +3891,15 @@ module Version2 = {
       | _ => Belt.Result.Error(["Expected an object"])
       }
   and deserialize_Data__Node__t:
-    type arg0 arg1.
+    'arg0 'arg1.
     (
-      Js.Json.t => Belt.Result.t(arg0, list(string)),
-      Js.Json.t => Belt.Result.t(arg1, list(string)),
+      Js.Json.t => Belt.Result.t('arg0, list(string)),
+      Js.Json.t => Belt.Result.t('arg1, list(string)),
       Js.Json.t
     ) =>
-    Belt.Result.t(_Data__Node__t(arg0, arg1), list(string))
+    Belt.Result.t(_Data__Node__t('arg0, 'arg1), list(string))
    =
-    (
+    (type arg1, type arg0) => (
       (contentsTransformer, prefixTransformer, record) =>
         switch (Js.Json.classify(record)) {
         | JSONObject(dict) =>
@@ -4354,16 +4362,30 @@ module Version2 = {
             }
           };
         | _ => Belt.Result.Error(["Expected an object"])
-        }
+        }:
+        (
+          Js.Json.t => Belt.Result.t(arg0, list(string)),
+          Js.Json.t => Belt.Result.t(arg1, list(string)),
+          Js.Json.t
+        ) =>
+        Belt.Result.t(_Data__Node__t(arg0, arg1), list(string))
     )
-  and deserialize_Data__Tag__id = Version1.deserialize_Data__Tag__id
-  and deserialize_Data__Tag__t = Version1.deserialize_Data__Tag__t
-  and deserialize_Delta____delta = Version1.deserialize_Delta____delta
-  and deserialize_Js_date____t = Version1.deserialize_Js_date____t
-  and deserialize_MetaData____remote = Version1.deserialize_MetaData____remote
-  and deserialize_MetaData____sync = Version1.deserialize_MetaData____sync
-  and deserialize_MetaData____t = Version1.deserialize_MetaData____t
-  and deserialize_NodeType____prefix = Version1.deserialize_NodeType____prefix
+  and deserialize_Data__Tag__id:
+    Js.Json.t => Belt.Result.t(_Data__Tag__id, list(string)) = Version1.deserialize_Data__Tag__id
+  and deserialize_Data__Tag__t:
+    Js.Json.t => Belt.Result.t(_Data__Tag__t, list(string)) = Version1.deserialize_Data__Tag__t
+  and deserialize_Delta____delta:
+    Js.Json.t => Belt.Result.t(_Delta__delta, list(string)) = Version1.deserialize_Delta____delta
+  and deserialize_Js_date____t:
+    Js.Json.t => Belt.Result.t(_Js_date__t, list(string)) = Version1.deserialize_Js_date____t
+  and deserialize_MetaData____remote:
+    Js.Json.t => Belt.Result.t(_MetaData__remote, list(string)) = Version1.deserialize_MetaData____remote
+  and deserialize_MetaData____sync:
+    Js.Json.t => Belt.Result.t(_MetaData__sync, list(string)) = Version1.deserialize_MetaData____sync
+  and deserialize_MetaData____t:
+    Js.Json.t => Belt.Result.t(_MetaData__t, list(string)) = Version1.deserialize_MetaData____t
+  and deserialize_NodeType____prefix:
+    Js.Json.t => Belt.Result.t(_NodeType__prefix, list(string)) = Version1.deserialize_NodeType____prefix
   and deserialize_NodeType____t:
     Js.Json.t => Belt.Result.t(_NodeType__t, list(string)) =
     value =>
@@ -4388,8 +4410,10 @@ module Version2 = {
       )(
         value,
       )
-  and deserialize_Session____auth = Version1.deserialize_Session____auth
-  and deserialize_Session____google = Version1.deserialize_Session____google
+  and deserialize_Session____auth:
+    Js.Json.t => Belt.Result.t(_Session__auth, list(string)) = Version1.deserialize_Session____auth
+  and deserialize_Session____google:
+    Js.Json.t => Belt.Result.t(_Session__google, list(string)) = Version1.deserialize_Session____google
   and deserialize_StoreInOne__Server__serverFile:
     Js.Json.t => Belt.Result.t(_StoreInOne__Server__serverFile, list(string)) =
     record =>
@@ -4445,13 +4469,56 @@ module Version2 = {
         };
       | _ => Belt.Result.Error(["Expected an object"])
       }
-  and deserialize_Sync____change = Version1.deserialize_Sync____change
-  and deserialize_Sync____changeInner = Version1.deserialize_Sync____changeInner
-  and deserialize_Sync____link = Version1.deserialize_Sync____link
-  and deserialize_Sync____sessionInfo = Version1.deserialize_Sync____sessionInfo
-  and deserialize_View____cursor = Version1.deserialize_View____cursor
-  and deserialize_View____sharedViewData = Version1.deserialize_View____sharedViewData
-  and deserialize_View__Range__range = Version1.deserialize_View__Range__range
+  and deserialize_Sync____change:
+    'arg0 'arg1 'arg2.
+    (
+      Js.Json.t => Belt.Result.t('arg0, list(string)),
+      Js.Json.t => Belt.Result.t('arg1, list(string)),
+      Js.Json.t => Belt.Result.t('arg2, list(string)),
+      Js.Json.t
+    ) =>
+    Belt.Result.t(_Sync__change('arg0, 'arg1, 'arg2), list(string))
+   =
+    (type arg2, type arg1, type arg0) => (
+      Version1.deserialize_Sync____change:
+        (
+          Js.Json.t => Belt.Result.t(arg0, list(string)),
+          Js.Json.t => Belt.Result.t(arg1, list(string)),
+          Js.Json.t => Belt.Result.t(arg2, list(string)),
+          Js.Json.t
+        ) =>
+        Belt.Result.t(_Sync__change(arg0, arg1, arg2), list(string))
+    )
+  and deserialize_Sync____changeInner:
+    'arg0 'arg1.
+    (
+      Js.Json.t => Belt.Result.t('arg0, list(string)),
+      Js.Json.t => Belt.Result.t('arg1, list(string)),
+      Js.Json.t
+    ) =>
+    Belt.Result.t(_Sync__changeInner('arg0, 'arg1), list(string))
+   =
+    (type arg1, type arg0) => (
+      Version1.deserialize_Sync____changeInner:
+        (
+          Js.Json.t => Belt.Result.t(arg0, list(string)),
+          Js.Json.t => Belt.Result.t(arg1, list(string)),
+          Js.Json.t
+        ) =>
+        Belt.Result.t(_Sync__changeInner(arg0, arg1), list(string))
+    )
+  and deserialize_Sync____link:
+    Js.Json.t => Belt.Result.t(_Sync__link, list(string)) = Version1.deserialize_Sync____link
+  and deserialize_Sync____sessionInfo:
+    type arg0.
+      (Js.Json.t => Belt.Result.t(arg0, list(string)), Js.Json.t) =>
+      Belt.Result.t(_Sync__sessionInfo(arg0), list(string)) = Version1.deserialize_Sync____sessionInfo
+  and deserialize_View____cursor:
+    Js.Json.t => Belt.Result.t(_View__cursor, list(string)) = Version1.deserialize_View____cursor
+  and deserialize_View____sharedViewData:
+    Js.Json.t => Belt.Result.t(_View__sharedViewData, list(string)) = Version1.deserialize_View____sharedViewData
+  and deserialize_View__Range__range:
+    Js.Json.t => Belt.Result.t(_View__Range__range, list(string)) = Version1.deserialize_View__Range__range
   and deserialize_WorkerProtocol____changeInner:
     Js.Json.t => Belt.Result.t(_WorkerProtocol__changeInner, list(string)) =
     value =>
@@ -4915,8 +4982,10 @@ module Version2 = {
       )(
         value,
       )
-  and deserialize_World__MultiChange__rebaseItem = Version1.deserialize_World__MultiChange__rebaseItem
-  and deserialize_World__MultiChange__selection = Version1.deserialize_World__MultiChange__selection
+  and deserialize_World__MultiChange__rebaseItem:
+    Js.Json.t => Belt.Result.t(_World__MultiChange__rebaseItem, list(string)) = Version1.deserialize_World__MultiChange__rebaseItem
+  and deserialize_World__MultiChange__selection:
+    Js.Json.t => Belt.Result.t(_World__MultiChange__selection, list(string)) = Version1.deserialize_World__MultiChange__selection
   and serialize_Belt_MapString____t:
     'arg0.
     ('arg0 => Js.Json.t, _Belt_MapString__t('arg0)) => Js.Json.t
@@ -5841,7 +5910,8 @@ module Version2 = {
     ('value => 'value_migrated, Version1._Belt_MapString__t('value)) =>
     _Belt_MapString__t('value_migrated)
    =
-    (_migrator_value, _input_data) => _input_data
+    (_migrator_value, _input_data) =>
+      TransformHelpers.migrate_Belt_MapString__t(_migrator_value, _input_data)
   and migrate_Belt_SetString____t:
     Version1._Belt_SetString__t => _Belt_SetString__t =
     _input_data => _input_data

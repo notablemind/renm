@@ -13,6 +13,8 @@ let wrapError = item => Belt.Result.(switch item {
   | Ok(v) => Ok(v)
 });
 
+let migrate_Belt_MapString__t = (transformer, map) => Belt.Map.String.map(map, transformer);
+
 let deserialize_Belt_MapString____t = (transformer, json) =>
   switch (Js.Json.classify(json)) {
   | JSONObject(items) =>
