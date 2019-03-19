@@ -1164,6 +1164,119 @@
           [
             "Data",
             ["Node"],
+            "column"
+          ],
+          [
+            [],
+            {
+              "name": "column",
+              "variables": [],
+              "body": [
+                "Record",
+                [
+                  [
+                    "title",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "string"
+                      ],
+                      []
+                    ]
+                  ],
+                  [
+                    "kind",
+                    [
+                      "Reference",
+                      [
+                        "Public",
+                        [
+                          "Data",
+                          ["Node"],
+                          "columnKind"
+                        ]
+                      ],
+                      []
+                    ]
+                  ],
+                  [
+                    "width",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "int"
+                      ],
+                      []
+                    ]
+                  ]
+                ]
+              ]
+            }
+          ]
+        ],
+        [
+          [
+            "Data",
+            ["Node"],
+            "columnKind"
+          ],
+          [
+            [],
+            {
+              "name": "columnKind",
+              "variables": [],
+              "body": [
+                "Variant",
+                [
+                  [
+                    "FreeForm",
+                    [],
+                    null
+                  ],
+                  [
+                    "Checkbox",
+                    [],
+                    null
+                  ],
+                  [
+                    "Date",
+                    [],
+                    null
+                  ],
+                  [
+                    "Options",
+                    [
+                      [
+                        "Reference",
+                        [
+                          "Builtin",
+                          "list"
+                        ],
+                        [
+                          [
+                            "Reference",
+                            [
+                              "Builtin",
+                              "string"
+                            ],
+                            []
+                          ]
+                        ]
+                      ]
+                    ],
+                    null
+                  ]
+                ]
+              ]
+            }
+          ]
+        ],
+        [
+          [
+            "Data",
+            ["Node"],
             "id"
           ],
           [
@@ -1180,6 +1293,51 @@
                     "string"
                   ],
                   []
+                ]
+              ]
+            }
+          ]
+        ],
+        [
+          [
+            "Data",
+            ["Node"],
+            "reaction"
+          ],
+          [
+            [],
+            {
+              "name": "reaction",
+              "variables": [],
+              "body": [
+                "Record",
+                [
+                  [
+                    "name",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "string"
+                      ],
+                      []
+                    ]
+                  ],
+                  [
+                    "users",
+                    [
+                      "Reference",
+                      [
+                        "Public",
+                        [
+                          "Belt_SetString",
+                          [],
+                          "t"
+                        ]
+                      ],
+                      []
+                    ]
+                  ]
                 ]
               ]
             }
@@ -1358,6 +1516,96 @@
                         "bool"
                       ],
                       []
+                    ]
+                  ],
+                  [
+                    "reactions",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "list"
+                      ],
+                      [
+                        [
+                          "Reference",
+                          [
+                            "Public",
+                            [
+                              "Data",
+                              ["Node"],
+                              "reaction"
+                            ]
+                          ],
+                          []
+                        ]
+                      ]
+                    ]
+                  ],
+                  [
+                    "columns",
+                    [
+                      "Reference",
+                      [
+                        "Public",
+                        [
+                          "Belt_MapString",
+                          [],
+                          "t"
+                        ]
+                      ],
+                      [
+                        [
+                          "Variable",
+                          "contents"
+                        ]
+                      ]
+                    ]
+                  ],
+                  [
+                    "childColumns",
+                    [
+                      "Reference",
+                      [
+                        "Builtin",
+                        "option"
+                      ],
+                      [
+                        [
+                          "Tuple",
+                          [
+                            [
+                              "Reference",
+                              [
+                                "Builtin",
+                                "list"
+                              ],
+                              [
+                                [
+                                  "Reference",
+                                  [
+                                    "Public",
+                                    [
+                                      "Data",
+                                      ["Node"],
+                                      "column"
+                                    ]
+                                  ],
+                                  []
+                                ]
+                              ]
+                            ],
+                            [
+                              "Reference",
+                              [
+                                "Builtin",
+                                "bool"
+                              ],
+                              []
+                            ]
+                          ]
+                        ]
+                      ]
                     ]
                   ],
                   [

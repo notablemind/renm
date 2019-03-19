@@ -145,7 +145,7 @@ let make = (~placeholder, ~getResults, ~rawHtml=false, ~header=ReasonReact.null,
             }
             <span className=Styles.description>
               {ReasonReact.string(description)}
-              {ReasonReact.string(" " ++ Fuzzy.showScore(sort))}
+              // {ReasonReact.string(" " ++ Fuzzy.showScore(sort))}
             </span>
           </div>
         })->ReasonReact.array}

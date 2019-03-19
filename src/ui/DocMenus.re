@@ -434,7 +434,7 @@ let show = (store, dialog, showDialog, hideDialog, sendMessage) =>
     />
   | Search =>
     <SuperMenu
-      placeholder="Select file to open"
+      placeholder="Search within this file (fuzzy)"
       key="search"
       rawHtml={true}
       header={superHeader(Search, showDialog)}
