@@ -153,3 +153,12 @@ let make = (~placeholder, ~getResults, ~rawHtml=false, ~header=ReasonReact.null,
     </Dialog>
   }
 };
+
+
+// let x = (a, b) => (a + 1, b);
+
+// let n = x(0);
+// let m = x(2)(3);
+// let m = x(1)("b");
+// let z = n("b");
+// let x = n(2);

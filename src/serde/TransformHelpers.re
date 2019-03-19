@@ -23,11 +23,11 @@ let deserialize_Belt_MapString____t = (transformer, json) =>
       | [(name, one), ...more] =>
         switch (transformer(one)) {
         | Result.Ok(one) => loop(Belt.Map.String.set(map, name, one), more)
-        | _ => Error(["expected a string"])
+        | Result.Error(items) => Error(["error deserializing map item: " ++ name, ...items])
         }
       };
     loop(Belt.Map.String.empty, List.fromArray(items->Js.Dict.entries));
-  | _ => Result.Error(["Expected an array"])
+  | _ => Result.Error(["Expected a json object for Map"])
   };
 
 let deserialize_Belt_SetString____t = json =>
