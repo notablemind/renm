@@ -6008,13 +6008,13 @@ module Version2 = {
     Version1._Change__rebaseItem => _Change__rebaseItem =
     _input_data => _input_data
   and migrate_Data____data:
-    type contents contents_migrated prefix prefix_migrated.
+    'contents 'contents_migrated 'prefix 'prefix_migrated.
     (
-      prefix => prefix_migrated,
-      contents => contents_migrated,
-      Version1._Data__data(contents, prefix)
+      'prefix => 'prefix_migrated,
+      'contents => 'contents_migrated,
+      Version1._Data__data('contents, 'prefix)
     ) =>
-    _Data__data(contents_migrated, prefix_migrated)
+    _Data__data('contents_migrated, 'prefix_migrated)
    =
     (_migrator_prefix, _migrator_contents, _input_data) => {
       let _converted_nodes =
