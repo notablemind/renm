@@ -206,9 +206,10 @@ module Version1 = {
   let rec deserialize_Belt_MapString____t:
     type arg0.
       (Js.Json.t => Belt.Result.t(arg0, list(string)), Js.Json.t) =>
-      Belt.Result.t(_Belt_MapString__t(arg0), list(string)) =
+      Belt.Result.t(Belt_MapString.t(arg0), list(string)) =
     valueTransformer =>
       TransformHelpers.deserialize_Belt_MapString____t(valueTransformer)
+
   and deserialize_Belt_SetString____t:
     Js.Json.t => Belt.Result.t(_Belt_SetString__t, list(string)) = TransformHelpers.deserialize_Belt_SetString____t
   and deserialize_Change____change:
@@ -3285,8 +3286,9 @@ module Version2 = {
     _Belt_SetString__t,
     (int, int),
   );
-  let rec deserialize_Belt_MapString____t = Version1.deserialize_Belt_MapString____t
-  and deserialize_Belt_SetString____t = Version1.deserialize_Belt_SetString____t
+  let rec
+  deserialize_Belt_MapString____t: 'arg . (Js.Json.t => Belt.Result.t('arg, list(string)), Js.Json.t) => Belt.Result.t(Belt.Map.String.t('arg), list(string)) = Version1.deserialize_Belt_MapString____t and
+  deserialize_Belt_SetString____t = Version1.deserialize_Belt_SetString____t
   and deserialize_Change____change:
     Js.Json.t => Belt.Result.t(_Change__change, list(string)) =
     constructor =>
@@ -3343,12 +3345,13 @@ module Version2 = {
         }
       | JSONArray([|tag, arg0, arg1, arg2, arg3, arg4|])
           when Js.Json.JSONString("ImportNodes") == Js.Json.classify(tag) =>
+        let deserialize_Belt_MapString____t: 'arg . (Js.Json.t => Belt.Result.t('arg, list(string)), Js.Json.t) => Belt.Result.t(Belt.Map.String.t('arg), list(string)) = deserialize_Belt_MapString____t;
         switch (
-          (deserialize_Belt_MapString____t(deserialize_Data__Tag__t))(arg4)
+          deserialize_Belt_MapString____t(deserialize_Data__Tag__t, arg4)
         ) {
-        | Belt.Result.Ok(arg4) =>
+        | Belt.Result.Ok(arg4: Belt.Map.String.t(Data.Tag.t)) =>
           switch (
-            (deserialize_Belt_MapString____t(deserialize_NodeType____t))(
+            deserialize_Belt_MapString____t(deserialize_NodeType____t, 
               arg3,
             )
           ) {
@@ -3657,14 +3660,12 @@ module Version2 = {
                 | None => Belt.Result.Error(["No attribute nodes"])
                 | Some(json) =>
                   switch (
-                    (
+                    
                       deserialize_Belt_MapString____t(
                         deserialize_Data__Node__t(
                           contentsTransformer,
                           prefixTransformer,
                         ),
-                      )
-                    )(
                       json,
                     )
                   ) {
@@ -3678,7 +3679,7 @@ module Version2 = {
               | None => Belt.Result.Error(["No attribute tags"])
               | Some(json) =>
                 switch (
-                  (deserialize_Belt_MapString____t(deserialize_Data__Tag__t))(
+                  deserialize_Belt_MapString____t(deserialize_Data__Tag__t,
                     json,
                   )
                 ) {
@@ -3882,15 +3883,15 @@ module Version2 = {
       | _ => Belt.Result.Error(["Expected an object"])
       }
   and deserialize_Data__Node__t:
-    'arg0 'arg1.
+    type arg0 arg1.
     (
-      Js.Json.t => Belt.Result.t('arg0, list(string)),
-      Js.Json.t => Belt.Result.t('arg1, list(string)),
+      Js.Json.t => Belt.Result.t(arg0, list(string)),
+      Js.Json.t => Belt.Result.t(arg1, list(string)),
       Js.Json.t
     ) =>
-    Belt.Result.t(_Data__Node__t('arg0, 'arg1), list(string))
+    Belt.Result.t(_Data__Node__t(arg0, arg1), list(string))
    =
-    (type arg1, type arg0) => (
+    (
       (contentsTransformer, prefixTransformer, record) =>
         switch (Js.Json.classify(record)) {
         | JSONObject(dict) =>
@@ -4353,13 +4354,7 @@ module Version2 = {
             }
           };
         | _ => Belt.Result.Error(["Expected an object"])
-        }:
-        (
-          Js.Json.t => Belt.Result.t(arg0, list(string)),
-          Js.Json.t => Belt.Result.t(arg1, list(string)),
-          Js.Json.t
-        ) =>
-        Belt.Result.t(_Data__Node__t(arg0, arg1), list(string))
+        }
     )
   and deserialize_Data__Tag__id = Version1.deserialize_Data__Tag__id
   and deserialize_Data__Tag__t = Version1.deserialize_Data__Tag__t
