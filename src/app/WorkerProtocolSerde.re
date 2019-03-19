@@ -5910,8 +5910,15 @@ module Version2 = {
     ('value => 'value_migrated, Version1._Belt_MapString__t('value)) =>
     _Belt_MapString__t('value_migrated)
    =
-    (_migrator_value, _input_data) =>
-      TransformHelpers.migrate_Belt_MapString__t(_migrator_value, _input_data)
+    (type value, type value_migrated) => (
+      (_migrator_value, _input_data) =>
+        TransformHelpers.migrate_Belt_MapString__t(
+          _migrator_value,
+          _input_data,
+        ):
+        (value => value_migrated, Version1._Belt_MapString__t(value)) =>
+        _Belt_MapString__t(value_migrated)
+    )
   and migrate_Belt_SetString____t:
     Version1._Belt_SetString__t => _Belt_SetString__t =
     _input_data => _input_data
@@ -6016,35 +6023,43 @@ module Version2 = {
     ) =>
     _Data__data('contents_migrated, 'prefix_migrated)
    =
-    (_migrator_prefix, _migrator_contents, _input_data) => {
-      let _converted_nodes =
-        migrate_Belt_MapString____t(
-          arg =>
-            migrate_Data__Node__t(
-              arg => _migrator_prefix(arg),
-              arg => _migrator_contents(arg),
-              arg,
-            ),
-          _input_data.nodes,
-        );
-      let _converted_tags =
-        migrate_Belt_MapString____t(
-          arg => migrate_Data__Tag__t(arg),
-          _input_data.tags,
-        );
-      let _converted_root = migrate_Data__Node__id(_input_data.root);
-      let _converted_contributors =
-        migrate_Belt_MapString____t(
-          arg => migrate_Data____user(arg),
-          _input_data.contributors,
-        );
-      {
-        contributors: _converted_contributors,
-        root: _converted_root,
-        tags: _converted_tags,
-        nodes: _converted_nodes,
-      };
-    }
+    (type prefix, type prefix_migrated, type contents, type contents_migrated) => (
+      (_migrator_prefix, _migrator_contents, _input_data) => {
+        let _converted_nodes =
+          migrate_Belt_MapString____t(
+            arg =>
+              migrate_Data__Node__t(
+                arg => _migrator_prefix(arg),
+                arg => _migrator_contents(arg),
+                arg,
+              ),
+            _input_data.nodes,
+          );
+        let _converted_tags =
+          migrate_Belt_MapString____t(
+            arg => migrate_Data__Tag__t(arg),
+            _input_data.tags,
+          );
+        let _converted_root = migrate_Data__Node__id(_input_data.root);
+        let _converted_contributors =
+          migrate_Belt_MapString____t(
+            arg => migrate_Data____user(arg),
+            _input_data.contributors,
+          );
+        {
+          contributors: _converted_contributors,
+          root: _converted_root,
+          tags: _converted_tags,
+          nodes: _converted_nodes,
+        };
+      }:
+        (
+          prefix => prefix_migrated,
+          contents => contents_migrated,
+          Version1._Data__data(contents, prefix)
+        ) =>
+        _Data__data(contents_migrated, prefix_migrated)
+    )
   and migrate_Data____date: Version1._Data__date => _Data__date =
     _input_data => _input_data
   and migrate_Data____source: Version1._Data__source => _Data__source =
@@ -6054,77 +6069,85 @@ module Version2 = {
   and migrate_Data__Node__id: Version1._Data__Node__id => _Data__Node__id =
     _input_data => _input_data
   and migrate_Data__Node__t:
-    type contents contents_migrated prefix prefix_migrated.
+    'contents 'contents_migrated 'prefix 'prefix_migrated.
     (
-      prefix => prefix_migrated,
-      contents => contents_migrated,
-      Version1._Data__Node__t(contents, prefix)
+      'prefix => 'prefix_migrated,
+      'contents => 'contents_migrated,
+      Version1._Data__Node__t('contents, 'prefix)
     ) =>
-    _Data__Node__t(contents_migrated, prefix_migrated)
+    _Data__Node__t('contents_migrated, 'prefix_migrated)
    =
-    (_migrator_prefix, _migrator_contents, _input_data) => {
-      let _converted_id = migrate_Data__Node__id(_input_data.id);
-      let _converted_parent = migrate_Data__Node__id(_input_data.parent);
-      let _converted_author = _input_data.author;
-      let _converted_created = migrate_Data____date(_input_data.created);
-      let _converted_completed = _input_data.completed;
-      let _converted_trashed =
-        switch (_input_data.trashed) {
-        | None => None
-        | Some(_item) => Some(migrate_Data____date(_item))
+    (type prefix, type prefix_migrated, type contents, type contents_migrated) => (
+      (_migrator_prefix, _migrator_contents, _input_data) => {
+        let _converted_id = migrate_Data__Node__id(_input_data.id);
+        let _converted_parent = migrate_Data__Node__id(_input_data.parent);
+        let _converted_author = _input_data.author;
+        let _converted_created = migrate_Data____date(_input_data.created);
+        let _converted_completed = _input_data.completed;
+        let _converted_trashed =
+          switch (_input_data.trashed) {
+          | None => None
+          | Some(_item) => Some(migrate_Data____date(_item))
+          };
+        let _converted_modified = migrate_Data____date(_input_data.modified);
+        let _converted_childrenModified =
+          migrate_Data____date(_input_data.childrenModified);
+        let _converted_children =
+          (Belt.List.map(_input_data.children))(_item => _item);
+        let _converted_numberChildren = _input_data.numberChildren;
+        let _converted_reactions =
+          (
+            _ => []:
+              Version1._Data__Node__t(contents, prefix) =>
+              list(_Data__Node__reaction)
+          )(
+            _input_data,
+          );
+        let _converted_columns =
+          (
+            _ => Map.String.empty:
+              Version1._Data__Node__t(contents, prefix) =>
+              _Belt_MapString__t(contents_migrated)
+          )(
+            _input_data,
+          );
+        let _converted_childColumns =
+          (
+            _ => None:
+              Version1._Data__Node__t(contents, prefix) =>
+              option((list(_Data__Node__column), bool))
+          )(
+            _input_data,
+          );
+        let _converted_contents = _migrator_contents(_input_data.contents);
+        let _converted_tags = migrate_Belt_SetString____t(_input_data.tags);
+        let _converted_prefix = _migrator_prefix(_input_data.prefix);
+        {
+          prefix: _converted_prefix,
+          tags: _converted_tags,
+          contents: _converted_contents,
+          childColumns: _converted_childColumns,
+          columns: _converted_columns,
+          reactions: _converted_reactions,
+          numberChildren: _converted_numberChildren,
+          children: _converted_children,
+          childrenModified: _converted_childrenModified,
+          modified: _converted_modified,
+          trashed: _converted_trashed,
+          completed: _converted_completed,
+          created: _converted_created,
+          author: _converted_author,
+          parent: _converted_parent,
+          id: _converted_id,
         };
-      let _converted_modified = migrate_Data____date(_input_data.modified);
-      let _converted_childrenModified =
-        migrate_Data____date(_input_data.childrenModified);
-      let _converted_children =
-        (Belt.List.map(_input_data.children))(_item => _item);
-      let _converted_numberChildren = _input_data.numberChildren;
-      let _converted_reactions =
+      }:
         (
-          _ => []:
-            Version1._Data__Node__t(contents, prefix) =>
-            list(_Data__Node__reaction)
-        )(
-          _input_data,
-        );
-      let _converted_columns =
-        (
-          _ => Map.String.empty:
-            Version1._Data__Node__t(contents, prefix) =>
-            _Belt_MapString__t(contents_migrated)
-        )(
-          _input_data,
-        );
-      let _converted_childColumns =
-        (
-          _ => None:
-            Version1._Data__Node__t(contents, prefix) =>
-            option((list(_Data__Node__column), bool))
-        )(
-          _input_data,
-        );
-      let _converted_contents = _migrator_contents(_input_data.contents);
-      let _converted_tags = migrate_Belt_SetString____t(_input_data.tags);
-      let _converted_prefix = _migrator_prefix(_input_data.prefix);
-      {
-        prefix: _converted_prefix,
-        tags: _converted_tags,
-        contents: _converted_contents,
-        childColumns: _converted_childColumns,
-        columns: _converted_columns,
-        reactions: _converted_reactions,
-        numberChildren: _converted_numberChildren,
-        children: _converted_children,
-        childrenModified: _converted_childrenModified,
-        modified: _converted_modified,
-        trashed: _converted_trashed,
-        completed: _converted_completed,
-        created: _converted_created,
-        author: _converted_author,
-        parent: _converted_parent,
-        id: _converted_id,
-      };
-    }
+          prefix => prefix_migrated,
+          contents => contents_migrated,
+          Version1._Data__Node__t(contents, prefix)
+        ) =>
+        _Data__Node__t(contents_migrated, prefix_migrated)
+    )
   and migrate_Data__Tag__id: Version1._Data__Tag__id => _Data__Tag__id =
     _input_data => _input_data
   and migrate_Data__Tag__t: Version1._Data__Tag__t => _Data__Tag__t =
@@ -6179,21 +6202,37 @@ module Version2 = {
     ) =>
     _Sync__change('change_migrated, 'rebase_migrated, 'selection_migrated)
    =
-    (_migrator_selection, _migrator_rebase, _migrator_change, _input_data) => {
-      let _converted_inner =
-        migrate_Sync____changeInner(
-          arg => _migrator_selection(arg),
-          arg => _migrator_change(arg),
-          _input_data.inner,
-        );
-      let _converted_revert = _migrator_change(_input_data.revert);
-      let _converted_rebase = _migrator_rebase(_input_data.rebase);
-      {
-        rebase: _converted_rebase,
-        revert: _converted_revert,
-        inner: _converted_inner,
-      };
-    }
+    (
+      type selection,
+      type selection_migrated,
+      type rebase,
+      type rebase_migrated,
+      type change,
+      type change_migrated,
+    ) => (
+      (_migrator_selection, _migrator_rebase, _migrator_change, _input_data) => {
+        let _converted_inner =
+          migrate_Sync____changeInner(
+            arg => _migrator_selection(arg),
+            arg => _migrator_change(arg),
+            _input_data.inner,
+          );
+        let _converted_revert = _migrator_change(_input_data.revert);
+        let _converted_rebase = _migrator_rebase(_input_data.rebase);
+        {
+          rebase: _converted_rebase,
+          revert: _converted_revert,
+          inner: _converted_inner,
+        };
+      }:
+        (
+          selection => selection_migrated,
+          rebase => rebase_migrated,
+          change => change_migrated,
+          Version1._Sync__change(change, rebase, selection)
+        ) =>
+        _Sync__change(change_migrated, rebase_migrated, selection_migrated)
+    )
   and migrate_Sync____changeInner:
     'change 'change_migrated 'selection 'selection_migrated.
     (
@@ -6203,26 +6242,39 @@ module Version2 = {
     ) =>
     _Sync__changeInner('change_migrated, 'selection_migrated)
    =
-    (_migrator_selection, _migrator_change, _input_data) => {
-      let _converted_changeId = _input_data.changeId;
-      let _converted_link =
-        switch (_input_data.link) {
-        | None => None
-        | Some(_item) => Some(migrate_Sync____link(_item))
+    (
+      type selection,
+      type selection_migrated,
+      type change,
+      type change_migrated,
+    ) => (
+      (_migrator_selection, _migrator_change, _input_data) => {
+        let _converted_changeId = _input_data.changeId;
+        let _converted_link =
+          switch (_input_data.link) {
+          | None => None
+          | Some(_item) => Some(migrate_Sync____link(_item))
+          };
+        let _converted_apply = _migrator_change(_input_data.apply);
+        let _converted_sessionInfo =
+          migrate_Sync____sessionInfo(
+            arg => _migrator_selection(arg),
+            _input_data.sessionInfo,
+          );
+        {
+          sessionInfo: _converted_sessionInfo,
+          apply: _converted_apply,
+          link: _converted_link,
+          changeId: _converted_changeId,
         };
-      let _converted_apply = _migrator_change(_input_data.apply);
-      let _converted_sessionInfo =
-        migrate_Sync____sessionInfo(
-          arg => _migrator_selection(arg),
-          _input_data.sessionInfo,
-        );
-      {
-        sessionInfo: _converted_sessionInfo,
-        apply: _converted_apply,
-        link: _converted_link,
-        changeId: _converted_changeId,
-      };
-    }
+      }:
+        (
+          selection => selection_migrated,
+          change => change_migrated,
+          Version1._Sync__changeInner(change, selection)
+        ) =>
+        _Sync__changeInner(change_migrated, selection_migrated)
+    )
   and migrate_Sync____link: Version1._Sync__link => _Sync__link =
     _input_data => _input_data
   and migrate_Sync____sessionInfo:
@@ -6233,26 +6285,33 @@ module Version2 = {
     ) =>
     _Sync__sessionInfo('selection_migrated)
    =
-    (_migrator_selection, _input_data) => {
-      let _converted_preSelection =
-        _migrator_selection(_input_data.preSelection);
-      let _converted_postSelection =
-        _migrator_selection(_input_data.postSelection);
-      let _converted_sessionId = _input_data.sessionId;
-      let _converted_changeset =
-        switch (_input_data.changeset) {
-        | None => None
-        | Some(_item) => Some(_item)
+    (type selection, type selection_migrated) => (
+      (_migrator_selection, _input_data) => {
+        let _converted_preSelection =
+          _migrator_selection(_input_data.preSelection);
+        let _converted_postSelection =
+          _migrator_selection(_input_data.postSelection);
+        let _converted_sessionId = _input_data.sessionId;
+        let _converted_changeset =
+          switch (_input_data.changeset) {
+          | None => None
+          | Some(_item) => Some(_item)
+          };
+        let _converted_author = _input_data.author;
+        {
+          author: _converted_author,
+          changeset: _converted_changeset,
+          sessionId: _converted_sessionId,
+          postSelection: _converted_postSelection,
+          preSelection: _converted_preSelection,
         };
-      let _converted_author = _input_data.author;
-      {
-        author: _converted_author,
-        changeset: _converted_changeset,
-        sessionId: _converted_sessionId,
-        postSelection: _converted_postSelection,
-        preSelection: _converted_preSelection,
-      };
-    }
+      }:
+        (
+          selection => selection_migrated,
+          Version1._Sync__sessionInfo(selection)
+        ) =>
+        _Sync__sessionInfo(selection_migrated)
+    )
   and migrate_View____cursor: Version1._View__cursor => _View__cursor =
     _input_data => _input_data
   and migrate_View____sharedViewData:
