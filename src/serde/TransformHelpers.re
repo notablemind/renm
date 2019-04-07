@@ -13,6 +13,8 @@ let wrapError = item => Belt.Result.(switch item {
   | Ok(v) => Ok(v)
 });
 
+let migrate_Belt_MapString__t = (transformer, map) => Belt.Map.String.map(map, transformer);
+
 let deserialize_Belt_MapString____t = (transformer, json) =>
   switch (Js.Json.classify(json)) {
   | JSONObject(items) =>
@@ -23,30 +25,27 @@ let deserialize_Belt_MapString____t = (transformer, json) =>
       | [(name, one), ...more] =>
         switch (transformer(one)) {
         | Result.Ok(one) => loop(Belt.Map.String.set(map, name, one), more)
-        | _ => Error(["expected a string"])
+        | Result.Error(items) => Error(["error deserializing map item: " ++ name, ...items])
         }
       };
     loop(Belt.Map.String.empty, List.fromArray(items->Js.Dict.entries));
-  | _ => Result.Error(["Expected an array"])
+  | _ => Result.Error(["Expected a json object for Map"])
   };
 
 let deserialize_Belt_SetString____t = json =>
   switch (Js.Json.classify(json)) {
   | JSONArray(items) =>
-    let rec loop = items =>
+    let rec loop = (current, items) =>
       switch (items) {
-      | [] => Result.Ok([])
+      | [] => Result.Ok(List.reverse(current))
       | [one, ...more] =>
         switch (Js.Json.classify(one)) {
         | JSONString(one) =>
-          switch (loop(more)) {
-          | Error(e) => Error(e)
-          | Ok(items) => Ok([one, ...items])
-          }
+          loop([one, ...current], more)
         | _ => Error(["expected a string"])
         }
       };
-    switch (loop(List.fromArray(items))) {
+    switch (loop([], List.fromArray(items))) {
     | Error(e) => Result.Error(e)
     | Ok(items) => Ok(Set.String.fromArray(List.toArray(items)))
     };

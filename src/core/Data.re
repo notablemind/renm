@@ -15,6 +15,31 @@ module Tag = {
 module Node = {
   type id = string;
 
+  type reaction = {name: string, users: Set.String.t};
+
+  type columnKind =
+  | FreeForm
+  | Checkbox
+  | Date
+  | Options(list(string))
+
+  // What should be expensive?
+  // columns are ordered list
+  // - reorder / remove
+  // columns are title-mapped
+  // - renames
+  // columns are id-mapped
+  // - none, but the display is weird. Can't map an old column or something.
+
+  type column = {
+    title: string,
+    kind: columnKind,
+    width: int,
+  };
+
+  [@migrate.columns (_) => Map.String.empty]
+  [@migrate.childColumns (_) => None]
+  [@migrate.reactions (_) => []]
   type t('contents, 'prefix) = {
     id,
     parent: id,
@@ -28,6 +53,12 @@ module Node = {
     children: list(string),
     numberChildren: bool,
     /* contentsy-stuff */
+    // Ok so this needs to be added...
+    // So maybe this needs I need to actually get type migration working 🙃
+    reactions: list(reaction),
+    columns: Map.String.t('contents),
+    childColumns: option((list(column), bool /* true if the columns should apply recursively */)),
+
     contents: 'contents,
     tags: Set.String.t,
     prefix: 'prefix,
@@ -44,6 +75,11 @@ module Node = {
     completed: false,
     numberChildren: false,
     modified: Js.Date.now(),
+
+    reactions: [],
+    columns: Map.String.empty,
+    childColumns: None,
+
     childrenModified: Js.Date.now(),
     children,
     prefix,

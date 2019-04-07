@@ -399,6 +399,12 @@ let quillConfig = (props: ref(propsType), registry) => {
           "altKey": true,
           "handler": (.) => props^.onToggleCollapse(),
         },
+        "collapse-mac": {
+          "key": {j|Ω|j},
+          "collapsed": true,
+          "altKey": true,
+          "handler": (.) => props^.onToggleCollapse(),
+        },
         "left-at-start": {
           "key": "ArrowLeft",
           "handler":

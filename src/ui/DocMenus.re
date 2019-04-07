@@ -37,7 +37,7 @@ module Commands = {
     let clear = {
       SuperMenu.title: "Prefix: clear",
       description: "Clear the node prefix",
-      sort: 0.,
+      sort: Fuzzy.empty,
       action: () => {
         store.act(view.selection->Set.String.toList->List.map(id => 
           Actions.SetPrefix(id, None)
@@ -47,7 +47,7 @@ module Commands = {
     let attribution = {
       SuperMenu.title: "Prefix: attribution",
       description: "Make this a 'comment' item",
-      sort: 0.,
+      sort: Fuzzy.empty,
       action: () => {
         store.act(view.selection->Set.String.toList->List.map(id => 
           Actions.SetPrefix(id, Some(Attribution))
@@ -57,7 +57,7 @@ module Commands = {
     let checkbox = {
       SuperMenu.title: "Prefix: checkbox",
       description: "Make this a 'todo' item",
-      sort: 0.,
+      sort: Fuzzy.empty,
       action: () => {
         store.act(view.selection->Set.String.toList->List.map(id => 
           Actions.SetPrefix(id, Some(Todo))
@@ -85,7 +85,7 @@ module Commands = {
       {
         SuperMenu.title: "Export deep",
         description: "Export selected node and children",
-        sort: 0.,
+        sort: Fuzzy.empty,
         action: () => {
           let root = store.view().active;
           let (nodes, tags) = Data.exportTree(store.data(), root);
@@ -113,7 +113,7 @@ module Commands = {
       {
         SuperMenu.title: "Import dump",
         description: "",
-        sort: 0.,
+        sort: Fuzzy.empty,
         action: () => {
           showDialog(Import)
         }
@@ -121,7 +121,7 @@ module Commands = {
       {
         SuperMenu.title: "Export contents as json delta",
         description: "",
-        sort: 0.,
+        sort: Fuzzy.empty,
         action: () => {
           let%Lets.OptConsume node = store->ClientStore.activeNode;
           triggerCopy({
@@ -141,7 +141,7 @@ let getCommands = (store: ClientStore.t('a, 'b, 'c), showDialog, text) => {
       {
         SuperMenu.title: "Link to File",
         description: "Hyperlink the current text to another (maybe new) file",
-        sort: 0.,
+        sort: Fuzzy.empty,
         action: () => {
           showDialog(FileLink);
         },
@@ -149,13 +149,13 @@ let getCommands = (store: ClientStore.t('a, 'b, 'c), showDialog, text) => {
       {
         SuperMenu.title: "Add/remove tags",
         description: "",
-        sort: 0.,
+        sort: Fuzzy.empty,
         action: () => showDialog(Tags)
       },
       {
         SuperMenu.title: "Copy Symlink",
         description: "Copy current node as symlink",
-        sort: 0.,
+        sort: Fuzzy.empty,
         action: () => {
           let delta = {
             "ops": ({
@@ -191,30 +191,31 @@ let simpleSearch = (store: ClientStore.t('a, 'b, 'c), text) => {
     let found = nodes->Map.String.reduce([], (results, _id, node) => {
       let contents = node.contents->Delta.getText;
       // Js.log2("Search", contents);
-      if (SuperMenu.fuzzysearch(text, contents->Js.String.toLowerCase)) {
-        let result = SuperMenu.fuzzy(~term=contents, ~query=text);
+      if (Fuzzy.fuzzysearch(text, contents->Js.String.toLowerCase)) {
+        let result = Fuzzy.fuzzyScore(text, contents);
         [{
-          SuperMenu.title: result##highlightedTerm,
+          SuperMenu.title: contents,
           description: "",
-          sort: result##score->float_of_int,
+          sort: result,
           action: () => ActionCreators.jumpTo(store, node.id)
         }, ...results]
       } else {
         results
       }
     });
-    found->atMost(50)->List.toArray
+    found->List.toArray
   }
 };
 
 let fileCommands = (store: ClientStore.t('a, 'b, 'c), ~onSelect, ~onCreate, text) => {
   let files = store.session().allFiles;
+  let text = text->Js.String.toLowerCase;
   Hashtbl.fold((id, meta: MetaData.t, results) => {
-    if (SuperMenu.fuzzysearch(text, meta.title)) {
+    if (Fuzzy.fuzzysearch(text, meta.title->Js.String.toLowerCase)) {
       [{
         SuperMenu.title: meta.title,
         description: meta.id,
-        sort: SuperMenu.fuzzyScore(~term=meta.title, ~query=text),
+        sort: Fuzzy.fuzzyScore(text, meta.title),
         action: () => {
           Js.log2("Hi", meta);
 
@@ -226,13 +227,13 @@ let fileCommands = (store: ClientStore.t('a, 'b, 'c), ~onSelect, ~onCreate, text
     }
   }, files, [text == "" ? {
     SuperMenu.title: "[new file]",
-    sort: 0.,
+    sort: Fuzzy.empty,
     description: "Type the name you want to give to the new file",
     action: () => ()
   } : {
     SuperMenu.title: "Create file \"" ++ text ++ "\"",
     description: "",
-    sort: 0.,
+    sort: Fuzzy.empty,
     action: () => onCreate(text)
   }])->List.toArray
 };
@@ -385,7 +386,7 @@ module TagsMenu = {
       {
         SuperMenu.title: (remove ? "Remove " : "Add ") ++ tag.name,
         description: "",
-        sort: 0.,
+        sort: Fuzzy.empty,
         action: () => store.act([remove ? RemoveTagFromNodes(tag.id, [node.id]) : AddTagToNodes(tag.id, [node.id])]),
       }
     })->SuperMenu.filterAndAddScores(text)
@@ -393,7 +394,7 @@ module TagsMenu = {
     {
       SuperMenu.title: text == "" ? "[type to create a new tag]" : "Create new tag: " ++ text,
       description: "",
-      sort: 0.,
+      sort: Fuzzy.empty,
       action: () => text == "" ? () : {
         let id = Utils.newId();
         store.act([CreateTag({
@@ -433,7 +434,7 @@ let show = (store, dialog, showDialog, hideDialog, sendMessage) =>
     />
   | Search =>
     <SuperMenu
-      placeholder="Select file to open"
+      placeholder="Search within this file (fuzzy)"
       key="search"
       rawHtml={true}
       header={superHeader(Search, showDialog)}
