@@ -1,21 +1,69 @@
 {
+  "$schemaVersion": 2,
   "version": 2,
-  "$schemaVersion": 1,
-  "output": "src/app/WorkerProtocolSerde.re",
-  "engine": "Js.Json",
+  "engines": {
+    "Js.Json": {
+      "output": "src/app/WorkerProtocolSerde.re",
+      "helpers": "TransformHelpers"
+    }
+  },
   "entries": [
-    {"file": "./src/app/WorkerProtocol.re", "type": "message"},
-    {"file": "./src/app/WorkerProtocol.re", "type": "serverMessage"},
-    {"file": "./src/core/MetaData.re", "type": "t", "publicName": "metaData"},
-    {"file": "./src/core/StoreInOne.re", "type": "Server.serverFile", "publicName": "serverFile"},
-    {"file": "./src/core/View.re", "type": "sharedViewData"},
-    {"file": "./src/World.re", "type": "MultiChange.rebaseItem", "publicName": "rebaseItem"},
-    {"file": "./src/World.re", "type": "MultiChange.change", "publicName": "change"},
-    {"file": "./src/World.re", "type": "MultiChange.fullChange", "publicName": "historyItem"},
-    {"file": "./src/core/Session.re", "type": "auth", "publicName": "auth"},
-    {"file": "./src/NodeType.re", "type": "t", "publicName": "node"},
-    {"file": "./src/core/Data.re", "type": "Tag.t", "publicName": "tag"},
-    {"file": "./src/core/Data.re", "type": "user"}
+    {
+      "file": "./src/app/WorkerProtocol.re",
+      "type": "message"
+    },
+    {
+      "file": "./src/app/WorkerProtocol.re",
+      "type": "serverMessage"
+    },
+    {
+      "file": "./src/core/MetaData.re",
+      "type": "t",
+      "publicName": "metaData"
+    },
+    {
+      "file": "./src/core/StoreInOne.re",
+      "type": "Server.serverFile",
+      "publicName": "serverFile"
+    },
+    {
+      "file": "./src/core/View.re",
+      "type": "sharedViewData"
+    },
+    {
+      "file": "./src/World.re",
+      "type": "MultiChange.rebaseItem",
+      "publicName": "rebaseItem"
+    },
+    {
+      "file": "./src/World.re",
+      "type": "MultiChange.change",
+      "publicName": "change"
+    },
+    {
+      "file": "./src/World.re",
+      "type": "MultiChange.fullChange",
+      "publicName": "historyItem"
+    },
+    {
+      "file": "./src/core/Session.re",
+      "type": "auth",
+      "publicName": "auth"
+    },
+    {
+      "file": "./src/NodeType.re",
+      "type": "t",
+      "publicName": "node"
+    },
+    {
+      "file": "./src/core/Data.re",
+      "type": "Tag.t",
+      "publicName": "tag"
+    },
+    {
+      "file": "./src/core/Data.re",
+      "type": "user"
+    }
   ],
   "custom": []
 }

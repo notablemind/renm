@@ -1,71 +1,81 @@
 {
-  "$schemaVersion": 1,
-  "engine": ["Js.Json"],
+  "$schemaVersion": 2,
   "versions": [
     {
       "entries": [
         {
           "moduleName": "WorkerProtocol",
           "modulePath": [],
+          "engines": [],
           "name": "message"
         },
         {
           "moduleName": "WorkerProtocol",
           "modulePath": [],
+          "engines": [],
           "name": "serverMessage"
         },
         {
           "moduleName": "MetaData",
           "modulePath": [],
+          "engines": [],
           "name": "t"
         },
         {
           "moduleName": "StoreInOne",
           "modulePath": ["Server"],
+          "engines": [],
           "name": "serverFile"
         },
         {
           "moduleName": "View",
           "modulePath": [],
+          "engines": [],
           "name": "sharedViewData"
         },
         {
           "moduleName": "World",
           "modulePath": ["MultiChange"],
+          "engines": [],
           "name": "rebaseItem"
         },
         {
           "moduleName": "World",
           "modulePath": ["MultiChange"],
+          "engines": [],
           "name": "change"
         },
         {
           "moduleName": "World",
           "modulePath": ["MultiChange"],
+          "engines": [],
           "name": "fullChange"
         },
         {
           "moduleName": "Session",
           "modulePath": [],
+          "engines": [],
           "name": "auth"
         },
         {
           "moduleName": "NodeType",
           "modulePath": [],
+          "engines": [],
           "name": "t"
         },
         {
           "moduleName": "Data",
           "modulePath": ["Tag"],
+          "engines": [],
           "name": "t"
         },
         {
           "moduleName": "Data",
           "modulePath": [],
+          "engines": [],
           "name": "user"
         }
       ],
-      "engineVersion": 1,
       "typeMap": [
         [
           [
@@ -3385,65 +3395,136 @@
         {
           "moduleName": "WorkerProtocol",
           "modulePath": [],
+          "engines": [
+            [
+              ["Js.Json"],
+              1
+            ]
+          ],
           "name": "message"
         },
         {
           "moduleName": "WorkerProtocol",
           "modulePath": [],
+          "engines": [
+            [
+              ["Js.Json"],
+              1
+            ]
+          ],
           "name": "serverMessage"
         },
         {
           "moduleName": "MetaData",
           "modulePath": [],
+          "engines": [
+            [
+              ["Js.Json"],
+              1
+            ]
+          ],
           "name": "t"
         },
         {
           "moduleName": "StoreInOne",
           "modulePath": ["Server"],
+          "engines": [
+            [
+              ["Js.Json"],
+              1
+            ]
+          ],
           "name": "serverFile"
         },
         {
           "moduleName": "View",
           "modulePath": [],
+          "engines": [
+            [
+              ["Js.Json"],
+              1
+            ]
+          ],
           "name": "sharedViewData"
         },
         {
           "moduleName": "World",
           "modulePath": ["MultiChange"],
+          "engines": [
+            [
+              ["Js.Json"],
+              1
+            ]
+          ],
           "name": "rebaseItem"
         },
         {
           "moduleName": "World",
           "modulePath": ["MultiChange"],
+          "engines": [
+            [
+              ["Js.Json"],
+              1
+            ]
+          ],
           "name": "change"
         },
         {
           "moduleName": "World",
           "modulePath": ["MultiChange"],
+          "engines": [
+            [
+              ["Js.Json"],
+              1
+            ]
+          ],
           "name": "fullChange"
         },
         {
           "moduleName": "Session",
           "modulePath": [],
+          "engines": [
+            [
+              ["Js.Json"],
+              1
+            ]
+          ],
           "name": "auth"
         },
         {
           "moduleName": "NodeType",
           "modulePath": [],
+          "engines": [
+            [
+              ["Js.Json"],
+              1
+            ]
+          ],
           "name": "t"
         },
         {
           "moduleName": "Data",
           "modulePath": ["Tag"],
+          "engines": [
+            [
+              ["Js.Json"],
+              1
+            ]
+          ],
           "name": "t"
         },
         {
           "moduleName": "Data",
           "modulePath": [],
+          "engines": [
+            [
+              ["Js.Json"],
+              1
+            ]
+          ],
           "name": "user"
         }
       ],
-      "engineVersion": 1,
       "typeMap": [
         [
           [
